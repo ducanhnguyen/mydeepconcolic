@@ -1,0 +1,136 @@
+import keras
+import numpy as np
+from keras.models import model_from_json
+
+class abstract_dataset:
+    def __init__(self):
+        self.__Xtrain = None  # 2-D array: (N_samples, N_features)
+        self.__Xtest = None  # 2-D array: (N_samples, N_features)
+        self.__ytrain = None  # 1-D array
+        self.__ytest = None  # 1-D array
+        self.__model = None  # Keras model
+        self.__num_classes = None  # int
+
+    def create_model(self, input_shape):
+        pass
+
+    def read_data(self, training_path, testing_path):
+        pass
+
+    def get_an_observation(self, index):
+        assert (index >= 0 and len(self.get_Xtrain().shape) == 2 and len(self.get_ytrain().shape) == 1)
+        return self.get_Xtrain()[index].reshape(1, -1), self.get_ytrain()[index]
+
+    def train_model(self, train, kernel_path, model_path, training_path, testing_path):
+        assert (train == True or train == False)
+        assert (kernel_path != None and training_path != None and testing_path != None)
+
+        self.read_data(training_path, testing_path)
+        model = self.create_model(input_shape=len(self.get_Xtrain()[0]))
+
+        # train ANN model
+        if train:
+            batch_size = 64
+            nb_epoch = 100
+
+            # compiling
+            model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(lr=1e-3),
+                          metrics=['accuracy'])
+
+            # training
+            model.fit(self.get_Xtrain(), self.category2indicator(self.get_ytrain()),
+                      validation_data=(self.get_Xtest(), self.category2indicator(self.get_ytest())),
+                      batch_size=batch_size, epochs=nb_epoch, verbose=1)
+
+            score = model.evaluate(self.get_Xtest(), self.category2indicator(self.get_ytest()), verbose=0)
+            print('\n')
+            print('Overall Test score:', score[0])
+            print('Overall Test accuracy:', score[1])
+
+            # save model
+            model.save_weights(kernel_path)
+
+            with open(model_path, "w") as json_file:
+                json_file.write( model.to_json())
+
+        else:
+            # Load model from file
+            model.load_weights(kernel_path)
+
+        return model
+
+    def score(Y, Yhat):
+        y = np.argmax(Y, axis=1)
+        yhat = np.argmax(Yhat, axis=1)
+        return np.mean(y == yhat)
+
+    def load_model(self, kernel_path, model_path, training_path):
+        assert (kernel_path != None and training_path != None)
+
+        # load structure of model
+        json_file = open(model_path, 'r')
+        loaded_model_json = json_file.read()
+        json_file.close()
+        model = model_from_json(loaded_model_json)
+
+        '''
+        Xtrain, _, _, _ = self.read_data(training_path, None)
+        model = self.create_model(input_shape=len(Xtrain[0]))
+        '''
+
+        # Load weight from file
+        model.load_weights(kernel_path)
+
+        self.set_model(model)
+        return model
+
+    def category2indicator(self, y):
+        Y = np.zeros(shape=(y.shape[0], self.get_num_classes()))
+
+        for idx, item in enumerate(y):
+            if item == 10:
+                Y[idx][0] = 1
+            else:
+                Y[idx][item] = 1
+
+        return Y
+
+    def get_num_classes(self):
+        return self.__num_classes
+
+    def set_num_classes(self, num_class):
+        self.__num_classes = num_class
+
+    def set_Xtrain(self, Xtrain):
+        assert (len(Xtrain.shape) == 2)
+        self.__Xtrain = Xtrain
+
+    def get_Xtrain(self):
+        return self.__Xtrain
+
+    def set_ytrain(self, y_train):
+        assert (len(y_train.shape) == 1)
+        self.__ytrain = y_train
+
+    def get_ytrain(self):
+        return self.__ytrain
+
+    def get_Xtest(self):
+        return self.__Xtest
+
+    def set_Xtest(self, Xtest):
+        assert (len(Xtest.shape) == 2)
+        self.__Xtest = Xtest
+
+    def get_ytest(self):
+        return self.__ytest
+
+    def set_ytest(self, ytest):
+        assert (len(ytest.shape) == 1)
+        self.__ytest = ytest
+
+    def set_model(self, model):
+        self.__model = model
+
+    def get_model(self):
+        return self.__model
