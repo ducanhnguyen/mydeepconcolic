@@ -31,7 +31,7 @@ class abstract_dataset:
         # train ANN model
         if train:
             batch_size = 64
-            nb_epoch = 100
+            nb_epoch = 1
 
             # compiling
             model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(lr=1e-3),
@@ -54,9 +54,9 @@ class abstract_dataset:
                 json_file.write( model.to_json())
 
         else:
-            # Load model from file
-            model.load_weights(kernel_path)
+            model = self.load_model(kernel_path, model_path, training_path)
 
+        self.set_model(model)
         return model
 
     def score(Y, Yhat):
@@ -64,11 +64,11 @@ class abstract_dataset:
         yhat = np.argmax(Yhat, axis=1)
         return np.mean(y == yhat)
 
-    def load_model(self, kernel_path, model_path, training_path):
-        assert (kernel_path != None and training_path != None)
+    def load_model(self, weight_path, structure_path, trainset_path):
+        assert (weight_path != None and trainset_path != None)
 
         # load structure of model
-        json_file = open(model_path, 'r')
+        json_file = open(structure_path, 'r')
         loaded_model_json = json_file.read()
         json_file.close()
         model = model_from_json(loaded_model_json)
@@ -79,7 +79,7 @@ class abstract_dataset:
         '''
 
         # Load weight from file
-        model.load_weights(kernel_path)
+        model.load_weights(weight_path)
 
         self.set_model(model)
         return model

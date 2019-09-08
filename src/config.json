@@ -1,0 +1,43 @@
+{
+  "mnist": {
+    "structure": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/src/saved_models/mnist_ann_keras.json",
+    "weight": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/src/saved_models/mnist_ann_keras.h5",
+    "train_set": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/digit-recognizer/train.csv",
+    "test_set": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/digit-recognizer/test.csv",
+    "num_classes": 10,
+    "start_seed": 0,
+    "end_seed": 40000
+  },
+  "shvn": {
+    "structure": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/src/saved_models/shvn_ann_keras.json",
+    "weight": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/src/saved_models/shvn_ann_keras.h5",
+    "train_set": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/SVHN/train_32x32.mat",
+    "test_set": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/SVHN/test_32x32.mat",
+    "num_classes": 10,
+    "start_seed": 0,
+    "send_seed": 73257
+  },
+  "z3": {
+    "z3_solution_parser_command": "/Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/java -Dfile.encoding=UTF-8 -p /Users/ducanhnguyen/eclipse-workspace/z3_parser2/bin:/Users/ducanhnguyen/eclipse-workspace/z3_parser2/lib/hamcrest-core-1.3.jar:/Users/ducanhnguyen/eclipse-workspace/z3_parser2/lib/jeval.jar:/Users/ducanhnguyen/eclipse-workspace/z3_parser2/lib/junit-4.13-beta-3.jar:/Users/ducanhnguyen/eclipse-workspace/z3_parser2/lib/org.apache.commons.io.jar -m z3_parser2/z3_parser.Z3SolutionParser",
+    "z3_normalized_solution_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/norm_solution.txt",
+    "z3_solution_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/solution.txt",
+    "z3_input_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/constraint.txt",
+    "z3_solver_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/lib/z3-4.8.5-x64-osx-10.14.2/bin/z3",
+    "constraint_file": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/constraint.txt",
+    "time_out": 5000
+  },
+  "files": {
+    "seed_file_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/seed.csv",
+    "true_label_seed_file": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/true_label.txt",
+    "seed_index_file": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/seed_index.txt"
+  },
+  "constraint_config": {
+    "delta_lower_bound": 0,
+    "delta_upper_bound": 50,
+    "feature_lower_bound": 0,
+    "feature_upper_bound": 255,
+    "feature_input_type": "int",
+    "delta_prefix_name": "delta",
+    "output_layer_type_constraint": "upper_bound"
+  }
+}
