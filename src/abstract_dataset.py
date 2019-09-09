@@ -10,6 +10,8 @@ class abstract_dataset:
         self.__ytest = None  # 1-D array
         self.__model = None  # Keras model
         self.__num_classes = None  # int
+        self.__image_shape = None
+        self.__name_dataset = None
 
     def create_model(self, input_shape):
         pass
@@ -134,3 +136,15 @@ class abstract_dataset:
 
     def get_model(self):
         return self.__model
+
+    def set_image_shape(self, image_shape):
+        self.__image_shape = image_shape
+
+    def get_image_shape(self):
+        return self.__image_shape
+
+    def get_name_dataset(self):
+        return self.__name_dataset
+
+    def set_name_dataset(self, dataset):
+        self.__name_dataset = dataset

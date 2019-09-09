@@ -5,28 +5,35 @@ Command:
 # TODO: them bias vao cong thuc weight
 import os
 import random as ran
+from threading import Thread
+from types import SimpleNamespace
 
 from keras.models import Model
 
+from src.saved_models.mnist_ann_keras import *
+
+global graph
 from src.json_helloworld import *
 from src.test_summarizer import *
 from src.utils import keras_activation, keras_layer, keras_model
+import tensorflow as tf
 
 MINUS_INF = -10000000
 INF = 10000000
 
 DELTA_PREFIX_NAME = get_config(["constraint_config", "delta_prefix_name"])
 
+global logger
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
 
-# TODO: Evaluate the value of neuron with samples belonging to a class
-
-def create_constraint_between_layers(model):
+def create_constraint_between_layers(model_object):
+    assert (isinstance(model_object, abstract_dataset))
     constraints = []
     smt_constraints = []
 
+    model = model_object.get_model()
     for current_layer_idx, current_layer in enumerate(model.layers):
 
         if current_layer_idx == 0:
@@ -165,10 +172,12 @@ def create_constraint_between_layers(model):
     return constraints, smt_constraints
 
 
-def create_activation_constraints(model):
+def create_activation_constraints(model_object):
+    assert (isinstance(model_object, abstract_dataset))
     constraints = []
     smt_constraints = []
 
+    model = model_object.get_model()
     if keras_model.is_ANN(model):
         for current_layer_idx, current_layer in enumerate(model.layers):
             units = keras_layer.get_number_of_units(model, current_layer_idx)
@@ -286,11 +295,12 @@ def create_activation_constraints(model):
     return constraints, smt_constraints
 
 
-def create_variable_declarations(model, type_feature=get_config(["constraint_config", "feature_input_type"])):
+def create_variable_declarations(model_object, type_feature=get_config(["constraint_config", "feature_input_type"])):
+    assert (isinstance(model_object, abstract_dataset))
     constraints = []
     constraints.append(f'; variable declaration')
-    # types.append(f'(declare-fun {delta} () Int)')
 
+    model = model_object.get_model()
     if keras_model.is_ANN(model):
         if isinstance(model, keras.engine.sequential.Sequential):
             # for input layer
@@ -304,11 +314,6 @@ def create_variable_declarations(model, type_feature=get_config(["constraint_con
                 elif type_feature == 'int':
                     constraint = f'(declare-fun feature_{feature_idx} () Int)'
                     constraints.append(constraint)
-
-                    # constraint = f'(declare-fun feature_{feature_idx}_tmp () Real)'
-                    # constraints.append(constraint)
-
-                    # constraints.append(f'(assert(= feature_{feature_idx}_tmp (/ feature_{feature_idx} 255)))')
                 else:
                     logger.debug(f'Does not support the type {type_feature}')
 
@@ -335,10 +340,12 @@ def create_variable_declarations(model, type_feature=get_config(["constraint_con
     return constraints
 
 
-def create_feature_constraints_from_an_observation(model, x_train, delta=DELTA_PREFIX_NAME):
+def create_feature_constraints_from_an_observation(model_object, x_train, delta=DELTA_PREFIX_NAME):
+    assert (isinstance(model_object, abstract_dataset))
     constraints = []
     smt_constraints = []
 
+    model = model_object.get_model()
     if keras_model.is_ANN(model):
 
         if isinstance(model, keras.engine.sequential.Sequential):
@@ -382,10 +389,11 @@ def create_feature_constraints_from_an_observation(model, x_train, delta=DELTA_P
     return constraints, smt_constraints
 
 
-def create_output_constraints_from_an_observation(model,
-                                                  x_train, y_train):
+def create_output_constraints_from_an_observation(model_object, x_train, y_train, thread_config):
+    assert (isinstance(model_object, abstract_dataset))
     constraints = []
     smt_constraints = []
+    model = model_object.get_model()
 
     if keras_model.is_ANN(model):
         assert (x_train.shape[0] == 1 and len(x_train.shape) == 2)
@@ -432,14 +440,19 @@ def create_output_constraints_from_an_observation(model,
                 Add a constraint related to the bound of output. 
                 '''
                 tmp = x_train.reshape(1, -1)
+
                 before_softmax = model.layers[-2]
                 intermediate_layer_model = Model(inputs=model.inputs,
                                                  outputs=before_softmax.output)
-                prediction = intermediate_layer_model.predict(tmp)
-                logger.debug(f'The prediction of the current seed (before softmax): {prediction}')
+
+                with thread_config.graph.as_default():
+                    # must use when using thread
+                    prediction = intermediate_layer_model.predict(tmp)
+
+                # logger.debug(f'The prediction of the current seed (before softmax): {prediction}')
 
                 smt_constraints.append(f'; output constraints')
-                true_label = open(get_config(["files", "true_label_seed_file"]), "r").readline()
+                true_label = open(thread_config.true_label_seed_file, "r").readline()
                 old_probability = prediction[0][int(true_label)]
                 smt_constraint = f'(assert (< {left} {old_probability}) )'
                 logger.debug(f'Output constraint = {smt_constraint}')
@@ -454,14 +467,16 @@ def create_output_constraints_from_an_observation(model,
     return constraints, smt_constraints
 
 
-def create_bound_of_feature_constraints(model,
+def create_bound_of_feature_constraints(model_object,
                                         feature_lower_bound, feature_upper_bound,
                                         delta_lower_bound, delta_upper_bound, delta_prefix=DELTA_PREFIX_NAME):
     assert (feature_lower_bound <= feature_upper_bound)
     assert (delta_lower_bound <= delta_upper_bound)
     assert (delta_prefix != None and delta_prefix != '')
+    assert (isinstance(model_object, abstract_dataset))
     smt_constraints = []
 
+    model = model_object.get_model()
     if keras_model.is_ANN(model):
         first_layer = model.layers[0]
         weights = first_layer.get_weights()  # in which the second are biases, the first is kernel
@@ -506,32 +521,33 @@ def define_mathematical_function():
     return exp
 
 
-def create_constraints_file(obj, seed_index):
-    assert (isinstance(obj, abstract_dataset))
+def create_constraints_file(model_object, seed_index, thread_config):
+    assert (isinstance(model_object, abstract_dataset))
     assert (seed_index >= 0)
 
     # get an observation
-    x_train, y_train = obj.get_an_observation(seed_index)
-    with open(SEED_FILE, mode='w') as f:
+    x_train, y_train = model_object.get_an_observation(seed_index)
+    with open(thread_config.seed_file, mode='w') as f:
         seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         seed.writerow(x_train[0])
-    with open(TRUE_LABEL_SEED_FILE, 'w') as f:
+    with open(thread_config.true_label_seed_file, 'w') as f:
         f.write(str(y_train))
 
     # generate constraints
     smt_exp = define_mathematical_function()
 
-    variable_types = create_variable_declarations(obj.get_model())
+    variable_types = create_variable_declarations(model_object)
 
-    layers_constraints, smt_layers_constraints = create_constraint_between_layers(obj.get_model())
+    layers_constraints, smt_layers_constraints = create_constraint_between_layers(model_object)
 
-    activation_constraints, smt_activation_constraints = create_activation_constraints(obj.get_model())
+    activation_constraints, smt_activation_constraints = create_activation_constraints(model_object)
 
-    input_constraints, smt_input_constraints = create_feature_constraints_from_an_observation(obj.get_model(), x_train)
+    input_constraints, smt_input_constraints = create_feature_constraints_from_an_observation(model_object, x_train)
 
-    output_constraints, smt_output_constraints = create_output_constraints_from_an_observation(obj.get_model(), x_train,
-                                                                                               y_train)
-    smt_bound_input_constraints = create_bound_of_feature_constraints(obj.get_model(), delta_prefix=DELTA_PREFIX_NAME,
+    output_constraints, smt_output_constraints = create_output_constraints_from_an_observation(model_object, x_train,
+                                                                                               y_train, thread_config)
+    smt_bound_input_constraints = create_bound_of_feature_constraints(model_object=model_object,
+                                                                      delta_prefix=DELTA_PREFIX_NAME,
                                                                       feature_lower_bound=get_config(
                                                                           ["constraint_config", "feature_lower_bound"]),
                                                                       feature_upper_bound=get_config(
@@ -542,7 +558,7 @@ def create_constraints_file(obj, seed_index):
                                                                           ["constraint_config", "delta_upper_bound"]))
 
     # create constraint file
-    with open(CONSTRAINTS_FILE, 'w') as f:
+    with open(thread_config.constraints_file, 'w') as f:
         f.write(f'(set-option :timeout {get_config(["z3", "time_out"])})\n')
         f.write(f'(using-params smt :random-seed {ran.randint(1, 101)})\n')
 
@@ -569,104 +585,227 @@ def create_constraints_file(obj, seed_index):
 
         f.write('(check-sat)\n')
         f.write('(get-model)\n')
-    
-if __name__ == '__main__':
-    SEED_FILE = get_config(["files", "seed_file_path"])
-    TRUE_LABEL_SEED_FILE = get_config(["files", "true_label_seed_file"])
-    CONSTRAINTS_FILE = get_config(["z3", "constraint_file"])
-    SEED_INDEX_FILE = get_config(["files", "seed_file_path"])
 
-    Z3_PATH = get_config(["z3", "z3_solver_path"])
-    Z3_INPUT_PATH = get_config(["z3", "z3_input_path"])
-    Z3_OUTPUT_PATH = get_config(["z3", "z3_solution_path"])
-    Z3_NORMALIED_OUTPUT_PATH = get_config(["z3", "z3_normalized_solution_path"])
 
-    # initialize the environment
-    '''
-    if os.path.exists('/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data'):
-        shutil.rmtree('/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data')
-    os.makedirs('/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data')
-    '''
+def image_generation(seeds, thread_config, model_object):
+    assert (isinstance(model_object, abstract_dataset))
+    assert (len(seeds.shape) == 1)
 
-    # construct model from file
-    from src.saved_models.mnist_ann_keras import *
+    # append to analyzed seed file
+    # just read one time
+    # ranges of seed index in different threads are different
+    analyzed_seed_indexes = []
+    if os.path.exists(thread_config.analyzed_seed_index_file_path):
+        analyzed_seed_indexes = pd.read_csv(thread_config.analyzed_seed_index_file_path, header=None)
+        analyzed_seed_indexes = analyzed_seed_indexes.to_numpy()
 
-    obj = MNIST()
-    obj.set_num_classes(get_config(["mnist", "num_classes"]))
-    obj.read_data(trainset_path=get_config(["mnist", "train_set"]), testset_path=get_config(["mnist", "test_set"]))
-    obj.load_model(weight_path=get_config(["mnist", "weight"]), structure_path=get_config(["mnist", "structure"]),
-                   trainset_path=get_config(["mnist", "train_set"]))
-    start_seed = get_config(["mnist", "start_seed"])
-    end_seed = get_config(["mnist", "end_seed"])
-    image_shape = (28, 28)
-    logger.debug(obj.get_model().summary())
-
-    # generate adversarial samples
-    seeds = np.arange(2021, end_seed)
-    # random.shuffle(seeds)
-    # stop: 2021 mnist
-    
     for seed_index in seeds:
-        # seed_index = 516
-        if os.path.exists(TRUE_LABEL_SEED_FILE):
-            os.remove(TRUE_LABEL_SEED_FILE)
-        if os.path.exists(SEED_FILE):
-            os.remove(SEED_FILE)
-        if os.path.exists(CONSTRAINTS_FILE):
-            os.remove(CONSTRAINTS_FILE)
-        if os.path.exists(Z3_OUTPUT_PATH):
-            os.remove(Z3_OUTPUT_PATH)
-        if os.path.exists(Z3_NORMALIED_OUTPUT_PATH):
-            os.remove(Z3_NORMALIED_OUTPUT_PATH)
+        if seed_index in analyzed_seed_indexes:
+            logger.debug(f'{thread_config.thread_name}: Visited seed {seed_index}. Ignore!')
+            continue
+        else:
+            '''
+            if the seed is never analyzed before
+            '''
+            # append the current seed index to the analyzed seed index file
+            with open(thread_config.analyzed_seed_index_file_path, mode='a') as f:
+                f.write(str(seed_index) + ',')
 
-        logger.debug(f'seed index = {seed_index}')
-        with open(SEED_INDEX_FILE, mode='w') as f:
+            # clean the environment
+            if os.path.exists(thread_config.true_label_seed_file):
+                os.remove(thread_config.true_label_seed_file)
+            if os.path.exists(thread_config.seed_index_file):
+                os.remove(thread_config.seed_index_file)
+            if os.path.exists(thread_config.constraints_file):
+                os.remove(thread_config.constraints_file)
+            if os.path.exists(thread_config.z3_solution_file):
+                os.remove(thread_config.z3_solution_file)
+            if os.path.exists(thread_config.z3_normalized_output_file):
+                os.remove(thread_config.z3_normalized_output_file)
+
+            logger.debug(f'{thread_config.thread_name}: seed index = {seed_index}')
+            with open(thread_config.seed_index_file, mode='w') as f:
+                f.write(str(seed_index))
+
+            # generate constraints
+            logger.debug(f'{thread_config.thread_name}: generate constraints')
+            create_constraints_file(model_object, seed_index, thread_config)
+
+            # call SMT-Solver
+            logger.debug(f'{thread_config.thread_name}: call SMT-Solver to solve the constraints')
+            command = f"{thread_config.z3_path} -smt2 {thread_config.constraints_file} > {thread_config.z3_solution_file}"
+            # logger.debug(f'\t{thread_config.thread_name}: command = {command}')
+            os.system(command)
+
+            # parse solver solution
+            logger.debug(f'{thread_config.thread_name}: parse solver solution')
+            tmp1 = thread_config.z3_solution_file
+            tmp2 = thread_config.z3_normalized_output_file
+            command = get_config(["z3", "z3_solution_parser_command"]) + f' {tmp1} ' + f'{tmp2}'
+
+            logger.debug(f'{thread_config.thread_name}: \t{command}')
+            os.system(command)
+
+            # comparison
+            img = get_new_image(solution_path=thread_config.z3_normalized_output_file)
+
+            if len(img) > 0:  # 16627, 1121
+                csv_new_image_path = f'../data/{seed_index}.csv'
+                with open(csv_new_image_path, mode='w') as f:
+                    seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                    seed.writerow(img)
+
+                # plot the seed and the new image
+                png_comparison_image_path = f'../data/{seed_index}_comparison.png'
+                png_new_image_path = f'../data/{seed_index}_new.png'
+                png_old_image_path = f'../data/{seed_index}_old.png'
+                keep = plot_seed_and_new_image(model_object=model_object, config=thread_config,
+                                               csv_new_image_path=csv_new_image_path,
+                                               png_comparison_image_path=png_comparison_image_path,
+                                               png_new_image_path=png_new_image_path)
+                os.remove(csv_new_image_path)
+                if keep:
+                    with open(thread_config.selected_seed_index_file_path, mode='a') as f:
+                        f.write(str(seed_index) + ',')
+                '''
+                if not keep:
+                    os.remove(png_comparison_image_path)
+                    os.remove(png_new_image_path)
+                '''
+            else:
+                logger.debug(f'The constraints have no solution')
+            logger.debug('--------------------------------------------------')
+            # break
+
+
+def set_up_config(thread_idx):
+    assert (thread_idx >= 0)
+    OLD = '{thread_idx}'
+    config = SimpleNamespace(**dict())
+    config.seed_file = get_config(["files", "seed_file_path"]).replace(OLD, str(thread_idx))
+    config.true_label_seed_file = get_config(["files", "true_label_seed_file_path"]).replace(OLD, str(
+        thread_idx))
+    config.seed_index_file = get_config(["files", "seed_index_file_path"]).replace(OLD, str(thread_idx))
+    config.constraints_file = get_config(["z3", "constraints_file_path"]).replace(OLD, str(thread_idx))
+    config.z3_solution_file = get_config(["z3", "z3_solution_path"]).replace(OLD, str(thread_idx))
+    config.z3_normalized_output_file = get_config(["z3", "z3_normalized_solution_path"]).replace(OLD, str(
+        thread_idx))
+    config.z3_path = get_config(["z3", "z3_solver_path"]).replace(OLD, str(thread_idx))
+    config.graph = tf.get_default_graph()
+    config.analyzed_seed_index_file_path = get_config(["files", "analyzed_seed_index_file_path"])
+    config.selected_seed_index_file_path = get_config(["files", "selected_seed_index_file_path"])
+    config.thread_name = f'thread_{thread_idx}'
+    config.should_plot = False  # should be False when running in multithread
+    config.z3_solution_parser_command = get_config(["z3", "z3_solution_parser_command"])
+    config.new_image_file_path = get_config(["files", "new_image_file_path"])
+    config.comparison_file_path = get_config(["files", "comparison_file_path"])
+    return config
+
+
+def generate_samples(model_object):
+    """
+    Generate adversarial samples
+    :return:
+    """
+    '''
+    construct model from file
+    '''
+    start_seed = get_config([model_object.get_name_dataset(), "start_seed"])
+    end_seed = get_config([model_object.get_name_dataset(), "end_seed"])
+    logger.debug(model_object.get_model().summary())
+
+    '''
+    generate adversarial samples
+    '''
+    n_threads = get_config(["n_threads"])
+    n_single_thread_seeds = int(np.floor((end_seed - start_seed) / n_threads))
+    threads = []
+
+    for thread_idx in range(n_threads):
+        # get range of seed in the current thread
+        if thread_idx == n_threads - 1:
+            seeds = np.arange(n_single_thread_seeds * (n_threads - 1), end_seed)
+        else:
+            seeds = np.arange(n_single_thread_seeds * thread_idx, n_single_thread_seeds * (thread_idx + 1))
+
+        # read the configuration of a thread
+        thread_config = set_up_config(thread_idx)
+        thread_config.image_shape = model_object.get_image_shape()
+
+        # create new thread
+        t = Thread(target=image_generation, args=(seeds, thread_config, model_object))
+        threads.append(t)
+
+    # start all threads
+    for thread in threads:
+        thread.start()
+
+
+def export_to_image(model_object):
+    # load selected indexes
+    selected_seed_indexes = pd.read_csv(get_config(["files", "selected_seed_index_file_path"]), header=None).to_numpy()
+    selected_seed_indexes = selected_seed_indexes.reshape(-1)
+
+    # config
+    config = set_up_config(1235678910)  # can use any number
+    config.should_plot = True
+
+    for seed_index in selected_seed_indexes:
+        seed_index = int(seed_index)
+        logger.debug(f'Seed index = {seed_index}')
+        with open(config.seed_index_file, mode='w') as f:
             f.write(str(seed_index))
 
         # generate constraints
-        logger.debug(f'generate constraints')
-        create_constraints_file(obj, seed_index)
+        logger.debug(f'{config.thread_name}: generate constraints')
+        create_constraints_file(model_object, seed_index, config)
 
         # call SMT-Solver
-        logger.debug(f'call SMT-Solver to solve the constraints')
-        command = f"{Z3_PATH} -smt2 {Z3_INPUT_PATH} > {Z3_OUTPUT_PATH}"
-        logger.debug(f'\tcommand = {command}')
+        logger.debug(f'{config.thread_name}: call SMT-Solver to solve the constraints')
+        command = f"{config.z3_path} -smt2 {config.constraints_file} > {config.z3_solution_file}"
+        logger.debug(f'\t{config.thread_name}: command = {command}')
         os.system(command)
 
-        # parse solver solution
-        logger.debug(f'parse solver solution')
-        command = get_config(["z3", "z3_solution_parser_command"]) + \
-                  f' {get_config(["z3", "z3_solution_path"])} ' \
-                      f'{get_config(["z3", "z3_normalized_solution_path"])}'
-
-        logger.debug(f'\t{command}')
+        # parse the solution of constraints
+        logger.debug(f'{config.thread_name}: parse solver solution')
+        command = f'{config.z3_solution_parser_command} {config.z3_solution_file} {config.z3_normalized_output_file}'
+        logger.debug(f'{config.thread_name}: {command}')
         os.system(command)
 
         # comparison
-        img = get_new_image(solution_path=Z3_NORMALIED_OUTPUT_PATH)
+        img = get_new_image(solution_path=config.z3_normalized_output_file)
 
-        if len(img) > 0:  # 16627, 1121
+        if len(img) > 0:
             csv_new_image_path = f'../data/{seed_index}.csv'
             with open(csv_new_image_path, mode='w') as f:
                 seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 seed.writerow(img)
 
             # plot the seed and the new image
-            png_comparison_image_path = f'../data/{seed_index}_comparison.png'
-            png_new_image_path = f'../data/{seed_index}_new.png'
-            png_old_image_path = f'../data/{seed_index}_old.png'
-            keep = plot_seed_and_new_image(model=obj.get_model(), seed_path=SEED_FILE,
-                                           new_image_path=csv_new_image_path,
-                                           png_comparison_image_path=png_comparison_image_path,
-                                           png_new_image_path=png_new_image_path,
-                                           image_shape=image_shape)
-            os.remove(csv_new_image_path)
+            png_comparison_image_path = str(config.comparison_file_path).replace('{seed_index}', str(seed_index))
+            png_new_image_path = str(config.new_image_file_path).replace('{seed_index}', str(seed_index))
+            plot_seed_and_new_image(model_object=model_object, config=config,
+                                    csv_new_image_path=csv_new_image_path,
+                                    png_comparison_image_path=png_comparison_image_path,
+                                    png_new_image_path=png_new_image_path)
 
-            if not keep:
-                os.remove(png_comparison_image_path)
-                os.remove(png_new_image_path)
 
-        else:
-            logger.debug(f'The constraints have no solution')
-        logger.debug('--------------------------------------------------')
-        # break
+def initialize_dnn_model():
+    # custom code
+    model_object = MNIST()
+    dataset = get_config(["dataset"])
+    model_object.set_num_classes(get_config([dataset, "num_classes"]))
+    model_object.read_data(trainset_path=get_config([dataset, "train_set"]),
+                           testset_path=get_config([dataset, "test_set"]))
+    model_object.load_model(weight_path=get_config([dataset, "weight"]),
+                            structure_path=get_config([dataset, "structure"]),
+                            trainset_path=get_config([dataset, "train_set"]))
+    model_object.set_name_dataset(dataset)
+    model_object.set_image_shape((28, 28))
+    return model_object
+
+
+if __name__ == '__main__':
+    model_object = initialize_dnn_model()
+    generate_samples(model_object)
+    #export_to_image(model_object)

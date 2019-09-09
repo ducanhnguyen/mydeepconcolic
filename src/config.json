@@ -19,17 +19,21 @@
   },
   "z3": {
     "z3_solution_parser_command": "/Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/java -Dfile.encoding=UTF-8 -p /Users/ducanhnguyen/eclipse-workspace/z3_parser2/bin:/Users/ducanhnguyen/eclipse-workspace/z3_parser2/lib/hamcrest-core-1.3.jar:/Users/ducanhnguyen/eclipse-workspace/z3_parser2/lib/jeval.jar:/Users/ducanhnguyen/eclipse-workspace/z3_parser2/lib/junit-4.13-beta-3.jar:/Users/ducanhnguyen/eclipse-workspace/z3_parser2/lib/org.apache.commons.io.jar -m z3_parser2/z3_parser.Z3SolutionParser",
-    "z3_normalized_solution_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/norm_solution.txt",
-    "z3_solution_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/solution.txt",
-    "z3_input_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/constraint.txt",
+    "z3_normalized_solution_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/norm_solution{thread_idx}.txt",
+    "z3_solution_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/solution{thread_idx}.txt",
+    "z3_input_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/constraint{thread_idx}.txt",
     "z3_solver_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/lib/z3-4.8.5-x64-osx-10.14.2/bin/z3",
-    "constraint_file": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/constraint.txt",
+    "constraints_file_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/constraint{thread_idx}.txt",
     "time_out": 5000
   },
   "files": {
-    "seed_file_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/seed.csv",
-    "true_label_seed_file": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/true_label.txt",
-    "seed_index_file": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/seed_index.txt"
+    "new_image_file_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/{seed_index}_new.png",
+    "comparison_file_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/{seed_index}_comparison.png",
+    "seed_file_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/seed{thread_idx}.csv",
+    "true_label_seed_file_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/true_label{thread_idx}.txt",
+    "seed_index_file_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/seed_index{thread_idx}.txt",
+    "analyzed_seed_index_file_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/analyzed_seed_index.txt",
+    "selected_seed_index_file_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/data/selected_seed_index.txt"
   },
   "constraint_config": {
     "delta_lower_bound": 0,
@@ -39,5 +43,7 @@
     "feature_input_type": "int",
     "delta_prefix_name": "delta",
     "output_layer_type_constraint": "upper_bound"
-  }
+  },
+  "n_threads": 20,
+  "dataset": "mnist"
 }

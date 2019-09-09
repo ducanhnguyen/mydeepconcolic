@@ -4,6 +4,7 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import scipy.misc
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -33,97 +34,104 @@ def get_new_image(solution_path):
         for index, value in zip(indexes, values):
             img[int(index)] = value
 
-        # img = img.reshape(image_shape)
+        logger.debug(img.shape)
+        assert (len(img.shape) == 1)
         return img
 
 
-def plot_seed_and_new_image(model, seed_path, new_image_path, png_comparison_image_path, image_shape, png_new_image_path):
-    with open('../data/true_label.txt', 'r') as f:
+def plot_seed_and_new_image(model_object, config, csv_new_image_path, png_comparison_image_path,
+                            png_new_image_path):
+    with open(config.true_label_seed_file, 'r') as f:
         true_label = int(f.read())
-    logger.debug(f'True label = {true_label}')
+    logger.debug(f'{config.thread_name}: True label = {true_label}')
 
     # Compare the prediction
-    seed = pd.read_csv(seed_path, header=None)
-    seed = seed.to_numpy()
-    seed = seed.reshape(1, -1)
-    original_prediction = np.argmax(model.predict(seed))
-    logger.debug(f'The prediction of the original seed = {original_prediction}')
+    seed = pd.read_csv(config.seed_file, header=None).to_numpy().reshape(1, -1)
 
-    new_image = pd.read_csv(new_image_path, header=None)
+    with config.graph.as_default():
+        original_prediction = np.argmax(model_object.get_model().predict(seed))
+    logger.debug(f'{config.thread_name}: The prediction of the original seed = {original_prediction}')
+
+    new_image = pd.read_csv(csv_new_image_path, header=None)
     new_image = new_image.to_numpy()
     new_image = new_image.reshape(1, -1)
-    modified_prediction = np.argmax(model.predict(new_image))
-    logger.debug(f'The prediction of the modified seed = {modified_prediction}')
+    modified_prediction = np.argmax(model_object.get_model().predict(new_image))
+    logger.debug(f'{config.thread_name}: The prediction of the modified seed = {modified_prediction}')
 
     if modified_prediction != original_prediction and original_prediction == true_label:
-        keep = True
+        success = True
     else:
-        keep = False
+        success = False
 
     # Export new image to file
-    new_image = pd.read_csv(new_image_path, header=None)
-    new_image = new_image.to_numpy()
-    new_image = new_image.reshape(image_shape)
+    if config.should_plot:
+        draw_figure(model_object, seed, original_prediction, modified_prediction, png_comparison_image_path,
+                    png_new_image_path, csv_new_image_path)
+
+    return success
+
+
+def draw_figure(model_object, seed, original_prediction, modified_prediction, png_comparison_image_path,
+                png_new_image_path, new_image_path):
+    new_image = pd.read_csv(new_image_path, header=None).to_numpy().reshape(model_object.get_image_shape())
+
+    # if the input model is in range of [0..1] and the value of pixel in image is in [0..255], we need to scale the image
     new_image /= 255
-    import scipy.misc
+
     scipy.misc.toimage(new_image, cmin=0.0, cmax=1).save(png_new_image_path)
 
-    # draw figure
     fig = plt.figure()
     nrow = 1
     ncol = 2
 
-    if len(image_shape) == 2:
-        logger.debug('image_shape = 2')
-        seed = seed.reshape(image_shape)
-        #seed /= 255 # for shvn
+    if len(model_object.get_image_shape()) == 2:
+        # the input is black-white image
+        # logger.debug('image_shape = 2')
+        seed = seed.reshape(model_object.get_image_shape())
 
         fig1 = fig.add_subplot(nrow, ncol, 1)
         fig1.title.set_text(f'The original image\n(prediction = {original_prediction})')
         plt.imshow(seed, cmap="gray")
 
-        new_image = new_image.reshape(image_shape)
-        #new_image /= 255  # for shvn
+        new_image = new_image.reshape(model_object.get_image_shape())
         fig2 = fig.add_subplot(nrow, ncol, 2)
         fig2.title.set_text(f'The modified image\n(prediction = {modified_prediction})')
         plt.imshow(new_image, cmap="gray")
 
-    elif len(image_shape) == 3:
-        logger.debug('image_shape = 3')
+    elif len(model_object.get_image_shape()) == 3:
+        # the input is rgb image
+        # logger.debug('image_shape = 3')
 
-        seed = seed.reshape(image_shape)
-        #seed /= 255  # for shvn
+        seed = seed.reshape(model_object.get_image_shape())
         fig1 = fig.add_subplot(nrow, ncol, 1)
         fig1.title.set_text(f'The original image\n(prediction = {original_prediction})')
         plt.imshow(seed)
 
-        new_image = new_image.reshape(image_shape)
-        new_image /= 255  # for shvn
+        new_image = new_image.reshape(model_object.get_image_shape())
         fig2 = fig.add_subplot(nrow, ncol, 2)
         fig2.title.set_text(f'The modified image\n(prediction = {modified_prediction})')
         plt.imshow(new_image)
 
     l1_distance = compute_L1_distance(seed, new_image)
     logger.debug(f'l1_distance between two image= {l1_distance}')
-    compute_the_different_pixels(seed, new_image)
+    diff_pixels = compute_the_different_pixels(seed, new_image)
 
     plt.savefig(png_comparison_image_path)
+    logger.debug('Saved image')
+    # plt.show()
 
-    #plt.show()
-
-    return keep
-
+    return diff_pixels
 
 def compute_the_different_pixels(img1, img2):
     diff = img1 - img2
     diff = diff.reshape(-1)
-    count = 0
+    diff_pixels = 0
     for item in diff:
         if item != 0:
-            count = count + 1
+            diff_pixels = diff_pixels + 1
 
-    logger.debug(f'The different points in two image = {count}')
-    return count
+    logger.debug(f'The different points in two image = {diff_pixels}')
+    return diff_pixels
 
 
 def compute_L1_distance(img1, img2):
@@ -146,4 +154,4 @@ if __name__ == '__main__':
 
     # plot the seed and the new image
     seed, new_image, similar = plot_seed_and_new_image(seed_path=seed_file,
-                                                       new_image_path=new_image_path)
+                                                       csv_new_image_path=new_image_path)
