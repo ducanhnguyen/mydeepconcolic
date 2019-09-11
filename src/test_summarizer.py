@@ -79,13 +79,16 @@ def draw_figure(model_object, seed, original_prediction, modified_prediction, pn
     # if the input model is in range of [0..1] and the value of pixel in image is in [0..255], we need to scale the image
     new_image /= 255
 
+    matplotlib.image.imsave(png_new_image_path, new_image)
+    '''
     if 'ubuntu' in platform.platform().lower():
         # scipy.misc.imsave works on macosx but does not work on ubuntu 17 + python 3.6
         # solution: on ubuntu 17, use matplotlib.image.imsave instead
         matplotlib.image.imsave(png_new_image_path, new_image)
     else:
         scipy.misc.imsave(new_image, cmin=0.0, cmax=1).save(png_new_image_path)
-
+    '''
+    
     fig = plt.figure()
     nrow = 1
     ncol = 2
