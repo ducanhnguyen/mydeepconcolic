@@ -25,7 +25,6 @@ DELTA_PREFIX_NAME = get_config(["constraint_config", "delta_prefix_name"])
 
 global logger
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
 
 
 def create_constraint_between_layers(model_object):
@@ -740,6 +739,9 @@ def generate_samples(model_object):
     for thread in threads:
         thread.start()
 
+    for thread in threads:
+        thread.join()
+
 
 def export_to_image(model_object):
     # load selected indexes
@@ -806,6 +808,9 @@ def initialize_dnn_model():
 
 
 if __name__ == '__main__':
+    logging.basicConfig()
+    logging.root.setLevel(logging.DEBUG)
+
     model_object = initialize_dnn_model()
     generate_samples(model_object)
     #export_to_image(model_object)
