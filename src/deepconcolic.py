@@ -1,6 +1,6 @@
 '''
 Command:
-/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/lib/z3-4.8.5-x64-osx-10.14.2/bin/z3 -smt2 /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/result/constraint.txt > /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/result/solution.txt
+/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/lib/z3-4.8.5-x64-osx-10.14.2/bin/z3 -smt2 /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/constraint.txt > /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/solution.txt
 '''
 # TODO: them bias vao cong thuc weight
 import os
@@ -713,36 +713,46 @@ def generate_samples(model_object):
     '''
     start_seed = get_config([model_object.get_name_dataset(), "start_seed"])
     end_seed = get_config([model_object.get_name_dataset(), "end_seed"])
-    logger.debug(model_object.get_model().summary())
+    seeds = np.arange(start_seed, end_seed)
 
     '''
     generate adversarial samples
     '''
     n_threads = get_config(["n_threads"])
-    n_single_thread_seeds = int(np.floor((end_seed - start_seed) / n_threads))
-    threads = []
+    if n_threads >= 2:
+        # prone to error
+        n_single_thread_seeds = int(np.floor((start_seed - end_seed) / n_threads))
+        logger.debug(f'n_single_thread_seeds = {n_single_thread_seeds}')
+        threads = []
 
-    for thread_idx in range(n_threads):
-        # get range of seed in the current thread
-        if thread_idx == n_threads - 1:
-            seeds = np.arange(n_single_thread_seeds * (n_threads - 1), end_seed)
-        else:
-            seeds = np.arange(n_single_thread_seeds * thread_idx, n_single_thread_seeds * (thread_idx + 1))
+        for thread_idx in range(n_threads):
+            # get range of seed in the current thread
+            if thread_idx == n_threads - 1:
+                thread_seeds = np.arange(n_single_thread_seeds * (n_threads - 1), len(seeds))
+            else:
+                thread_seeds = np.arange(n_single_thread_seeds * thread_idx, n_single_thread_seeds * (thread_idx + 1))
 
+            # read the configuration of a thread
+            thread_config = set_up_config(thread_idx)
+            thread_config.image_shape = model_object.get_image_shape()
+
+            # create new thread
+            t = Thread(target=image_generation, args=(thread_seeds, thread_config, model_object))
+            threads.append(t)
+
+        # start all threads
+        for thread in threads:
+            thread.start()
+
+        for thread in threads:
+            thread.join()
+
+    elif n_threads == 1:
         # read the configuration of a thread
-        thread_config = set_up_config(thread_idx)
-        thread_config.image_shape = model_object.get_image_shape()
+        main_thread_config = set_up_config(0)
+        main_thread_config.image_shape = model_object.get_image_shape()
 
-        # create new thread
-        t = Thread(target=image_generation, args=(seeds, thread_config, model_object))
-        threads.append(t)
-
-    # start all threads
-    for thread in threads:
-        thread.start()
-
-    for thread in threads:
-        thread.join()
+        image_generation(seeds, main_thread_config, model_object)
 
 
 def export_to_image(model_object):
@@ -815,5 +825,5 @@ if __name__ == '__main__':
     logging.root.setLevel(logging.DEBUG)
 
     model_object = initialize_dnn_model()
-    #generate_samples(model_object)
-    export_to_image(model_object)
+    generate_samples(model_object)
+    #export_to_image(model_object)
