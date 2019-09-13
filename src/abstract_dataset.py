@@ -12,6 +12,7 @@ class abstract_dataset:
         self.__num_classes = None  # int
         self.__image_shape = None # 2-D (black-white image) or 3-D array (rgb image)
         self.__name_dataset = None # String
+        self.__selected_seed_index_file_path = None # String
 
     def create_model(self, input_shape):
         pass
@@ -149,3 +150,9 @@ class abstract_dataset:
 
     def set_name_dataset(self, dataset):
         self.__name_dataset = dataset
+
+    def get_selected_seed_index_file_path(self):
+        return self.__selected_seed_index_file_path
+
+    def set_selected_seed_index_file_path(self, selected_seed_index_file_path):
+        self.__selected_seed_index_file_path = selected_seed_index_file_path
