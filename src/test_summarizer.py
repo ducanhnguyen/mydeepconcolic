@@ -125,7 +125,7 @@ def draw_figure(model_object, seed, original_prediction, modified_prediction, pn
     logger.debug(f'l1_distance between two image= {l1_distance}')
     diff_pixels = compute_the_different_pixels(seed, new_image)
 
-    plt.savefig(png_comparison_image_path)
+    plt.savefig(png_comparison_image_path, pad_inches=0, bbox_inches='tight')
     logger.debug('Saved image')
     # plt.show()
 
