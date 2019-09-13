@@ -2,21 +2,18 @@
 Command:
 /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/lib/z3-4.8.5-x64-osx-10.14.2/bin/z3 -smt2 /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/constraint.txt > /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/solution.txt
 '''
-# TODO: them bias vao cong thuc weight
 import os
 import random as ran
 from threading import Thread
 from types import SimpleNamespace
 
+import tensorflow as tf
 from keras.models import Model
 
+from src.config_parser import *
 from src.saved_models.mnist_ann_keras import *
-
-global graph
-from src.json_helloworld import *
 from src.test_summarizer import *
 from src.utils import keras_activation, keras_layer, keras_model
-import tensorflow as tf
 
 MINUS_INF = -10000000
 INF = 10000000
@@ -25,6 +22,8 @@ DELTA_PREFIX_NAME = get_config(["constraint_config", "delta_prefix_name"])
 
 global logger
 logger = logging.getLogger()
+
+global graph
 
 
 def create_constraint_between_layers(model_object):
@@ -684,12 +683,12 @@ def set_up_config(thread_idx):
     config = SimpleNamespace(**dict())
     config.dataset = get_config(["dataset"])
     config.seed_file = get_config(["files", "seed_file_path"]).replace(OLD, str(thread_idx))
-    config.true_label_seed_file = get_config(["files", "true_label_seed_file_path"]).\
+    config.true_label_seed_file = get_config(["files", "true_label_seed_file_path"]). \
         replace(OLD, str(thread_idx))
     config.seed_index_file = get_config(["files", "seed_index_file_path"]).replace(OLD, str(thread_idx))
     config.constraints_file = get_config(["z3", "constraints_file_path"]).replace(OLD, str(thread_idx))
     config.z3_solution_file = get_config(["z3", "z3_solution_path"]).replace(OLD, str(thread_idx))
-    config.z3_normalized_output_file = get_config(["z3", "z3_normalized_solution_path"])\
+    config.z3_normalized_output_file = get_config(["z3", "z3_normalized_solution_path"]) \
         .replace(OLD, str(thread_idx))
     config.z3_path = get_config(["z3", "z3_solver_path"]).replace(OLD, str(thread_idx))
     config.graph = tf.get_default_graph()
@@ -721,7 +720,7 @@ def generate_samples(model_object):
     n_threads = get_config(["n_threads"])
     if n_threads >= 2:
         # prone to error
-        n_single_thread_seeds = int(np.floor((start_seed - end_seed) / n_threads))
+        n_single_thread_seeds = int(np.floor((end_seed - start_seed) / n_threads))
         logger.debug(f'n_single_thread_seeds = {n_single_thread_seeds}')
         threads = []
 
@@ -826,4 +825,4 @@ if __name__ == '__main__':
 
     model_object = initialize_dnn_model()
     generate_samples(model_object)
-    #export_to_image(model_object)
+    # export_to_image(model_object)
