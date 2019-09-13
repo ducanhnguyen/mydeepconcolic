@@ -7,8 +7,15 @@ import pandas as pd
 '''
 Data set: https://www.kaggle.com/zalando-research/fashionmnist
 Train on 60000 samples.
-Accuracy on test set = 0.8776
-Accuracy on train set = 0.9316
+
+model 1:
+    Accuracy on test set = 0.8776
+    Accuracy on train set = 0.9316
+    
+model 2:
+    Accuracy on test set = 0.8823
+    Accuracy on train set = 0.9683
+    
 '''
 class FASHION_MNIST(abstract_dataset):
 
@@ -30,6 +37,9 @@ class FASHION_MNIST(abstract_dataset):
 
     def create_model(self, input_shape):
         model = Sequential()
+
+        model.add(Dense(64, name='dense_0', input_dim=input_shape))
+        model.add(Activation('relu', name='relu_0'))
 
         model.add(Dense(32, name='dense_1', input_dim=input_shape))
         model.add(Activation('relu', name='relu_1'))
@@ -53,11 +63,11 @@ if __name__ == '__main__':
                       training_path='../../fashion_mnist/train.csv', testing_path='../../fashion_mnist/test.csv')
     '''
     # load model
-    model = mnist.load_model(weight_path='../saved_models/mnist_ann_keras.h5', structure_path='../saved_models/fashion_mnist_ann_keras.json',
+    model = mnist.load_model(weight_path='../saved_models/fashion_mnist_ann_keras.h5', structure_path='../saved_models/fashion_mnist_ann_keras.json',
                              trainset_path='../../fashion_mnist/train.csv')
+    print(model.summary())
     mnist.read_data(trainset_path='../../fashion_mnist/train.csv', testset_path='../../fashion_mnist/test.csv')
     print(f'model.layers = {model.layers}')
-    mnist.predict_on_testset_kaggle()
 
     # plot an observation
     import matplotlib.pyplot as plt
@@ -66,4 +76,5 @@ if __name__ == '__main__':
     plt.imshow(img, cmap='gray')
     plt.title(f'A sample')
     plt.show()
+
 
