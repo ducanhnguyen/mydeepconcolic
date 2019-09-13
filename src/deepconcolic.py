@@ -649,15 +649,15 @@ def image_generation(seeds, thread_config, model_object):
             img = get_new_image(solution_path=thread_config.z3_normalized_output_file)
 
             if len(img) > 0:  # 16627, 1121
-                csv_new_image_path = f'../data/{seed_index}.csv'
+                csv_new_image_path = f'../result/{thread_config.dataset}/{seed_index}.csv'
                 with open(csv_new_image_path, mode='w') as f:
                     seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                     seed.writerow(img)
 
                 # plot the seed and the new image
-                png_comparison_image_path = f'../data/{seed_index}_comparison.png'
-                png_new_image_path = f'../data/{seed_index}_new.png'
-                png_old_image_path = f'../data/{seed_index}_old.png'
+                png_comparison_image_path = f'../result/{thread_config.dataset}/{seed_index}_comparison.png'
+                png_new_image_path = f'../result/{thread_config.dataset}/{seed_index}_new.png'
+                png_old_image_path = f'../result/{thread_config.dataset}/{seed_index}_old.png'
                 keep = plot_seed_and_new_image(model_object=model_object, config=thread_config,
                                                csv_new_image_path=csv_new_image_path,
                                                png_comparison_image_path=png_comparison_image_path,
@@ -680,15 +680,17 @@ def image_generation(seeds, thread_config, model_object):
 def set_up_config(thread_idx):
     assert (thread_idx >= 0)
     OLD = '{thread_idx}'
+
     config = SimpleNamespace(**dict())
+    config.dataset = get_config(["dataset"])
     config.seed_file = get_config(["files", "seed_file_path"]).replace(OLD, str(thread_idx))
-    config.true_label_seed_file = get_config(["files", "true_label_seed_file_path"]).replace(OLD, str(
-        thread_idx))
+    config.true_label_seed_file = get_config(["files", "true_label_seed_file_path"]).\
+        replace(OLD, str(thread_idx))
     config.seed_index_file = get_config(["files", "seed_index_file_path"]).replace(OLD, str(thread_idx))
     config.constraints_file = get_config(["z3", "constraints_file_path"]).replace(OLD, str(thread_idx))
     config.z3_solution_file = get_config(["z3", "z3_solution_path"]).replace(OLD, str(thread_idx))
-    config.z3_normalized_output_file = get_config(["z3", "z3_normalized_solution_path"]).replace(OLD, str(
-        thread_idx))
+    config.z3_normalized_output_file = get_config(["z3", "z3_normalized_solution_path"])\
+        .replace(OLD, str(thread_idx))
     config.z3_path = get_config(["z3", "z3_solver_path"]).replace(OLD, str(thread_idx))
     config.graph = tf.get_default_graph()
     config.analyzed_seed_index_file_path = get_config(["files", "analyzed_seed_index_file_path"])
@@ -762,7 +764,7 @@ def export_to_image(model_object):
         logger.debug(f'{config.thread_name}: generate constraints')
         create_constraints_file(model_object, seed_index, config)
 
-        # call SMT-Solver
+        # ecall SMT-Solver
         logger.debug(f'{config.thread_name}: call SMT-Solver to solve the constraints')
         command = f"{config.z3_path} -smt2 {config.constraints_file} > {config.z3_solution_file}"
         logger.debug(f'\t{config.thread_name}: command = {command}')
@@ -778,7 +780,7 @@ def export_to_image(model_object):
         img = get_new_image(solution_path=config.z3_normalized_output_file)
 
         if len(img) > 0:
-            csv_new_image_path = f'../data/{seed_index}.csv'
+            csv_new_image_path = f'../result/{model_object.get_name_dataset()}/{seed_index}.csv'
             with open(csv_new_image_path, mode='w') as f:
                 seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 seed.writerow(img)
@@ -804,6 +806,7 @@ def initialize_dnn_model():
                             trainset_path=get_config([dataset, "train_set"]))
     model_object.set_name_dataset(dataset)
     model_object.set_image_shape((28, 28))
+    model_object.set_selected_seed_index_file_path(get_config(["files", "selected_seed_index_file_path"]))
     return model_object
 
 
@@ -812,5 +815,5 @@ if __name__ == '__main__':
     logging.root.setLevel(logging.DEBUG)
 
     model_object = initialize_dnn_model()
-    generate_samples(model_object)
-    #export_to_image(model_object)
+    #generate_samples(model_object)
+    export_to_image(model_object)
