@@ -28,6 +28,9 @@
   },
   "files": {
     "new_image_file_path": "{base_path}/result/{dataset}/{seed_index}_new.png",
+    "new_csv_image_file_path": "{base_path}/result/{dataset}/{seed_index}_new.csv",
+    "old_image_file_path": "{base_path}/result/{dataset}/{seed_index}_old.png",
+    "old_csv_image_file_path": "{base_path}/result/{dataset}/{seed_index}_old.csv",
     "comparison_file_path": "{base_path}/result/{dataset}/{seed_index}_comparison.png",
     "seed_file_path": "{base_path}/result/{dataset}/seed{thread_idx}.csv",
     "true_label_seed_file_path": "{base_path}/result/{dataset}/true_label{thread_idx}.txt",

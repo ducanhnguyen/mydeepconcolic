@@ -40,46 +40,36 @@ def get_new_image(solution_path):
         return img
 
 
-def plot_seed_and_new_image(model_object, config, csv_new_image_path, png_comparison_image_path,
-                            png_new_image_path):
+def is_valid_modified_image(model_object, config, csv_new_image_path):
+    # get the true label
     with open(config.true_label_seed_file, 'r') as f:
         true_label = int(f.read())
     logger.debug(f'{config.thread_name}: True label = {true_label}')
 
-    # Compare the prediction
-    seed = pd.read_csv(config.seed_file, header=None).to_numpy().reshape(1, -1)
-
+    # Make prediction on the original sample
+    original_image = pd.read_csv(config.seed_file, header=None).to_numpy().reshape(1, -1)
     with config.graph.as_default():
-        original_prediction = np.argmax(model_object.get_model().predict(seed))
-    logger.debug(f'{config.thread_name}: The prediction of the original seed = {original_prediction}')
+        original_prediction = np.argmax(model_object.get_model().predict(original_image))
+        logger.debug(f'{config.thread_name}: The prediction of the original seed = {original_prediction}')
 
-    new_image = pd.read_csv(csv_new_image_path, header=None)
-    new_image = new_image.to_numpy()
-    new_image = new_image.reshape(1, -1)
-    modified_prediction = np.argmax(model_object.get_model().predict(new_image))
-    logger.debug(f'{config.thread_name}: The prediction of the modified seed = {modified_prediction}')
+    # Make prediction on the modified sample
+    modified_image = pd.read_csv(csv_new_image_path, header=None)
+    modified_image = modified_image.to_numpy()
+    modified_image = modified_image.reshape(1, -1)
+    with config.graph.as_default():
+        modified_prediction = np.argmax(model_object.get_model().predict(modified_image))
+        logger.debug(f'{config.thread_name}: The prediction of the modified seed = {modified_prediction}')
 
+    # compare
     if modified_prediction != original_prediction and original_prediction == true_label:
-        success = True
+        is_valid = True
     else:
-        success = False
+        is_valid = False
 
-    # Export new image to file
-    if config.should_plot:
-        draw_figure(model_object, seed, original_prediction, modified_prediction, png_comparison_image_path,
-                    png_new_image_path, csv_new_image_path)
-
-    return success
+    return is_valid, modified_prediction, original_prediction
 
 
-def draw_figure(model_object, seed, original_prediction, modified_prediction, png_comparison_image_path,
-                png_new_image_path, new_image_path):
-    new_image = pd.read_csv(new_image_path, header=None).to_numpy().reshape(model_object.get_image_shape())
-
-    # if the input model is in range of [0..1] and the value of pixel in image is in [0..255], we need to scale the image
-    new_image /= 255
-
-    matplotlib.image.imsave(png_new_image_path, new_image)
+def create_figure_comparison(model_object, seed, original_prediction, modified_prediction, png_comparison_image_path):
     '''
     if 'ubuntu' in platform.platform().lower():
         # scipy.misc.imsave works on macosx but does not work on ubuntu 17 + python 3.6
@@ -92,6 +82,7 @@ def draw_figure(model_object, seed, original_prediction, modified_prediction, pn
     fig = plt.figure()
     nrow = 1
     ncol = 2
+    new_image = pd.read_csv(new_image_path, header=None).to_numpy().reshape(model_object.get_image_shape())
 
     if len(model_object.get_image_shape()) == 2:
         # the input is black-white image
@@ -101,6 +92,7 @@ def draw_figure(model_object, seed, original_prediction, modified_prediction, pn
         fig1 = fig.add_subplot(nrow, ncol, 1)
         fig1.title.set_text(f'The original image\n(prediction = {original_prediction})')
         plt.imshow(seed, cmap="gray")
+
 
         new_image = new_image.reshape(model_object.get_image_shape())
         fig2 = fig.add_subplot(nrow, ncol, 2)
@@ -162,5 +154,5 @@ if __name__ == '__main__':
         seed.writerow(img)
 
     # plot the seed and the new image
-    seed, new_image, similar = plot_seed_and_new_image(seed_path=seed_file,
+    seed, new_image, similar = is_valid_modified_image(seed_path=seed_file,
                                                        csv_new_image_path=new_image_path)
