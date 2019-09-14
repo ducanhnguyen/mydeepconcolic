@@ -359,8 +359,8 @@ def create_feature_constraints_from_an_observation(model_object, x_train, delta=
                     constraint type 1
                     '''
                     constraint = f'feature_{feature_idx}  >= {x_train[feature_idx] * 255}-{delta}_{feature_idx} ' \
-                                 f' and ' \
-                                 f' feature_{feature_idx} <= {x_train[feature_idx] * 255} + {delta}_{feature_idx}'
+                        f' and ' \
+                        f' feature_{feature_idx} <= {x_train[feature_idx] * 255} + {delta}_{feature_idx}'
                     constraints.append(constraint)
 
                     '''
@@ -370,7 +370,7 @@ def create_feature_constraints_from_an_observation(model_object, x_train, delta=
                     smt_constraint = \
                         f'(assert(and ' \
                         + f'(>= feature_{feature_idx} (- {x_train[feature_idx] * 255} {delta}_{feature_idx})) ' \
-                          f'(<= feature_{feature_idx} (+ {x_train[feature_idx] * 255} {delta}_{feature_idx}))' \
+                            f'(<= feature_{feature_idx} (+ {x_train[feature_idx] * 255} {delta}_{feature_idx}))' \
                         + f'))'
                     smt_constraints.append(smt_constraint)
             else:
@@ -500,9 +500,9 @@ def create_bound_of_feature_constraints(model_object,
             # corresponding to: feature_494>=0 and feature_494<=0.1
             # Note 2: Because the model is ANN, the features fed into a 1-D array.
             smt_constraint = f'(assert(and ' \
-                             f'(>= feature_{feature_idx} {feature_lower_bound:.10f}) ' \
-                             f'(<= feature_{feature_idx} {feature_upper_bound:.10f})' \
-                             f'))'
+                f'(>= feature_{feature_idx} {feature_lower_bound:.10f}) ' \
+                f'(<= feature_{feature_idx} {feature_upper_bound:.10f})' \
+                f'))'
             smt_constraints.append(smt_constraint)
 
     elif keras_model.is_CNN(model):
@@ -558,7 +558,7 @@ def create_constraints_file(model_object, seed_index, thread_config):
     # create constraint file
     with open(thread_config.constraints_file, 'w') as f:
         f.write(f'(set-option :timeout {get_config(["z3", "time_out"])})\n')
-        f.write(f'(using-params smt :random-seed {ran.randint(1, 101)})\n')
+        #f.write(f'(using-params smt :random-seed {ran.randint(1, 101)})\n')
 
         for constraint in smt_exp:
             f.write(constraint + '\n')
@@ -646,45 +646,69 @@ def image_generation(seeds, thread_config, model_object):
             os.system(command)
 
             # export the modified image to files
-            modified_image = get_new_image(solution_path=thread_config.z3_normalized_output_file)  # 1-D image
-            modified_image /= 255  # if the input model is in range of [0..1] and the value of pixel in image is in [0..255], we need to scale the image
+            modified_image = get_new_image(solution_path=thread_config.z3_normalized_output_file).reshape(-1) # flatten
+            assert (len(modified_image.shape) == 1)
             if len(modified_image) > 0:
-                csv_new_image_path = get_config(['files', 'new_csv_image_file_path'])\
+                csv_new_image_path = get_config(['files', 'new_csv_image_file_path']) \
                     .replace('{seed_index}', str(seed_index))
                 with open(csv_new_image_path, mode='w') as f:
                     csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                     csv_writer.writerow(modified_image)
-            png_new_image_path = get_config(['files', 'new_image_file_path']).replace('{seed_index}', str(seed_index))
-            matplotlib.image.imsave(png_new_image_path, modified_image.reshape(model_object.get_image_shape()))
+                png_new_image_path = get_config(['files', 'new_image_file_path']).replace('{seed_index}', str(seed_index))
+                matplotlib.image.imsave(png_new_image_path, modified_image.reshape(model_object.get_image_shape()))
 
             # export the original image to files
-            original_image = pd.read_csv(thread_config.seed_file, header=None).to_numpy()
+            original_image = pd.read_csv(thread_config.seed_file, header=None).to_numpy().reshape(-1)  # flatten
+            assert (len(original_image.shape) == 1)
             if len(original_image) > 0:
                 csv_old_image_path = get_config(['files', 'old_csv_image_file_path']).replace('{seed_index}',
                                                                                               str(seed_index))
                 with open(csv_old_image_path, mode='w') as f:
                     csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                     csv_writer.writerow(original_image)
-            png_old_image_path = get_config(['files', 'old_image_file_path']).replace('{seed_index}', str(seed_index))
-            matplotlib.image.imsave(png_old_image_path, original_image.reshape(model_object.get_image_shape()))
+                png_old_image_path = get_config(['files', 'old_image_file_path']).replace('{seed_index}', str(seed_index))
+                matplotlib.image.imsave(png_old_image_path, original_image.reshape(model_object.get_image_shape()))
 
-            # check the valid property of the modified image
-            if len(modified_image) > 0 and len(original_image) > 0:
-                png_comparison_image_path = get_config(['files', 'comparison_file_path']).replace('{seed_index}',
-                                                                                                  str(seed_index))
+            if len(modified_image) > 0 and len(original_image) > 0 and len(modified_image) == len(original_image):
+                # check the valid property of the modified image
                 is_valid, original_prediction, modified_prediction = is_valid_modified_image(
                     model_object=model_object, config=thread_config,
+                    csv_original_image_path=csv_old_image_path,
                     csv_new_image_path=csv_new_image_path)
                 if is_valid:
                     with open(thread_config.selected_seed_index_file_path, mode='a') as f:
                         f.write(str(seed_index) + ',')
 
-                # create figure comparison
-                if thread_config.should_plot:
-                    create_figure_comparison(model_object, seed, original_prediction, modified_prediction,
-                                             png_comparison_image_path,
-                                             png_new_image_path)
+                    # create figure comparison
+                    if thread_config.should_plot:
+                        png_comparison_image_path = get_config(['files', 'comparison_file_path']).replace(
+                            '{seed_index}',
+                            str(seed_index))
+                        create_figure_comparison(model_object, original_image, modified_image, original_prediction,
+                                                 modified_prediction,
+                                                 png_comparison_image_path)
 
+                    # compute distance
+                    l0_distance = compute_L0_distance(original_image, modified_image)
+                    l1_distance = compute_L1_distance(original_image, modified_image)
+                    l2_distance = compute_L2_distance(original_image, modified_image)
+                    linf_distance = compute_inf_distance(original_image, modified_image)
+
+                    diff_pixels = compute_the_different_pixels(original_image, modified_image)
+                    logger.debug(f'diff_pixels = {diff_pixels}')
+
+                    # add to comparison file
+                    with open(thread_config.true_label_seed_file, 'r') as f:
+                        true_label = int(f.read())
+                    with open(get_config(['files', 'full_comparison']), mode='a') as f:
+                        writer = csv.writer(f)
+                        writer.writerow([seed_index, true_label, original_prediction, modified_prediction, is_valid,
+                                           diff_pixels, l0_distance, l1_distance, l2_distance,linf_distance])
+                else:
+                    os.remove(csv_old_image_path)
+                    os.remove(csv_new_image_path)
+                    os.remove(png_new_image_path)
+                    os.remove(png_old_image_path)
             else:
                 logger.debug(f'The constraints have no solution')
             logger.debug('--------------------------------------------------')
@@ -710,7 +734,7 @@ def set_up_config(thread_idx):
     config.analyzed_seed_index_file_path = get_config(["files", "analyzed_seed_index_file_path"])
     config.selected_seed_index_file_path = get_config(["files", "selected_seed_index_file_path"])
     config.thread_name = f'thread_{thread_idx}'
-    config.should_plot = False  # should be False when running in multithread
+    config.should_plot = False  # by default, it should be False when running in multithread
     config.z3_solution_parser_command = get_config(["z3", "z3_solution_parser_command"])
     config.new_image_file_path = get_config(["files", "new_image_file_path"])
     config.comparison_file_path = get_config(["files", "comparison_file_path"])
@@ -754,6 +778,7 @@ def generate_samples(model_object, seeds, n_threads):
             # read the configuration of a thread
             thread_config = set_up_config(thread_idx)
             thread_config.image_shape = model_object.get_image_shape()
+            thread_config.should_plot = False  # if we are running on multi-thread, it should be False
 
             # create new thread
             t = Thread(target=image_generation, args=(thread_seeds, thread_config, model_object))
@@ -770,57 +795,9 @@ def generate_samples(model_object, seeds, n_threads):
         # read the configuration of a thread
         main_thread_config = set_up_config(0)
         main_thread_config.image_shape = model_object.get_image_shape()
+        main_thread_config.should_plot = True
         # run on the main thread
         image_generation(seeds, main_thread_config, model_object)
-
-
-def export_to_image(model_object):
-    # load selected indexes
-    selected_seed_indexes = pd.read_csv(get_config(["files", "selected_seed_index_file_path"]), header=None).to_numpy()
-    selected_seed_indexes = selected_seed_indexes.reshape(-1)
-
-    # config
-    config = set_up_config(1235678910)  # can use any number
-    config.should_plot = True
-
-    for seed_index in selected_seed_indexes:
-        seed_index = int(seed_index)
-        logger.debug(f'Seed index = {seed_index}')
-        with open(config.seed_index_file, mode='w') as f:
-            f.write(str(seed_index))
-
-        # generate constraints
-        logger.debug(f'{config.thread_name}: generate constraints')
-        create_constraints_file(model_object, seed_index, config)
-
-        # ecall SMT-Solver
-        logger.debug(f'{config.thread_name}: call SMT-Solver to solve the constraints')
-        command = f"{config.z3_path} -smt2 {config.constraints_file} > {config.z3_solution_file}"
-        logger.debug(f'\t{config.thread_name}: command = {command}')
-        os.system(command)
-
-        # parse the solution of constraints
-        logger.debug(f'{config.thread_name}: parse solver solution')
-        command = f'{config.z3_solution_parser_command} {config.z3_solution_file} {config.z3_normalized_output_file}'
-        logger.debug(f'{config.thread_name}: {command}')
-        os.system(command)
-
-        # comparison
-        img = get_new_image(solution_path=config.z3_normalized_output_file)
-
-        if len(img) > 0:
-            csv_new_image_path = f'../result/{model_object.get_name_dataset()}/{seed_index}.csv'
-            with open(csv_new_image_path, mode='w') as f:
-                seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                seed.writerow(img)
-
-            # plot the seed and the new image
-            png_comparison_image_path = str(config.comparison_file_path).replace('{seed_index}', str(seed_index))
-            png_new_image_path = str(config.new_image_file_path).replace('{seed_index}', str(seed_index))
-            is_valid_modified_image(model_object=model_object, config=config,
-                                    csv_new_image_path=csv_new_image_path,
-                                    png_comparison_image_path=png_comparison_image_path,
-                                    png_new_image_path=png_new_image_path)
 
 
 def initialize_dnn_model():
@@ -844,6 +821,6 @@ if __name__ == '__main__':
     logging.root.setLevel(logging.DEBUG)
 
     model_object = initialize_dnn_model()
-    seeds = read_seeds_from_file(csv_file=get_config(["files", "selected_seed_index_file_path"]))
+    seeds = read_seeds_from_file(csv_file='/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/result/mnist/selected_seed_index.txt')
+    #seeds = read_seeds_from_config()
     generate_samples(model_object=model_object, seeds=seeds, n_threads=get_config(["n_threads"]))
-    # export_to_image(model_object)
