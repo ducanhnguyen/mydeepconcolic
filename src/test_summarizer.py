@@ -5,8 +5,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.misc
-
+from numpy import linalg as LA
 import matplotlib
+import os
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
@@ -35,30 +36,37 @@ def get_new_image(solution_path):
         for index, value in zip(indexes, values):
             img[int(index)] = value
 
+        # if the input model is in range of [0..1] and the value of pixel in image is in [0..255], we need to scale the image
+        img /= 255
         logger.debug(img.shape)
         assert (len(img.shape) == 1)
         return img
 
 
-def is_valid_modified_image(model_object, config, csv_new_image_path):
+def is_valid_modified_image(model_object, config, csv_original_image_path, csv_new_image_path):
+    assert (os.path.exists(csv_new_image_path))
+    assert (os.path.exists(csv_original_image_path))
+    assert (model_object != None and config != None and config.graph != None)
+    assert (os.path.exists(config.true_label_seed_file))
+
     # get the true label
     with open(config.true_label_seed_file, 'r') as f:
         true_label = int(f.read())
     logger.debug(f'{config.thread_name}: True label = {true_label}')
 
     # Make prediction on the original sample
-    original_image = pd.read_csv(config.seed_file, header=None).to_numpy().reshape(1, -1)
+    original_image = pd.read_csv(csv_original_image_path, header=None).to_numpy().reshape(1, -1)
     with config.graph.as_default():
         original_prediction = np.argmax(model_object.get_model().predict(original_image))
         logger.debug(f'{config.thread_name}: The prediction of the original seed = {original_prediction}')
 
     # Make prediction on the modified sample
-    modified_image = pd.read_csv(csv_new_image_path, header=None)
-    modified_image = modified_image.to_numpy()
-    modified_image = modified_image.reshape(1, -1)
+    modified_image = pd.read_csv(csv_new_image_path, header=None).to_numpy().reshape(1, -1)
     with config.graph.as_default():
         modified_prediction = np.argmax(model_object.get_model().predict(modified_image))
         logger.debug(f'{config.thread_name}: The prediction of the modified seed = {modified_prediction}')
+
+    assert (len(original_image) == len(modified_image))
 
     # compare
     if modified_prediction != original_prediction and original_prediction == true_label:
@@ -66,10 +74,13 @@ def is_valid_modified_image(model_object, config, csv_new_image_path):
     else:
         is_valid = False
 
-    return is_valid, modified_prediction, original_prediction
+    return is_valid, original_prediction, modified_prediction
 
 
-def create_figure_comparison(model_object, seed, original_prediction, modified_prediction, png_comparison_image_path):
+def create_figure_comparison(model_object, original_image, modified_image, original_prediction, modified_prediction, png_comparison_image_path):
+    assert (len(original_image.shape) == 1 and len(modified_image.shape) == 1 and len(original_image) == len(modified_image))
+    assert (original_prediction >= 0 and original_prediction >= 0)
+    assert (png_comparison_image_path != None)
     '''
     if 'ubuntu' in platform.platform().lower():
         # scipy.misc.imsave works on macosx but does not work on ubuntu 17 + python 3.6
@@ -78,50 +89,29 @@ def create_figure_comparison(model_object, seed, original_prediction, modified_p
     else:
         scipy.misc.imsave(new_image, cmin=0.0, cmax=1).save(png_new_image_path)
     '''
-    
+
     fig = plt.figure()
     nrow = 1
     ncol = 2
-    new_image = pd.read_csv(new_image_path, header=None).to_numpy().reshape(model_object.get_image_shape())
 
-    if len(model_object.get_image_shape()) == 2:
-        # the input is black-white image
-        # logger.debug('image_shape = 2')
-        seed = seed.reshape(model_object.get_image_shape())
+    # add the original image to the plot
+    original_image = original_image.reshape(model_object.get_image_shape())
+    fig1 = fig.add_subplot(nrow, ncol, 1)
+    fig1.title.set_text(f'The original image\n(prediction = {original_prediction})')
+    plt.imshow(original_image, cmap="gray")
 
-        fig1 = fig.add_subplot(nrow, ncol, 1)
-        fig1.title.set_text(f'The original image\n(prediction = {original_prediction})')
-        plt.imshow(seed, cmap="gray")
+    # add the modified image to the plot
+    modified_image = modified_image.reshape(model_object.get_image_shape())
+    fig2 = fig.add_subplot(nrow, ncol, 2)
+    fig2.title.set_text(f'The modified image\n(prediction = {modified_prediction})')
+    plt.imshow(modified_image, cmap="gray")
 
-
-        new_image = new_image.reshape(model_object.get_image_shape())
-        fig2 = fig.add_subplot(nrow, ncol, 2)
-        fig2.title.set_text(f'The modified image\n(prediction = {modified_prediction})')
-        plt.imshow(new_image, cmap="gray")
-
-    elif len(model_object.get_image_shape()) == 3:
-        # the input is rgb image
-        # logger.debug('image_shape = 3')
-
-        seed = seed.reshape(model_object.get_image_shape())
-        fig1 = fig.add_subplot(nrow, ncol, 1)
-        fig1.title.set_text(f'The original image\n(prediction = {original_prediction})')
-        plt.imshow(seed)
-
-        new_image = new_image.reshape(model_object.get_image_shape())
-        fig2 = fig.add_subplot(nrow, ncol, 2)
-        fig2.title.set_text(f'The modified image\n(prediction = {modified_prediction})')
-        plt.imshow(new_image)
-
-    l1_distance = compute_L1_distance(seed, new_image)
-    logger.debug(f'l1_distance between two image= {l1_distance}')
-    diff_pixels = compute_the_different_pixels(seed, new_image)
-
+    # save to disk
     plt.savefig(png_comparison_image_path, pad_inches=0, bbox_inches='tight')
     logger.debug('Saved image')
-    # plt.show()
+    #plt.show()
 
-    return diff_pixels
+    return png_comparison_image_path
 
 def compute_the_different_pixels(img1, img2):
     diff = img1 - img2
@@ -135,10 +125,20 @@ def compute_the_different_pixels(img1, img2):
     return diff_pixels
 
 
-def compute_L1_distance(img1, img2):
-    distance = np.sum(np.abs(img1 - img2))
-    return distance
+def compute_L0_distance(img1, img2):
+    # Frobenius norm
+    return LA.norm(img1 - img2, 0)
 
+def compute_L1_distance(img1, img2):
+    # Frobenius norm
+    return LA.norm(img1 - img2, 1)
+
+def compute_L2_distance(img1, img2):
+    # Frobenius norm
+    return LA.norm(img1 - img2, 2)
+
+def compute_inf_distance(img1, img2):
+    return LA.norm(img1 - img2, np.inf)
 
 if __name__ == '__main__':
     seed_file = f'../data/seed.csv'
