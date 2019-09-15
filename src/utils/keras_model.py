@@ -82,3 +82,16 @@ def get_considered_layers(model):
         print(f'model must be instance of keras.engine.sequential.Sequential')
 
     return considered_layers
+
+def get_activation_layers(model):
+    assert (isinstance(model, keras.engine.sequential.Sequential))
+    activation_layers = []
+    indexes = []
+
+    if isinstance(model, keras.engine.sequential.Sequential):
+        for idx, layer in enumerate(model.layers):
+            if keras_layer.is_activation(layer):
+                activation_layers.append(layer)
+                indexes.append(idx)
+
+    return list(zip(activation_layers, indexes))
