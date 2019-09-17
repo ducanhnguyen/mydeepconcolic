@@ -15,6 +15,9 @@ from src.saved_models.mnist_ann_keras import *
 from src.test_summarizer import *
 from src.utils import keras_activation, keras_layer, keras_model
 
+import threading
+lock = threading.Lock()
+
 MINUS_INF = -10000000
 INF = 10000000
 
@@ -442,11 +445,11 @@ def create_output_constraints_from_an_observation(model_object, x_train, y_train
                 before_softmax = model.layers[-2]
                 intermediate_layer_model = Model(inputs=model.inputs,
                                                  outputs=before_softmax.output)
-
+                lock.acquire()
                 with thread_config.graph.as_default():
                     # must use when using thread
                     prediction = intermediate_layer_model.predict(tmp)
-
+                lock.release()
                 # logger.debug(f'The prediction of the current seed (before softmax): {prediction}')
 
                 smt_constraints.append(f'; output constraints')
@@ -607,8 +610,10 @@ def image_generation(seeds, thread_config, model_object):
             if the seed is never analyzed before
             '''
             # append the current seed index to the analyzed seed index file
+            lock.acquire()
             with open(thread_config.analyzed_seed_index_file_path, mode='a') as f:
                 f.write(str(seed_index) + ',')
+            lock.release()
 
             # clean the environment
             if os.path.exists(thread_config.true_label_seed_file):
@@ -676,8 +681,10 @@ def image_generation(seeds, thread_config, model_object):
                     csv_original_image_path=csv_old_image_path,
                     csv_new_image_path=csv_new_image_path)
                 if is_valid:
+                    lock.acquire()
                     with open(thread_config.selected_seed_index_file_path, mode='a') as f:
                         f.write(str(seed_index) + ',')
+                    lock.release()
 
                     # create figure comparison
                     if thread_config.should_plot:
@@ -700,10 +707,13 @@ def image_generation(seeds, thread_config, model_object):
                     # add to comparison file
                     with open(thread_config.true_label_seed_file, 'r') as f:
                         true_label = int(f.read())
+
+                    lock.acquire()
                     with open(get_config(['files', 'full_comparison']), mode='a') as f:
                         writer = csv.writer(f)
                         writer.writerow([seed_index, true_label, original_prediction, modified_prediction, is_valid,
                                            diff_pixels, l0_distance, l1_distance, l2_distance,linf_distance])
+                    lock.release()
                 else:
                     os.remove(csv_old_image_path)
                     os.remove(csv_new_image_path)
@@ -821,6 +831,6 @@ if __name__ == '__main__':
     logging.root.setLevel(logging.DEBUG)
 
     model_object = initialize_dnn_model()
-    seeds = read_seeds_from_file(csv_file='/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/result/mnist/selected_seed_index.txt')
-    #seeds = read_seeds_from_config()
+    #seeds = read_seeds_from_file(csv_file='/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist/[ubuntu]/selected_seed_index.txt')
+    seeds = read_seeds_from_config()
     generate_samples(model_object=model_object, seeds=seeds, n_threads=get_config(["n_threads"]))
