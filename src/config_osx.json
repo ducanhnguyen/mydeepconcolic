@@ -25,7 +25,7 @@
     "test_set": "{base_path}/dataset/digit-recognizer/test.csv",
     "num_classes": 10,
     "start_seed": 0,
-    "end_seed": 40000
+    "end_seed": 42000
   },
   "shvn": {
     "structure": "{base_path}/src/saved_models/shvn_ann_keras.json",
@@ -43,16 +43,20 @@
     "z3_input_path": "{base_path}/result/{dataset}/constraint{thread_idx}.txt",
     "z3_solver_path": "{base_path}/lib/z3-4.8.5-x64-osx-10.14.2/bin/z3",
     "constraints_file_path": "{base_path}/result/{dataset}/constraint{thread_idx}.txt",
-    "time_out": 5000
+    "time_out": 10000
   },
   "files": {
     "new_image_file_path": "{base_path}/result/{dataset}/{seed_index}_new.png",
+    "new_csv_image_file_path": "{base_path}/result/{dataset}/{seed_index}_new.csv",
+    "old_image_file_path": "{base_path}/result/{dataset}/{seed_index}_old.png",
+    "old_csv_image_file_path": "{base_path}/result/{dataset}/{seed_index}_old.csv",
     "comparison_file_path": "{base_path}/result/{dataset}/{seed_index}_comparison.png",
     "seed_file_path": "{base_path}/result/{dataset}/seed{thread_idx}.csv",
     "true_label_seed_file_path": "{base_path}/result/{dataset}/true_label{thread_idx}.txt",
     "seed_index_file_path": "{base_path}/result/{dataset}/seed_index{thread_idx}.txt",
     "analyzed_seed_index_file_path": "{base_path}/result/{dataset}/analyzed_seed_index.txt",
-    "selected_seed_index_file_path": "{base_path}/result/{dataset}/selected_seed_index.txt"
+    "selected_seed_index_file_path": "{base_path}/result/{dataset}/selected_seed_index.txt",
+    "full_comparison": "{base_path}/result/{dataset}/full_comparison.csv"
   },
   "constraint_config": {
     "delta_lower_bound": 0,
