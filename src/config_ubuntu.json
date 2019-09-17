@@ -1,4 +1,23 @@
 {
+  "cifar_10": {
+    "structure": "{base_path}/src/saved_models/cifar10_ann_keras.json",
+    "weight": "{base_path}/src/saved_models/cifar10_ann_keras.h5",
+    "train_set": "invalid",
+    "test_set": "invalid",
+    "num_classes": 10,
+    "start_seed": 0,
+    "end_seed": 60000,
+    "link": "https://www.cs.toronto.edu/~kriz/cifar.html"
+  },
+  "fashion_mnist": {
+    "structure": "{base_path}/src/saved_models/fashion_mnist_ann_keras.json",
+    "weight": "{base_path}/src/saved_models/fashion_mnist_ann_keras.h5",
+    "train_set": "{base_path}/dataset/fashion_mnist/train.csv",
+    "test_set": "{base_path}/dataset/fashion_mnist/test.csv",
+    "num_classes": 10,
+    "start_seed": 0,
+    "end_seed": 60000
+  },
   "mnist": {
     "structure": "{base_path}/src/saved_models/mnist_ann_keras.json",
     "weight": "{base_path}/src/saved_models/mnist_ann_keras.h5",
@@ -36,7 +55,8 @@
     "true_label_seed_file_path": "{base_path}/result/{dataset}/true_label{thread_idx}.txt",
     "seed_index_file_path": "{base_path}/result/{dataset}/seed_index{thread_idx}.txt",
     "analyzed_seed_index_file_path": "{base_path}/result/{dataset}/analyzed_seed_index.txt",
-    "selected_seed_index_file_path": "{base_path}/result/{dataset}/selected_seed_index.txt"
+    "selected_seed_index_file_path": "{base_path}/result/{dataset}/selected_seed_index.txt",
+    "full_comparison": "{base_path}/result/{dataset}/full_comparison.csv"
   },
   "constraint_config": {
     "delta_lower_bound": 0,
@@ -48,6 +68,6 @@
     "output_layer_type_constraint": "upper_bound"
   },
   "n_threads": 1,
-  "dataset": "mnist",
+  "dataset": "fashion_mnist",
   "base_path": "/home/pass-la-1/PycharmProjects/mydeepconcolic"
 }
