@@ -14,6 +14,7 @@ class abstract_dataset:
         self.__image_shape = None # 2-D (black-white image) or 3-D array (rgb image)
         self.__name_dataset = None # String
         self.__selected_seed_index_file_path = None # String
+        self.train_log = None # history of training model
 
     def create_model(self, input_shape):
         pass
@@ -27,7 +28,7 @@ class abstract_dataset:
 
     def train_model(self, train, kernel_path, model_path, training_path, testing_path, batch_size = 64, nb_epoch = 100, learning_rate=1e-3):
         assert (train == True or train == False)
-        assert (os.path.exists(kernel_path) and os.path.exists(training_path) and os.path.exists(testing_path))
+        assert (os.path.exists(training_path) and os.path.exists(testing_path))
 
         self.read_data(training_path, testing_path)
         model = self.create_model(input_shape=len(self.get_Xtrain()[0]))
@@ -43,16 +44,16 @@ class abstract_dataset:
             if self.get_ytest() is not None:
                 # in some cases, we do not have the test set.
                 # we only have the training set
-                model.fit(self.get_Xtrain(), self.category2indicator(self.get_ytrain()),
-                          validation_data=(self.get_Xtest(), self.category2indicator(self.get_ytest())),
-                          batch_size=batch_size, epochs=nb_epoch, verbose=1)
+                self.train_log = model.fit(self.get_Xtrain(), self.category2indicator(self.get_ytrain()),
+                                           validation_data=(self.get_Xtest(), self.category2indicator(self.get_ytest())),
+                                           batch_size=batch_size, epochs=nb_epoch, verbose=1)
                 score = model.evaluate(self.get_Xtest(), self.category2indicator(self.get_ytest()), verbose=0)
                 print('\n')
                 print('Overall Test score:', score[0])
                 print('Accuracy on test set:', score[1])
             else:
-                model.fit(self.get_Xtrain(), self.category2indicator(self.get_ytrain()),
-                          batch_size=batch_size, epochs=nb_epoch, verbose=1)
+                self.train_log = model.fit(self.get_Xtrain(), self.category2indicator(self.get_ytrain()),
+                                           batch_size=batch_size, epochs=nb_epoch, verbose=1)
                 score = model.evaluate(self.get_Xtrain(), self.category2indicator(self.get_ytrain()), verbose=0)
                 print('\n')
                 print('Accuracy on train set:', score[1])
@@ -99,6 +100,36 @@ class abstract_dataset:
                 Y[idx][item] = 1
 
         return Y
+
+    def plot(self):
+        assert (self.train_log != None)
+        import matplotlib.pyplot as plt
+        plt.figure(figsize=(15, 6))
+
+        nrow = 1
+        ncol = 2
+        plt.subplot(nrow, ncol, 1)
+        plt.title(f'Accuracy')
+        plt.plot(self.train_log.history['acc'], label ='training accuracy')
+        plt.plot(self.train_log.history['val_acc'], label ='validation accuracy')
+        plt.title('model accuracy')
+        plt.xlabel('epoch')
+        plt.ylabel('accuracy')
+        plt.grid()
+        plt.legend()
+
+        plt.subplot(nrow, ncol, 2)
+        plt.title(f'Accuracy')
+        plt.plot(self.train_log.history['loss'], label='training loss')
+        plt.plot(self.train_log.history['val_loss'], label='validation loss')
+        plt.title('model loss')
+        plt.xlabel('epoch')
+        plt.ylabel('loss')
+        plt.grid()
+        plt.legend()
+
+        plt.suptitle('Comparison')
+        plt.show()
 
     def get_num_classes(self):
         return self.__num_classes
