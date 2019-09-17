@@ -17,13 +17,14 @@ class NC_COMPUTATION:
         assert (isinstance(self.get_model(), keras.engine.sequential.Sequential))
 
         activation_layers = keras_model.get_activation_layers(self.get_model())
-
-        models = Model(inputs=self.get_model().input, outputs=[item[0].output for item in activation_layers])
+        # ignore the last activsation layer
+        models = Model(inputs=self.get_model().input,
+                       outputs=[item[0].output for item in activation_layers if item[1] != len(self.get_model().layers)-1])
         input = self.get_X().reshape(len(self.get_X()), -1)
         prediction = models.predict(input)  # (#activation_layers, #inputs, #hidden_units)
 
         # count the number of active neurons
-        N = len(activation_layers)
+        N = len(activation_layers) - 1 # -1: ignore the last activation layer
         M = len(input)
         total = 0
         n_active_neuron = 0
@@ -63,11 +64,11 @@ if __name__ == '__main__':
     model_object = MNIST()
     model_object.set_num_classes(10)
     model = model_object.load_model(
-        weight_path='/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/src/saved_models/mnist_ann_keras.h5',
-        structure_path='/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/src/saved_models/mnist_ann_keras.json',
-        trainset_path='/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/digit-recognizer/train.csv')
+        weight_path='/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/src/saved_models/mnist_ann_keras_expansion.h5',
+        structure_path='/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/src/saved_models/mnist_ann_keras_expansion.json',
+        trainset_path='/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/digit-recognizer/train_expansion.csv')
     model_object.read_data(
-        trainset_path='/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/digit-recognizer/train.csv',
+        trainset_path='/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/digit-recognizer/train_expansion.csv',
         testset_path='/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/digit-recognizer/test.csv')
     print(model.summary())
 
@@ -90,3 +91,8 @@ if __name__ == '__main__':
     plt.ylabel('nc coverage')
     plt.ylim(0, 1)
     plt.show()
+
+    # result
+    # mnist: delta = 50: expansion = [1.0, 0.6474857001972386, 0.6293555226824458, 0.6111558185404339, 0.5929704142011835]
+    # original = [1.0, 0.6088883928571428, 0.5928174603174603, 0.5766800595238095, 0.5603546626984127]
+    #
