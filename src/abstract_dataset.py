@@ -1,6 +1,7 @@
 import keras
 import numpy as np
 from keras.models import model_from_json
+import os
 
 class abstract_dataset:
     def __init__(self):
@@ -26,7 +27,7 @@ class abstract_dataset:
 
     def train_model(self, train, kernel_path, model_path, training_path, testing_path, batch_size = 64, nb_epoch = 100, learning_rate=1e-3):
         assert (train == True or train == False)
-        assert (kernel_path != None and training_path != None and testing_path != None)
+        assert (os.path.exists(kernel_path) and os.path.exists(training_path) and os.path.exists(testing_path))
 
         self.read_data(training_path, testing_path)
         model = self.create_model(input_shape=len(self.get_Xtrain()[0]))
