@@ -2,6 +2,7 @@ import keras
 import numpy as np
 from keras.models import model_from_json
 import os
+from keras.callbacks import ModelCheckpoint
 
 class abstract_dataset:
     def __init__(self):
@@ -40,26 +41,31 @@ class abstract_dataset:
             model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(lr=learning_rate),
                           metrics=['accuracy'])
 
+            # checkpoint
+            filepath = "weights-improvement-{epoch:02d}-{val_acc:.2f}.hdf5"
+            checkpoint = ModelCheckpoint(kernel_path, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+            callbacks_list = [checkpoint]
+
             # training
             if self.get_ytest() is not None:
                 # in some cases, we do not have the test set.
                 # we only have the training set
                 self.train_log = model.fit(self.get_Xtrain(), self.category2indicator(self.get_ytrain()),
                                            validation_data=(self.get_Xtest(), self.category2indicator(self.get_ytest())),
-                                           batch_size=batch_size, epochs=nb_epoch, verbose=1)
+                                           batch_size=batch_size, epochs=nb_epoch, verbose=1, callbacks=callbacks_list)
                 score = model.evaluate(self.get_Xtest(), self.category2indicator(self.get_ytest()), verbose=0)
                 print('\n')
                 print('Overall Test score:', score[0])
                 print('Accuracy on test set:', score[1])
             else:
                 self.train_log = model.fit(self.get_Xtrain(), self.category2indicator(self.get_ytrain()),
-                                           batch_size=batch_size, epochs=nb_epoch, verbose=1)
+                                           batch_size=batch_size, epochs=nb_epoch, verbose=1, callbacks=callbacks_list)
                 score = model.evaluate(self.get_Xtrain(), self.category2indicator(self.get_ytrain()), verbose=0)
                 print('\n')
                 print('Accuracy on train set:', score[1])
 
             # save model
-            model.save_weights(kernel_path)
+            #model.save_weights(kernel_path)
 
             with open(model_path, "w") as json_file:
                 json_file.write( model.to_json())
