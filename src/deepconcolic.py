@@ -592,137 +592,125 @@ def image_generation(seeds, thread_config, model_object):
     assert (isinstance(model_object, abstract_dataset))
     assert (len(seeds.shape) == 1)
 
-    # append to analyzed seed file
-    # just read one time
-    # ranges of seed index in different threads are different
-    analyzed_seed_indexes = []
-    if os.path.exists(thread_config.analyzed_seed_index_file_path):
-        analyzed_seed_indexes = pd.read_csv(thread_config.analyzed_seed_index_file_path, header=None)
-        analyzed_seed_indexes = analyzed_seed_indexes.to_numpy()
-
     for seed_index in seeds:
-        if seed_index in analyzed_seed_indexes:
-            logger.debug(f'{thread_config.thread_name}: Visited seed {seed_index}. Ignore!')
-            continue
-        else:
-            seed_index = int(seed_index)
-            '''
-            if the seed is never analyzed before
-            '''
-            # append the current seed index to the analyzed seed index file
-            lock.acquire()
-            with open(thread_config.analyzed_seed_index_file_path, mode='a') as f:
-                f.write(str(seed_index) + ',')
-            lock.release()
+        seed_index = int(seed_index)
+        '''
+        if the seed is never analyzed before
+        '''
+        # append the current seed index to the analyzed seed index file
+        lock.acquire()
+        with open(thread_config.analyzed_seed_index_file_path, mode='a') as f:
+            f.write(str(seed_index) + ',')
+        lock.release()
 
-            # clean the environment
-            if os.path.exists(thread_config.true_label_seed_file):
-                os.remove(thread_config.true_label_seed_file)
-            if os.path.exists(thread_config.seed_index_file):
-                os.remove(thread_config.seed_index_file)
-            if os.path.exists(thread_config.constraints_file):
-                os.remove(thread_config.constraints_file)
-            if os.path.exists(thread_config.z3_solution_file):
-                os.remove(thread_config.z3_solution_file)
-            if os.path.exists(thread_config.z3_normalized_output_file):
-                os.remove(thread_config.z3_normalized_output_file)
+        # clean the environment
+        if os.path.exists(thread_config.true_label_seed_file):
+            os.remove(thread_config.true_label_seed_file)
+        if os.path.exists(thread_config.seed_index_file):
+            os.remove(thread_config.seed_index_file)
+        if os.path.exists(thread_config.constraints_file):
+            os.remove(thread_config.constraints_file)
+        if os.path.exists(thread_config.z3_solution_file):
+            os.remove(thread_config.z3_solution_file)
+        if os.path.exists(thread_config.z3_normalized_output_file):
+            os.remove(thread_config.z3_normalized_output_file)
 
-            logger.debug(f'{thread_config.thread_name}: seed index = {seed_index}')
-            with open(thread_config.seed_index_file, mode='w') as f:
-                f.write(str(seed_index))
+        logger.debug(f'{thread_config.thread_name}: seed index = {seed_index}')
+        with open(thread_config.seed_index_file, mode='w') as f:
+            f.write(str(seed_index))
 
-            # generate constraints
-            logger.debug(f'{thread_config.thread_name}: generate constraints')
-            create_constraints_file(model_object, seed_index, thread_config)
+        # generate constraints
+        logger.debug(f'{thread_config.thread_name}: generate constraints')
+        create_constraints_file(model_object, seed_index, thread_config)
 
-            # call SMT-Solver
-            logger.debug(f'{thread_config.thread_name}: call SMT-Solver to solve the constraints')
-            command = f"{thread_config.z3_path} -smt2 {thread_config.constraints_file} > {thread_config.z3_solution_file}"
-            # logger.debug(f'\t{thread_config.thread_name}: command = {command}')
-            os.system(command)
+        # call SMT-Solver
+        logger.debug(f'{thread_config.thread_name}: call SMT-Solver to solve the constraints')
+        command = f"{thread_config.z3_path} -smt2 {thread_config.constraints_file} > {thread_config.z3_solution_file}"
+        # logger.debug(f'\t{thread_config.thread_name}: command = {command}')
+        os.system(command)
 
-            # parse solver solution
-            logger.debug(f'{thread_config.thread_name}: parse solver solution')
-            tmp1 = thread_config.z3_solution_file
-            tmp2 = thread_config.z3_normalized_output_file
-            command = get_config(["z3", "z3_solution_parser_command"]) + f' {tmp1} ' + f'{tmp2}'
+        # parse solver solution
+        logger.debug(f'{thread_config.thread_name}: parse solver solution')
+        tmp1 = thread_config.z3_solution_file
+        tmp2 = thread_config.z3_normalized_output_file
+        command = get_config(["z3", "z3_solution_parser_command"]) + f' {tmp1} ' + f'{tmp2}'
 
-            logger.debug(f'{thread_config.thread_name}: \t{command}')
-            os.system(command)
+        logger.debug(f'{thread_config.thread_name}: \t{command}')
+        os.system(command)
 
-            # export the modified image to files
-            modified_image = get_new_image(solution_path=thread_config.z3_normalized_output_file).reshape(-1) # flatten
-            assert (len(modified_image.shape) == 1)
-            if len(modified_image) > 0:
-                csv_new_image_path = get_config(['files', 'new_csv_image_file_path']) \
-                    .replace('{seed_index}', str(seed_index))
-                with open(csv_new_image_path, mode='w') as f:
-                    csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                    csv_writer.writerow(modified_image)
-                png_new_image_path = get_config(['files', 'new_image_file_path']).replace('{seed_index}', str(seed_index))
-                matplotlib.image.imsave(png_new_image_path, modified_image.reshape(model_object.get_image_shape()))
+        # export the modified image to files
+        modified_image = get_new_image(solution_path=thread_config.z3_normalized_output_file).reshape(-1) # flatten
+        assert (len(modified_image.shape) == 1)
+        if len(modified_image) > 0:
+            csv_new_image_path = get_config(['files', 'new_csv_image_file_path']) \
+                .replace('{seed_index}', str(seed_index))
+            with open(csv_new_image_path, mode='w') as f:
+                csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                csv_writer.writerow(modified_image)
+            png_new_image_path = get_config(['files', 'new_image_file_path']).replace('{seed_index}', str(seed_index))
+            matplotlib.image.imsave(png_new_image_path, modified_image.reshape(model_object.get_image_shape()))
 
-            # export the original image to files
-            original_image = pd.read_csv(thread_config.seed_file, header=None).to_numpy().reshape(-1)  # flatten
-            assert (len(original_image.shape) == 1)
-            if len(original_image) > 0:
-                csv_old_image_path = get_config(['files', 'old_csv_image_file_path']).replace('{seed_index}',
-                                                                                              str(seed_index))
-                with open(csv_old_image_path, mode='w') as f:
-                    csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                    csv_writer.writerow(original_image)
-                png_old_image_path = get_config(['files', 'old_image_file_path']).replace('{seed_index}', str(seed_index))
-                matplotlib.image.imsave(png_old_image_path, original_image.reshape(model_object.get_image_shape()))
+        # export the original image to files
+        original_image = pd.read_csv(thread_config.seed_file, header=None).to_numpy().reshape(-1)  # flatten
+        assert (len(original_image.shape) == 1)
+        if len(original_image) > 0:
+            csv_old_image_path = get_config(['files', 'old_csv_image_file_path']).replace('{seed_index}',
+                                                                                          str(seed_index))
+            with open(csv_old_image_path, mode='w') as f:
+                csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                csv_writer.writerow(original_image)
+            png_old_image_path = get_config(['files', 'old_image_file_path']).replace('{seed_index}', str(seed_index))
+            matplotlib.image.imsave(png_old_image_path, original_image.reshape(model_object.get_image_shape()))
 
-            if len(modified_image) > 0 and len(original_image) > 0 and len(modified_image) == len(original_image):
-                # check the valid property of the modified image
-                is_valid, original_prediction, modified_prediction = is_valid_modified_image(
-                    model_object=model_object, config=thread_config,
-                    csv_original_image_path=csv_old_image_path,
-                    csv_new_image_path=csv_new_image_path)
-                if is_valid:
-                    lock.acquire()
-                    with open(thread_config.selected_seed_index_file_path, mode='a') as f:
-                        f.write(str(seed_index) + ',')
-                    lock.release()
+        if len(modified_image) > 0 and len(original_image) > 0 and len(modified_image) == len(original_image):
+            # check the valid property of the modified image
+            is_valid, original_prediction, modified_prediction = is_valid_modified_image(
+                model_object=model_object, config=thread_config,
+                csv_original_image_path=csv_old_image_path,
+                csv_new_image_path=csv_new_image_path)
+            if is_valid:
+                lock.acquire()
+                with open(thread_config.selected_seed_index_file_path, mode='a') as f:
+                    f.write(str(seed_index) + ',')
+                lock.release()
 
-                    # create figure comparison
-                    if thread_config.should_plot:
-                        png_comparison_image_path = get_config(['files', 'comparison_file_path']).replace(
-                            '{seed_index}',
-                            str(seed_index))
-                        create_figure_comparison(model_object, original_image, modified_image, original_prediction,
-                                                 modified_prediction,
-                                                 png_comparison_image_path)
+                # create figure comparison
+                if thread_config.should_plot:
+                    png_comparison_image_path = get_config(['files', 'comparison_file_path']).replace(
+                        '{seed_index}',
+                        str(seed_index))
+                    create_figure_comparison(model_object, original_image, modified_image, original_prediction,
+                                             modified_prediction,
+                                             png_comparison_image_path)
 
-                    # compute distance
-                    l0_distance = compute_L0_distance(original_image, modified_image)
-                    l1_distance = compute_L1_distance(original_image, modified_image)
-                    l2_distance = compute_L2_distance(original_image, modified_image)
-                    linf_distance = compute_inf_distance(original_image, modified_image)
+                # compute distance
+                l0_distance = compute_L0_distance(original_image, modified_image)
+                l1_distance = compute_L1_distance(original_image, modified_image)
+                l2_distance = compute_L2_distance(original_image, modified_image)
+                linf_distance = compute_inf_distance(original_image, modified_image)
 
-                    diff_pixels = compute_the_different_pixels(original_image, modified_image)
-                    logger.debug(f'diff_pixels = {diff_pixels}')
+                diff_pixels = compute_the_different_pixels(original_image, modified_image)
+                logger.debug(f'diff_pixels = {diff_pixels}')
 
-                    # add to comparison file
-                    with open(thread_config.true_label_seed_file, 'r') as f:
-                        true_label = int(f.read())
+                # add to comparison file
+                with open(thread_config.true_label_seed_file, 'r') as f:
+                    true_label = int(f.read())
 
-                    lock.acquire()
-                    with open(get_config(['files', 'full_comparison']), mode='a') as f:
-                        writer = csv.writer(f)
-                        writer.writerow([seed_index, true_label, original_prediction, modified_prediction, is_valid,
-                                           diff_pixels, l0_distance, l1_distance, l2_distance,linf_distance])
-                    lock.release()
-                else:
-                    os.remove(csv_old_image_path)
-                    os.remove(csv_new_image_path)
-                    os.remove(png_new_image_path)
-                    os.remove(png_old_image_path)
+                lock.acquire()
+                with open(get_config(['files', 'full_comparison']), mode='a') as f:
+                    writer = csv.writer(f)
+                    writer.writerow([seed_index, true_label, original_prediction, modified_prediction, is_valid,
+                                       diff_pixels, l0_distance, l1_distance, l2_distance,linf_distance])
+                lock.release()
             else:
-                logger.debug(f'The constraints have no solution')
-            logger.debug('--------------------------------------------------')
-            # break
+                os.remove(csv_old_image_path)
+                os.remove(csv_new_image_path)
+                os.remove(png_new_image_path)
+                os.remove(png_old_image_path)
+        else:
+            logger.debug(f'The constraints have no solution')
+        logger.debug('--------------------------------------------------')
+        # break
 
 
 def set_up_config(thread_idx):
@@ -769,19 +757,28 @@ def generate_samples(model_object, seeds, n_threads):
     Generate adversarial samples
     :return:
     """
-    '''
-    generate adversarial samples
-    '''
+    # remove the analyzed seeds
+    analyzed_seed_indexes = []
+    analyzed = get_config(['files', 'analyzed_seed_index_file_path'])
+    if os.path.exists(analyzed):
+        analyzed_seed_indexes = pd.read_csv(analyzed, header=None).to_numpy()
+    not_analyzed_seeds = []
+    for seed in seeds:
+        if seed not in analyzed_seed_indexes:
+            not_analyzed_seeds.append(seed)
+    logger.debug(f'Putting {len(not_analyzed_seeds)} seeds into {n_threads} threads')
+
+    # run multithread
     if n_threads >= 2:
         # prone to error
-        n_single_thread_seeds = int(np.floor((len(seeds)) / n_threads))
+        n_single_thread_seeds = int(np.floor((len(not_analyzed_seeds)) / n_threads))
         logger.debug(f'n_single_thread_seeds = {n_single_thread_seeds}')
         threads = []
 
         for thread_idx in range(n_threads):
             # get range of seed in the current thread
             if thread_idx == n_threads - 1:
-                thread_seeds = np.arange(n_single_thread_seeds * (n_threads - 1), len(seeds))
+                thread_seeds = np.arange(n_single_thread_seeds * (n_threads - 1), len(not_analyzed_seeds))
             else:
                 thread_seeds = np.arange(n_single_thread_seeds * thread_idx, n_single_thread_seeds * (thread_idx + 1))
 
@@ -831,6 +828,6 @@ if __name__ == '__main__':
     logging.root.setLevel(logging.DEBUG)
 
     model_object = initialize_dnn_model()
-    #seeds = read_seeds_from_file(csv_file='/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist/[ubuntu]/selected_seed_index.txt')
-    seeds = read_seeds_from_config()
+    seeds = read_seeds_from_file(csv_file='/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist/seeds.txt')
+    #seeds = read_seeds_from_config()
     generate_samples(model_object=model_object, seeds=seeds, n_threads=get_config(["n_threads"]))
