@@ -1,50 +1,28 @@
-from keras import Model
+from src.deepgauge.abstract_coverage_computation import *
 from tensorflow.python import keras
-import numpy as np
 
 from src.saved_models.fashion_mnist_ann_keras import *
-from src.utils import keras_model, keras_layer
+from src.utils import keras_layer
+from src.deepgauge.statistics import *
 
-
-class K_MULTISECTION_NEURON_COVERAGE:
+class K_MULTISECTION_NEURON_COVERAGE(abstract_coverage_computation):
     def __init__(self):
-        self.__X = None  # (None, ?)
-        self.__model = None
+        super(K_MULTISECTION_NEURON_COVERAGE, self).__init__()
+        self.X_train = None
 
-    def load_model(self):
-        assert (isinstance(self.get_model(), keras.engine.sequential.Sequential))
-        activation_layers = keras_model.get_activation_layers(self.get_model())
-        # ignore the last activation layer
-        models = Model(inputs=self.get_model().input,
-                       outputs=[item[0].output for item in activation_layers if
-                                item[1] != len(self.get_model().layers) - 1])
-
-        assert (len(self.get_X().shape) == 2)
-        input = self.get_X().reshape(len(self.get_X()), -1)
-
-        prediction = models.predict(input)  # (#activation_layers, #inputs, #hidden_units)
-        return activation_layers, prediction
-
-    def compute_the_number_of_neurons(self, activation_layers):
-        # count the number of active neurons
-        n_coverage_layers = len(activation_layers) - 1  # -1: ignore the last activation layer
-
-        # compute the number of neurons
-        n_neurons = 0
-        for idx in range(n_coverage_layers):
-            layer_index_in_model = activation_layers[idx][1]
-            n_units = keras_layer.get_number_of_units(self.get_model(), layer_index_in_model)
-
-            for unit_idx in range(n_units):
-                n_neurons += 1
-        return n_neurons
+    def compute_bound_from_train_set(self):
+        statistics_computator = STATISTICS()
+        statistics_computator.set_model(self.get_model())
+        statistics_computator.set_X(self.get_Xtrain())
+        bounds = statistics_computator.draw_boxplot_of_units()['bound']
+        return bounds
 
     def compute_k_multisection_neuron_coverage(self, k):
         activation_layers, prediction = self.load_model()
         n_coverage_layers = len(activation_layers) - 1  # -1: ignore the last activation layer
         n_observations = len(self.get_X().reshape(len(self.get_X()), -1))
 
-        # compute the coverage
+        bounds = self.compute_bound_from_train_set()
         covs = []
         N = 0
         for idx in range(n_coverage_layers):
@@ -53,8 +31,10 @@ class K_MULTISECTION_NEURON_COVERAGE:
 
             for unit_idx in range(n_units):
                 # get lower and upper
-                u = np.max(prediction[idx][unit_idx])# (#activation_layers, #inputs, #hidden_units)
-                l = np.min(prediction[idx][unit_idx])
+                #print(len(values[idx][unit_idx]))
+                bound = bounds[STATISTICS().create_key(layer_idx=layer_index_in_model, unit_idx=unit_idx)]
+                u = bound['upper']
+                l = bound['lower']
                 fragment = np.abs(u - l) / k
                 print(f'layer {idx}, unit {unit_idx}: [{l}, {u})')
 
@@ -82,57 +62,36 @@ class K_MULTISECTION_NEURON_COVERAGE:
                 # compute coverage
                 covs.append(n_active_times)
 
-        # final coverage
+        # final deepgauge
         final_coverage = np.sum(covs) / (k*N)
         print(final_coverage)
         return final_coverage
 
-    def set_X(self, X):
-        self.__X = X
+    def set_Xtrain(self, X_train):
+        self.X_train = X_train
 
-    def get_X(self):
-        return self.__X
-
-    def get_model(self):
-        return self.__model
-
-    def set_model(self, model):
-        assert (isinstance(model, keras.engine.sequential.Sequential))
-        self.__model = model
+    def get_Xtrain(self):
+        return self.X_train
 
 if __name__ == '__main__':
     # construct model 1
-    model_object1 = FASHION_MNIST()
-    model_object1.set_num_classes(10)
-    model1 = model_object1.load_model(
-        weight_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f1_original.h5',
-        structure_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f1_original.json',
+    model_object = FASHION_MNIST()
+    model_object.set_num_classes(10)
+    model = model_object.load_model(
+        weight_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f2_original.h5',
+        structure_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f2_original.json',
         trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/train.csv')
-    model_object1.read_data(
+    model_object.read_data(
         trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/train.csv',
-        testset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist_f1/original_test_plus_expansion.csv')
-    print(model1.summary())
+        #testset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/test.csv')
+        testset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist_f2/original_test_plus_expansion.csv')
+    print(model.summary())
 
-    # construct model 2
-    '''
-    model_object2 = FASHION_MNIST()
-    model_object2.set_num_classes(10)
-    model2 = model_object2.load_model(
-        weight_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f1_original.h5',
-        structure_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f1_original.json',
-        trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/train.csv')
-    model_object2.read_data(
-        trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/train.csv',
-        testset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/test.csv')
-    print(model2.summary())
-    '''
     # compute neuron coverage
     nc_computator = K_MULTISECTION_NEURON_COVERAGE()
-    nc_computator.set_model(model_object1.get_model())
-    nc_computator.set_X(model_object1.get_Xtest())
+    nc_computator.set_model(model_object.get_model())
+    nc_computator.set_X(model_object.get_Xtest())
+    nc_computator.set_Xtrain(model_object.get_Xtrain())
     nc_computator.compute_k_multisection_neuron_coverage(k=1000)
-    # fashion mnist: xtest = 0.8383928571428572 (k=100)
-    # xtest_expansion: 0.8392857142857143 (k=100)
-
-    # fashion mnist: xtest = 0.6989107142857143 (k=1000)
-    # xtest_expansion: 0.6989107142857143(k=1000)
+    # fashion mnist f1: xtest =  (k=50)
+    # xtest_ original + expansion: (k=50)

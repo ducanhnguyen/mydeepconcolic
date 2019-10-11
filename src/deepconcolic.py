@@ -2,8 +2,8 @@
 Command:
 /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/lib/z3-4.8.5-x64-osx-10.14.2/bin/z3 -smt2 /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/constraint.txt > /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/solution.txt
 '''
-import os
-import random as ran
+import threading
+import time
 from threading import Thread
 from types import SimpleNamespace
 
@@ -14,8 +14,7 @@ from src.config_parser import *
 from src.saved_models.mnist_ann_keras import *
 from src.test_summarizer import *
 from src.utils import keras_activation, keras_layer, keras_model
-
-import threading
+import matplotlib
 lock = threading.Lock()
 
 MINUS_INF = -10000000
@@ -639,6 +638,11 @@ def image_generation(seeds, thread_config, model_object):
         os.system(command)
 
         # export the modified image to files
+        max_wait = 10
+        while (max_wait >=0 and not os.path.exists(thread_config.z3_normalized_output_file)):
+            time.sleep(0.5)
+            max_wait = max_wait -1
+
         modified_image = get_new_image(solution_path=thread_config.z3_normalized_output_file).reshape(-1) # flatten
         assert (len(modified_image.shape) == 1)
         if len(modified_image) > 0:
@@ -766,6 +770,7 @@ def generate_samples(model_object, seeds, n_threads):
     for seed in seeds:
         if seed not in analyzed_seed_indexes:
             not_analyzed_seeds.append(seed)
+    not_analyzed_seeds = np.asarray(not_analyzed_seeds)
     logger.debug(f'Putting {len(not_analyzed_seeds)} seeds into {n_threads} threads')
 
     # run multithread
@@ -804,7 +809,7 @@ def generate_samples(model_object, seeds, n_threads):
         main_thread_config.image_shape = model_object.get_image_shape()
         main_thread_config.should_plot = True
         # run on the main thread
-        image_generation(seeds, main_thread_config, model_object)
+        image_generation(not_analyzed_seeds, main_thread_config, model_object)
 
 
 def initialize_dnn_model():
