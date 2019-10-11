@@ -1,5 +1,5 @@
 from threading import Thread
-import time
+
 
 def display(name, start, end):
     for num in range(start, end):

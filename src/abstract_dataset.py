@@ -1,8 +1,10 @@
+import os
+
 import keras
 import numpy as np
-from keras.models import model_from_json
-import os
 from keras.callbacks import ModelCheckpoint
+from keras.models import model_from_json
+
 
 class abstract_dataset:
     def __init__(self):

@@ -6,11 +6,12 @@ LeNet-1: https://medium.com/@sh.tsang/paper-brief-review-of-lenet-1-lenet-4-lene
 
 from __future__ import print_function
 
+from keras import backend as K
 from keras.datasets import mnist
 from keras.layers import Conv2D, MaxPooling2D, Input, Dense, Activation, Flatten
 from keras.models import Model, Sequential
 from keras.utils import to_categorical
-from keras import backend as K
+
 
 def Model1(train=False, path=''):
     nb_classes = 10

@@ -1,13 +1,12 @@
 import csv
 import logging
-import platform
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scipy.misc
 from numpy import linalg as LA
-import matplotlib
-import os
+
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 

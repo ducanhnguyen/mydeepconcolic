@@ -1,8 +1,8 @@
+import pandas as pd
 from keras.layers import Dense, Activation
 from keras.models import Sequential
 
 from src.abstract_dataset import *
-import pandas as pd
 
 '''
 Data set: https://www.kaggle.com/c/digit-recognizer

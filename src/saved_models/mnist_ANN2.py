@@ -1,10 +1,11 @@
 from __future__ import print_function
 
+import keras
 from keras.datasets import mnist
 from keras.layers import Dense, Activation, Dropout
 from keras.models import Sequential
 from keras.utils import to_categorical
-import keras
+
 '''
 https://www.kaggle.com/ilufei/mnist-with-tensorflow-dnn-97
 Test accuracy: 0.983

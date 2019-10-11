@@ -1,8 +1,10 @@
 # TODO: Neu model khong co input layer, ma co Dense, ta nen them rang buoc cho input layer nuaf
-from src.utils import keras_layer, keras_model
-from src.utils.covered_layer import covered_layer
 import keras
 import numpy  as np
+
+from src.utils import keras_layer, keras_model
+from src.utils.covered_layer import covered_layer
+
 MINUS_INF = -10000000
 INF = 10000000
 

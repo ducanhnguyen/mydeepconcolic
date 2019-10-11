@@ -1,5 +1,7 @@
-import matplotlib.pyplot as plt
 from threading import Thread
+
+import matplotlib.pyplot as plt
+
 
 def plot():
     fig, ax = plt.subplots()
