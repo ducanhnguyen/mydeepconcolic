@@ -7,17 +7,8 @@ from src.abstract_dataset import *
 '''
 Data set: https://www.kaggle.com/zalando-research/fashionmnist
 Train on 60000 samples.
-
-model 1:
-    Accuracy on test set = 0.8776
-    Accuracy on train set = 0.9316
-    
-model 2:
-    Accuracy on test set = 0.8823
-    Accuracy on train set = 0.9683
-    
 '''
-class FASHION_MNIST(abstract_dataset):
+class FASHION_MNIST(ABSTRACT_DATASET):
 
     def __init__(self):
         super(FASHION_MNIST, self).__init__()
@@ -41,11 +32,11 @@ class FASHION_MNIST(abstract_dataset):
         model.add(Dense(64, name='dense_0', input_dim=input_shape))
         model.add(Activation('relu', name='relu_0'))
 
-        model.add(Dense(32, name='dense_1', input_dim=input_shape))
+        model.add(Dense(32, name='dense_1'))
         model.add(Activation('relu', name='relu_1'))
 
         model.add(Dense(16, name='dense_2'))
-        model.add(Activation('relu', name='relu_2'))
+        model.add(Activation('tanh', name='relu_2'))
 
         model.add(Dense(self.get_num_classes(), name='dense_n'))
         model.add(Activation('softmax', name='softmax'))
@@ -58,15 +49,20 @@ if __name__ == '__main__':
     mnist = FASHION_MNIST()
     mnist.set_num_classes(10)
 
-    '''
-    mnist.train_model(train=True, kernel_path='../saved_models/fashion_mnist_ann_keras.h5',  model_path='../saved_models/fashion_mnist_ann_keras.json',
-                      training_path='../../fashion_mnist/train.csv', testing_path='../../fashion_mnist/test.csv')
+    mnist.train_model(train=True,
+                      kernel_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f1_expansion.json',
+                      model_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f1_expansion.h5',
+                      training_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist_f1/original_train_plus_expansion2.csv',
+                      testing_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/test.csv')
     '''
     # load model
-    model = mnist.load_model(weight_path='../saved_models/fashion_mnist_ann_keras.h5', structure_path='../saved_models/fashion_mnist_ann_keras.json',
-                             trainset_path='../../fashion_mnist/train.csv')
+    model = mnist.load_model(weight_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f3_original.h5',
+                             structure_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f3_original.json',
+                             trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/train.csv')
     print(model.summary())
-    mnist.read_data(trainset_path='../../fashion_mnist/train.csv', testset_path='../../fashion_mnist/test.csv')
+    mnist.read_data(
+        trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/train.csv',
+        testset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/test.csv')
     print(f'model.layers = {model.layers}')
 
     # plot an observation
@@ -76,5 +72,4 @@ if __name__ == '__main__':
     plt.imshow(img, cmap='gray')
     plt.title(f'A sample')
     plt.show()
-
-
+    '''

@@ -1,838 +1,741 @@
 '''
 Command:
 /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/lib/z3-4.8.5-x64-osx-10.14.2/bin/z3 -smt2 /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/constraint.txt > /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/solution.txt
-'''
-import threading
-import time
-from threading import Thread
-from types import SimpleNamespace
 
-import tensorflow as tf
+ALgorithm
+
+Step 1. Run over the training set, for each sample on the training set:
+Step 2.     Generate a SMT-Lib file to describe the relationship between the current sample and the prediction
+Step 3.     Add new constraint to the SMT-Lib file
+Step 4.     Call SMT-Solver
+Step 5.     Save the solution of SMT-Solver if it has
+
+Limitation
+- Do not support CNN
+- Support ANN with low complexity
+- Just support linear activation function (i,e., relu)
+- Poor performance (i.e., MNIST ~ 2 days)
+- Low coverage: NC, NBC, KMNC
+'''
+
+import time
+
+import matplotlib
 from keras.models import Model
 
-from src.config_parser import *
-from src.saved_models.mnist_ann_keras import *
+from src.abstract_dnn_analyzer import *
+from src.saved_models.fashion_mnist_ann_keras import *
 from src.test_summarizer import *
 from src.utils import keras_activation, keras_layer, keras_model
-import matplotlib
-lock = threading.Lock()
-
-MINUS_INF = -10000000
-INF = 10000000
-
-DELTA_PREFIX_NAME = get_config(["constraint_config", "delta_prefix_name"])
-
-global logger
-logger = logging.getLogger()
-
-global graph
 
 
-def create_constraint_between_layers(model_object):
-    assert (isinstance(model_object, abstract_dataset))
-    constraints = []
-    smt_constraints = []
+class SMT_DNN(ABSTRACT_DNN_ANALYZER):
+    def __init__(self):
+        pass
 
-    model = model_object.get_model()
-    for current_layer_idx, current_layer in enumerate(model.layers):
+    def create_constraint_between_layers(self, model_object, upper_layer_index=10000000):
+        assert (isinstance(model_object, ABSTRACT_DATASET))
+        constraints = []
+        smt_constraints = []
 
-        if current_layer_idx == 0:
-            constraints.append(f'; (input layer, {current_layer.name})')
-            smt_constraints.append(f'; (input layer, {current_layer.name})')
-
-            if keras_model.is_ANN(model):
-                weights = current_layer.get_weights()  # the second are biases, the first are weights between two layers
-                kernel = weights[0]
-                biases = weights[1]
-                n_features = kernel.shape[0]
-                hidden_units_curr_layer = kernel.shape[1]
-
-                for current_pos in range(hidden_units_curr_layer):
-                    var = f'u_{current_layer_idx}_{current_pos}'
-
+        model = model_object.get_model()
+        for current_layer_idx, current_layer in enumerate(model.layers):
+            if current_layer_idx <= upper_layer_index:  # when we just want to consider some specific layers
+                if current_layer_idx == 0:
                     '''
-                    type constraint 1
+                    Case: if the current layer is the input layer.
                     '''
-                    constraint = f'{var} = '
+                    constraints.append(f'; (input layer, {current_layer.name})')
+                    smt_constraints.append(f'; (input layer, {current_layer.name})')
+
+                    if keras_model.is_ANN(model):
+                        weights = current_layer.get_weights()  # the second are biases, the first are weights between two layers
+                        kernel = weights[0]
+                        biases = weights[1]
+                        n_features = kernel.shape[0]
+                        hidden_units_curr_layer = kernel.shape[1]
+
+                        for current_pos in range(hidden_units_curr_layer):
+                            var = f'u_{current_layer_idx}_{current_pos}'
+
+                            '''
+                            type constraint 1 (just for reading)
+                            '''
+                            constraint = f'{var} = '
+                            for feature_idx in range(n_features):
+                                previous_var = f'feature_{feature_idx}'
+                                weight = kernel[feature_idx][current_pos]
+                                weight = weight / 255  # because the feature input is in range of [0..255]
+                                constraint += f'{previous_var} * {weight:.25f} + '
+
+                            constraint += f'{biases[current_pos]:.25f}'
+                            constraints.append(constraint)
+
+                            '''
+                            type constraint 2 (for SMT-solver)
+                            '''
+                            smt_constraint = ''
+                            for feature_idx in range(n_features):
+                                previous_var = f'feature_{feature_idx}'
+                                weight = kernel[feature_idx][current_pos]
+
+                                weight = weight / 255  # because the feature input is in range of [0..255]
+                                if feature_idx == 0:
+                                    smt_constraint = f'(* {previous_var} {weight:.25f}) '
+                                else:
+                                    smt_constraint = f'(+ {smt_constraint} (* {previous_var} {weight:.25f})) '
+
+                            smt_constraint = f'(+ {smt_constraint} {biases[current_pos]:.25f}) '
+                            smt_constraint = f'(assert(= {var} {smt_constraint}))'
+                            smt_constraints.append(smt_constraint)
+
+                    else:
+                        logger.debug(f'Do not support this kind of DNN')
+                        continue
+
+                elif current_layer_idx > 0:
+                    '''
+                    Case: The current layer is not the input layer
+                    '''
+                    if keras_layer.is_2dconv(current_layer):
+                        logger.debug(f'Layer {model.layers[current_layer_idx].name}: support conv later')
+
+                    elif keras_layer.is_dense(current_layer):
+                        pre_layer_idx = current_layer_idx - 1
+                        pre_layer = model.layers[pre_layer_idx]
+
+                        weights = current_layer.get_weights()  # the second are biases, the first are weights between two layers
+                        kernel = weights[0]
+                        biases = weights[1]
+                        hidden_units_pre_layer = kernel.shape[0]
+                        hidden_units_curr_layer = kernel.shape[1]
+
+                        constraints.append(f'; ({pre_layer.name}, {current_layer.name})')
+                        smt_constraints.append(f'; ({pre_layer.name}, {current_layer.name})')
+
+                        if keras_layer.is_dense(pre_layer):  # instance of keras.layers.core.Dense
+                            # the current layer and the previous layer is dense
+                            for current_pos in range(hidden_units_curr_layer):
+                                # constraints of a hidden unit layer include (1) bias, and (2) weight
+                                var = f'u_{current_layer_idx}_{current_pos}'
+
+                                '''
+                                type constraint 1
+                                '''
+                                constraint = f'{var} = '
+                                for feature_idx in range(hidden_units_pre_layer):
+                                    previous_var = f'v_{current_layer_idx - 1}_{feature_idx}'
+                                    weight = kernel[feature_idx][current_pos]
+                                    constraint += f'{previous_var} * {weight:.25f} + '
+
+                                constraint += f'{biases[current_pos]:.25f}'
+                                constraints.append(constraint)
+
+                                '''
+                                type constraint 2
+                                '''
+                                smt_constraint = f'{var} = '
+                                for feature_idx in range(hidden_units_pre_layer):
+                                    previous_var = f'v_{pre_layer_idx}_{feature_idx}'
+                                    weight = kernel[feature_idx][current_pos]
+                                    if feature_idx == 0:
+                                        smt_constraint = f'(* {previous_var} {weight:.25f}) '
+                                    else:
+                                        smt_constraint = f'(+ {smt_constraint} (* {previous_var} {weight:.25f})) '
+
+                                smt_constraint = f'(+ {smt_constraint} {biases[current_layer_idx]:.25f}) '
+                                smt_constraint = f'(assert {smt_constraint})'
+                                smt_constraints.append(smt_constraint)
+
+                        elif keras_layer.is_activation(pre_layer) or keras_layer.is_dropout(
+                                pre_layer):  # instance of keras.layers.core.Dense
+                            for current_pos in range(hidden_units_curr_layer):
+                                var = f'u_{current_layer_idx}_{current_pos}'
+                                previous_var = f'v_{current_layer_idx - 1}_{current_pos}'
+
+                                constraint = f'{var} = {previous_var}'
+                                constraints.append(constraint)
+
+                                smt_constraint = f'(assert(= {var} {previous_var}))'
+                                smt_constraints.append(smt_constraint)
+
+                    elif (not keras_layer.is_dense(current_layer) and keras_layer.is_activation(current_layer)) \
+                            or keras_layer.is_dropout(current_layer):
+                        pre_layer_idx = current_layer_idx - 1
+                        pre_layer = model.layers[pre_layer_idx]
+
+                        constraints.append(f'; ({pre_layer.name}, {current_layer.name})')
+                        smt_constraints.append(f'; ({pre_layer.name}, {current_layer.name})')
+
+                        units = keras_layer.get_number_of_units(model, pre_layer_idx)
+                        for unit_idx in range(units):
+                            '''
+                            type constraint 1
+                            '''
+                            constraint = f'v_{pre_layer_idx}_{unit_idx} = u_{current_layer_idx}_{unit_idx}'
+                            constraints.append(constraint)
+
+                            '''
+                            type constraint 2
+                            '''
+                            smt_constraint = f'(assert(= v_{pre_layer_idx}_{unit_idx} u_{current_layer_idx}_{unit_idx}))'
+                            smt_constraints.append(smt_constraint)
+
+        return constraints, smt_constraints
+
+    def create_activation_constraints(self, model_object, upper_layer_index=10000000, upper_unit_index=10000000,
+                                      lower_unit_index=-1):
+        assert (isinstance(model_object, ABSTRACT_DATASET))
+        constraints = []
+        smt_constraints = []
+
+        model = model_object.get_model()
+        if keras_model.is_ANN(model):
+            for current_layer_idx, current_layer in enumerate(model.layers):
+                if current_layer_idx <= upper_layer_index:  # added
+                    units = keras_layer.get_number_of_units(model, current_layer_idx)
+
+                    if keras_activation.is_activation(current_layer):
+                        constraints.append(f'; {current_layer.name}')
+                        smt_constraints.append(f'; {current_layer.name}')
+
+                        # Create the formula based on the type of activation
+                        if keras_activation.is_relu(current_layer):
+                            for unit_idx in range(units):
+                                if unit_idx >= lower_unit_index and unit_idx <= upper_unit_index:  # added
+                                    '''
+                                    constraint type 1
+                                    '''
+                                    constraint = f'v_{current_layer_idx}_{unit_idx} = u_{current_layer_idx}_{unit_idx} >= 0 ? u_{current_layer_idx}_{unit_idx} : 0 '
+                                    constraints.append(constraint)
+
+                                    '''
+                                    constraint type 2
+                                    v = u>0?x:0
+                                    '''
+                                    smt_constraint = f'(= v_{current_layer_idx}_{unit_idx} (ite (>= u_{current_layer_idx}_{unit_idx} 0) u_{current_layer_idx}_{unit_idx} 0))'
+                                    smt_constraint = f'(assert{smt_constraint})'
+                                    smt_constraints.append(smt_constraint)
+
+                        elif keras_activation.is_tanh(current_layer):
+                            for unit_idx in range(units):
+                                if unit_idx >= lower_unit_index and unit_idx <= upper_unit_index:  # added
+                                    '''
+                                    constraint type 1
+                                    '''
+                                    constraint = f'v_{current_layer_idx}_{unit_idx} = (1 - exp(2*u_{current_layer_idx}_{unit_idx})) / (1 + exp(2*u_{current_layer_idx}_{unit_idx}))'
+                                    constraints.append(constraint)
+
+                                    '''
+                                    constraint type 2
+                                    1 - exp(2*a)
+                                    a = u_{current_layer_idx}_{unit_idx}
+                                    '''
+                                    smt_constraint = f'(= v_{current_layer_idx}_{unit_idx} (/ (- 1 (exp (* 2 u_{current_layer_idx}_{unit_idx}))) (+ 1 (exp (* 2 u_{current_layer_idx}_{unit_idx})))))'
+                                    smt_constraint = f'(assert{smt_constraint})'
+                                    smt_constraints.append(smt_constraint)
+
+                        elif keras_activation.is_softmax(current_layer):
+                            if current_layer_idx == len(model.layers) - 1:
+                                # no need to create constraints for the output layer
+                                smt_constraints.append(f'; The last layer is softmax: no need to create constraints!')
+                                continue
+                            else:
+                                '''
+                                constraint type 1
+                                '''
+                                # add denominator
+                                sum = f'sum_{current_layer_idx}_{unit_idx}'
+                                constraint = f'{sum} = '
+                                for unit_idx in range(units):
+                                    if unit_idx >= lower_unit_index and unit_idx <= upper_unit_index:  # added
+                                        if unit_idx == units - 1:
+                                            constraint += f'exp(-u_{current_layer_idx}_{unit_idx})'
+                                        else:
+                                            constraint += f'exp(-u_{current_layer_idx}_{unit_idx}) + '
+                                constraints.append(constraint)
+
+                                for unit_idx in range(units):
+                                    if unit_idx >= lower_unit_index and unit_idx <= upper_unit_index:  # added
+                                        constraint = f'v_{current_layer_idx}_{unit_idx} = exp(-u_{current_layer_idx}_{unit_idx}) / {sum}'
+                                        constraints.append(constraint)
+                                '''
+                                constraint type 2
+                                '''
+                                smt_sum_name = f'sum_{current_layer_idx}_{unit_idx}'
+                                smt_constraints.append(f'(declare-fun {smt_sum_name} () Real)')
+
+                                smt_sum = ''
+                                for unit_idx in range(units):
+                                    if unit_idx >= lower_unit_index and unit_idx <= upper_unit_index:  # added
+                                        if unit_idx == 0:
+                                            smt_sum = f'(exp (- 0 u_{current_layer_idx}_{unit_idx}))'
+                                        else:
+                                            smt_sum = f'(+ {smt_sum} (exp (- 0 u_{current_layer_idx}_{unit_idx})))'
+
+                                smt_constraint = f'(= {smt_sum_name} {smt_sum})'
+                                smt_constraint = f'(assert{smt_constraint})'
+                                smt_constraints.append(smt_constraint)
+
+                                #
+                                for unit_idx in range(units):
+                                    smt_constraint = f'(= v_{current_layer_idx}_{unit_idx} (/ (exp (- 0 u_{current_layer_idx}_{unit_idx})) {smt_sum_name}))'
+                                    smt_constraint = f'(assert{smt_constraint})'
+                                    smt_constraints.append(smt_constraint)
+
+                    elif (keras_layer.is_dense(current_layer) and not keras_layer.is_activation(current_layer)) or \
+                            keras_layer.is_dropout(current_layer):
+                        # the current layer is dense and not an activation
+                        constraints.append(f'; {current_layer.name}')
+                        smt_constraints.append(f'; {current_layer.name}')
+
+                        for unit_idx in range(units):
+                            if unit_idx >= lower_unit_index and unit_idx <= upper_unit_index:  # added
+                                '''
+                                constraint type 1
+                                '''
+                                constraint = f'u_{current_layer_idx}_{unit_idx} = v_{current_layer_idx}_{unit_idx}'
+                                constraints.append(constraint)
+
+                                '''
+                                constraint type 2
+                                '''
+                                smt_constraint = f'(assert(= u_{current_layer_idx}_{unit_idx} v_{current_layer_idx}_{unit_idx}))'
+                                smt_constraints.append(smt_constraint)
+                    else:
+                        logger.debug(f'Does not support layer {current_layer}')
+
+        elif keras_model.is_CNN(model):
+            logger.debug(f'Model is not CNN. Does not support!')
+
+        else:
+            logger.debug(f'Unable to detect the type of neural network')
+
+        return constraints, smt_constraints
+
+    def create_variable_declarations(self, model_object, type_feature):
+        assert (isinstance(model_object, ABSTRACT_DATASET))
+        constraints = []
+        constraints.append(f'; variable declaration')
+
+        model = model_object.get_model()
+        if keras_model.is_ANN(model):
+            if isinstance(model, keras.engine.sequential.Sequential):
+                # for input layer
+                input_shape = model.input_shape  # (None, n_features)
+                n_features = input_shape[1]
+
+                for feature_idx in range(n_features):
+                    if type_feature == 'float':
+                        constraint = f'(declare-fun feature_{feature_idx} () Real)'
+                        constraints.append(constraint)
+                    elif type_feature == 'int':
+                        constraint = f'(declare-fun feature_{feature_idx} () Int)'
+                        constraints.append(constraint)
+                    else:
+                        logger.debug(f'Does not support the type {type_feature}')
+
+                # for other layers
+                for layer_idx, layer in enumerate(model.layers):
+                    # get number of hidden units
+                    units = keras_layer.get_number_of_units(model, layer_idx)
+
+                    # value of neuron in all layers except input layer must be real
+                    if units != None:
+                        for unit_idx in range(units):
+                            before_activation = f'(declare-fun u_{layer_idx}_{unit_idx} () Real)'
+                            constraints.append(before_activation)
+
+                            after_activation = f'(declare-fun v_{layer_idx}_{unit_idx} () Real)'
+                            constraints.append(after_activation)
+
+        elif keras_model.is_CNN(model):
+            logger.debug(f'Model is not CNN. Does not support!')
+
+        else:
+            logger.debug(f'Unable to detect the type of neural network')
+
+        return constraints
+
+    def create_feature_constraints_from_an_observation(self, model_object, x_train, delta):
+        assert (isinstance(model_object, ABSTRACT_DATASET))
+        constraints = []
+        smt_constraints = []
+
+        model = model_object.get_model()
+        if keras_model.is_ANN(model):
+
+            if isinstance(model, keras.engine.sequential.Sequential):
+                input_shape = model.input_shape  # (None, n_features)
+                constraints.append('; input value')
+                smt_constraints.append('; input value')
+
+                n_features = input_shape[1]
+                x_train = x_train.reshape(-1)
+                if n_features == x_train.shape[0]:
                     for feature_idx in range(n_features):
-                        previous_var = f'feature_{feature_idx}'
-                        weight = kernel[feature_idx][current_pos]
-                        weight = weight / 255
-                        constraint += f'{previous_var} * {weight:.25f} + '
+                        '''
+                        constraint type 1
+                        '''
+                        constraint = f'feature_{feature_idx}  >= {x_train[feature_idx] * 255}-{delta}_{feature_idx} ' \
+                                     f' and ' \
+                                     f' feature_{feature_idx} <= {x_train[feature_idx] * 255} + {delta}_{feature_idx}'
+                        constraints.append(constraint)
 
-                    constraint += f'{biases[current_pos]:.25f}'
-                    constraints.append(constraint)
-
-                    '''
-                    type constraint 2
-                    '''
-                    smt_constraint = ''
-                    for feature_idx in range(n_features):
-                        previous_var = f'feature_{feature_idx}'
-                        weight = kernel[feature_idx][current_pos]
-
-                        weight = weight / 255  # rather than normalizing feature input
-                        if feature_idx == 0:
-                            smt_constraint = f'(* {previous_var} {weight:.25f}) '
-                        else:
-                            smt_constraint = f'(+ {smt_constraint} (* {previous_var} {weight:.25f})) '
-
-                    smt_constraint = f'(+ {smt_constraint} {biases[current_pos]:.25f}) '
-                    smt_constraint = f'(assert(= {var} {smt_constraint}))'
-                    smt_constraints.append(smt_constraint)
-
+                        '''
+                        constraint type 2
+                        '''
+                        smt_constraints.append(f'(declare-fun {delta}_{feature_idx} () Int)')
+                        smt_constraint = \
+                            f'(assert(and ' \
+                            + f'(>= feature_{feature_idx} (- {x_train[feature_idx] * 255} {delta}_{feature_idx})) ' \
+                              f'(<= feature_{feature_idx} (+ {x_train[feature_idx] * 255} {delta}_{feature_idx}))' \
+                            + f'))'
+                        smt_constraints.append(smt_constraint)
+                else:
+                    logger.debug(f'The size of sample does not match!')
             else:
-                logger.debug(f'Do not support CNN')
-                continue
+                logger.debug(f'The input model must be sequential')
 
-        elif keras_layer.is_2dconv(current_layer):
-            logger.debug(f'Layer {model.layers[current_layer_idx].name}: support conv later')
+        elif keras_model.is_CNN(model):
+            logger.debug(f'Model is not CNN. Does not support!')
 
-        elif keras_layer.is_dense(current_layer):
-            pre_layer_idx = current_layer_idx - 1
-            pre_layer = model.layers[pre_layer_idx]
+        else:
+            logger.debug(f'Unable to detect the type of neural network')
 
-            weights = current_layer.get_weights()  # the second are biases, the first are weights between two layers
-            kernel = weights[0]
-            biases = weights[1]
-            hidden_units_pre_layer = kernel.shape[0]
-            hidden_units_curr_layer = kernel.shape[1]
+        return constraints, smt_constraints
 
-            constraints.append(f'; ({pre_layer.name}, {current_layer.name})')
-            smt_constraints.append(f'; ({pre_layer.name}, {current_layer.name})')
+    def create_output_constraints_from_an_observation(self, model_object, x_train, y_train, thread_config):
+        assert (isinstance(model_object, ABSTRACT_DATASET))
+        assert (isinstance(thread_config, ThreadConfig))
+        constraints = []
+        smt_constraints = []
+        model = model_object.get_model()
 
-            if keras_layer.is_dense(pre_layer):  # instance of keras.layers.core.Dense
-                # the current layer and the previous layer is dense
-                for current_pos in range(hidden_units_curr_layer):
-                    # constraints of a hidden unit layer include (1) bias, and (2) weight
-                    var = f'u_{current_layer_idx}_{current_pos}'
+        if keras_model.is_ANN(model):
+            assert (x_train.shape[0] == 1 and len(x_train.shape) == 2)
 
-                    '''
-                    type constraint 1
-                    '''
-                    constraint = f'{var} = '
-                    for feature_idx in range(hidden_units_pre_layer):
-                        previous_var = f'v_{current_layer_idx - 1}_{feature_idx}'
-                        weight = kernel[feature_idx][current_pos]
-                        constraint += f'{previous_var} * {weight:.25f} + '
+            last_layer_idx = len(model.layers) - 1
+            last_layer = model.layers[last_layer_idx]
+            true_label = y_train
+            left = f'u_{last_layer_idx}_{true_label}'
 
-                    constraint += f'{biases[current_pos]:.25f}'
-                    constraints.append(constraint)
+            # get the number of hidden units in the output layer
+            n_classes = keras_layer.get_number_of_units(model, last_layer_idx)
 
-                    '''
-                    type constraint 2
-                    '''
-                    smt_constraint = f'{var} = '
-                    for feature_idx in range(hidden_units_pre_layer):
-                        previous_var = f'v_{pre_layer_idx}_{feature_idx}'
-                        weight = kernel[feature_idx][current_pos]
-                        if feature_idx == 0:
-                            smt_constraint = f'(* {previous_var} {weight:.25f}) '
-                        else:
-                            smt_constraint = f'(+ {smt_constraint} (* {previous_var} {weight:.25f})) '
+            if n_classes != None:
+                '''
+                constraint type 1
+                '''
+                right = ''
+                for class_idx in range(n_classes):
+                    if class_idx == n_classes - 1:
+                        right += f'u_{last_layer_idx}_{class_idx}'
+                    else:
+                        right += f'u_{last_layer_idx}_{class_idx}, '
+                right = f'max({right})'
+                constraint = f'{left} = {right}'
+                constraints.append(f'; output constraints')
+                constraints.append(constraint)
 
-                    smt_constraint = f'(+ {smt_constraint} {biases[current_layer_idx]:.25f}) '
+                smt_type_constraint = ConfigController().get_config(
+                    ["constraint_config", "output_layer_type_constraint"])
+
+                if smt_type_constraint == 'or':
+                    smt_constraint = ''
+                    for class_idx in range(n_classes):
+                        if class_idx != true_label:
+                            if class_idx == 0:
+                                smt_constraint = f'(< {left} u_{last_layer_idx}_{class_idx}) '
+                            else:
+                                smt_constraint = f'(or {smt_constraint} (< {left} u_{last_layer_idx}_{class_idx})) '
+                    smt_constraints.append(f'; output constraints')
                     smt_constraint = f'(assert {smt_constraint})'
                     smt_constraints.append(smt_constraint)
 
-            elif keras_layer.is_activation(pre_layer) or keras_layer.is_dropout(
-                    pre_layer):  # instance of keras.layers.core.Dense
-                for current_pos in range(hidden_units_curr_layer):
-                    var = f'u_{current_layer_idx}_{current_pos}'
-                    previous_var = f'v_{current_layer_idx - 1}_{current_pos}'
+                elif smt_type_constraint == 'upper_bound':
+                    '''
+                    Add a constraint related to the bound of output. 
+                    '''
+                    tmp = x_train.reshape(1, -1)
 
-                    constraint = f'{var} = {previous_var}'
-                    constraints.append(constraint)
+                    before_softmax = model.layers[-2]
+                    intermediate_layer_model = Model(inputs=model.inputs,
+                                                     outputs=before_softmax.output)
+                    lock.acquire()
+                    with thread_config.graph.as_default():
+                        # must use when using thread
+                        prediction = intermediate_layer_model.predict(tmp)
+                    lock.release()
+                    # logger.debug(f'The prediction of the current seed (before softmax): {prediction}')
 
-                    smt_constraint = f'(assert(= {var} {previous_var}))'
+                    smt_constraints.append(f'; output constraints')
+                    true_label = open(thread_config.true_label_seed_file, "r").readline()
+                    old_probability = prediction[0][int(true_label)]
+                    smt_constraint = f'(assert (< {left} {old_probability}) )'
+                    logger.debug(f'Output constraint = {smt_constraint}')
                     smt_constraints.append(smt_constraint)
 
-        elif (not keras_layer.is_dense(current_layer) and keras_layer.is_activation(current_layer)) \
-                or keras_layer.is_dropout(current_layer):
-            pre_layer_idx = current_layer_idx - 1
-            pre_layer = model.layers[pre_layer_idx]
+        elif keras_model.is_CNN(model):
+            logger.debug(f'Does not support CNN')
 
-            constraints.append(f'; ({pre_layer.name}, {current_layer.name})')
-            smt_constraints.append(f'; ({pre_layer.name}, {current_layer.name})')
-
-            units = keras_layer.get_number_of_units(model, pre_layer_idx)
-            for unit_idx in range(units):
-                '''
-                type constraint 1
-                '''
-                constraint = f'v_{pre_layer_idx}_{unit_idx} = u_{current_layer_idx}_{unit_idx}'
-                constraints.append(constraint)
-
-                '''
-                type constraint 2
-                '''
-                smt_constraint = f'(assert(= v_{pre_layer_idx}_{unit_idx} u_{current_layer_idx}_{unit_idx}))'
-                smt_constraints.append(smt_constraint)
-
-    return constraints, smt_constraints
-
-
-def create_activation_constraints(model_object):
-    assert (isinstance(model_object, abstract_dataset))
-    constraints = []
-    smt_constraints = []
-
-    model = model_object.get_model()
-    if keras_model.is_ANN(model):
-        for current_layer_idx, current_layer in enumerate(model.layers):
-            units = keras_layer.get_number_of_units(model, current_layer_idx)
-
-            if keras_activation.is_activation(current_layer):
-                constraints.append(f'; {current_layer.name}')
-                smt_constraints.append(f'; {current_layer.name}')
-
-                # Create the formula based on the type of activation
-                if keras_activation.is_relu(current_layer):
-                    for unit_idx in range(units):
-                        '''
-                        constraint type 1
-                        '''
-                        constraint = f'v_{current_layer_idx}_{unit_idx} = u_{current_layer_idx}_{unit_idx} >= 0 ? u_{current_layer_idx}_{unit_idx} : 0 '
-                        constraints.append(constraint)
-
-                        '''
-                        constraint type 2
-                        v = u>0?x:0
-                        '''
-                        smt_constraint = f'(= v_{current_layer_idx}_{unit_idx} (ite (>= u_{current_layer_idx}_{unit_idx} 0) u_{current_layer_idx}_{unit_idx} 0))'
-                        smt_constraint = f'(assert{smt_constraint})'
-                        smt_constraints.append(smt_constraint)
-
-                elif keras_activation.is_tanh(current_layer):
-                    for unit_idx in range(units):
-                        '''
-                        constraint type 1
-                        '''
-                        constraint = f'v_{current_layer_idx}_{unit_idx} = (1 - exp(2*u_{current_layer_idx}_{unit_idx})) / (1 + exp(2*u_{current_layer_idx}_{unit_idx}))'
-                        constraints.append(constraint)
-
-                        '''
-                        constraint type 2
-                        1 - exp(2*a)
-                        a = u_{current_layer_idx}_{unit_idx}
-                        '''
-                        smt_constraint = f'(= v_{current_layer_idx}_{unit_idx} (/ (- 1 (exp (* 2 u_{current_layer_idx}_{unit_idx}))) (+ 1 (exp (* 2 u_{current_layer_idx}_{unit_idx})))))'
-                        smt_constraint = f'(assert{smt_constraint})'
-                        smt_constraints.append(smt_constraint)
-
-                elif keras_activation.is_softmax(current_layer):
-                    if current_layer_idx == len(model.layers) - 1:
-                        # no need to create constraints for the output layer
-                        smt_constraints.append(f'; The last layer is softmax: no need to create constraints!')
-                        continue
-                    else:
-                        '''
-                        constraint type 1
-                        '''
-                        # add denominator
-                        sum = f'sum_{current_layer_idx}_{unit_idx}'
-                        constraint = f'{sum} = '
-                        for unit_idx in range(units):
-                            if unit_idx == units - 1:
-                                constraint += f'exp(-u_{current_layer_idx}_{unit_idx})'
-                            else:
-                                constraint += f'exp(-u_{current_layer_idx}_{unit_idx}) + '
-                        constraints.append(constraint)
-
-                        for unit_idx in range(units):
-                            constraint = f'v_{current_layer_idx}_{unit_idx} = exp(-u_{current_layer_idx}_{unit_idx}) / {sum}'
-                            constraints.append(constraint)
-                        '''
-                        constraint type 2
-                        '''
-                        smt_sum_name = f'sum_{current_layer_idx}_{unit_idx}'
-                        smt_constraints.append(f'(declare-fun {smt_sum_name} () Real)')
-
-                        smt_sum = ''
-                        for unit_idx in range(units):
-                            if unit_idx == 0:
-                                smt_sum = f'(exp (- 0 u_{current_layer_idx}_{unit_idx}))'
-                            else:
-                                smt_sum = f'(+ {smt_sum} (exp (- 0 u_{current_layer_idx}_{unit_idx})))'
-
-                        smt_constraint = f'(= {smt_sum_name} {smt_sum})'
-                        smt_constraint = f'(assert{smt_constraint})'
-                        smt_constraints.append(smt_constraint)
-
-                        #
-                        for unit_idx in range(units):
-                            smt_constraint = f'(= v_{current_layer_idx}_{unit_idx} (/ (exp (- 0 u_{current_layer_idx}_{unit_idx})) {smt_sum_name}))'
-                            smt_constraint = f'(assert{smt_constraint})'
-                            smt_constraints.append(smt_constraint)
-
-            elif (keras_layer.is_dense(current_layer) and not keras_layer.is_activation(current_layer)) or \
-                    keras_layer.is_dropout(current_layer):
-                # the current layer is dense and not an activation
-                constraints.append(f'; {current_layer.name}')
-                smt_constraints.append(f'; {current_layer.name}')
-
-                for unit_idx in range(units):
-                    '''
-                    constraint type 1
-                    '''
-                    constraint = f'u_{current_layer_idx}_{unit_idx} = v_{current_layer_idx}_{unit_idx}'
-                    constraints.append(constraint)
-
-                    '''
-                    constraint type 2
-                    '''
-                    smt_constraint = f'(assert(= u_{current_layer_idx}_{unit_idx} v_{current_layer_idx}_{unit_idx}))'
-                    smt_constraints.append(smt_constraint)
-            else:
-                logger.debug(f'Does not support layer {current_layer}')
-
-    elif keras_model.is_CNN(model):
-        logger.debug(f'Model is not CNN. Does not support!')
-
-    else:
-        logger.debug(f'Unable to detect the type of neural network')
-
-    return constraints, smt_constraints
-
-
-def create_variable_declarations(model_object, type_feature=get_config(["constraint_config", "feature_input_type"])):
-    assert (isinstance(model_object, abstract_dataset))
-    constraints = []
-    constraints.append(f'; variable declaration')
-
-    model = model_object.get_model()
-    if keras_model.is_ANN(model):
-        if isinstance(model, keras.engine.sequential.Sequential):
-            # for input layer
-            input_shape = model.input_shape  # (None, n_features)
-            n_features = input_shape[1]
-
-            for feature_idx in range(n_features):
-                if type_feature == 'float':
-                    constraint = f'(declare-fun feature_{feature_idx} () Real)'
-                    constraints.append(constraint)
-                elif type_feature == 'int':
-                    constraint = f'(declare-fun feature_{feature_idx} () Int)'
-                    constraints.append(constraint)
-                else:
-                    logger.debug(f'Does not support the type {type_feature}')
-
-            # for other layers
-            for layer_idx, layer in enumerate(model.layers):
-                # get number of hidden units
-                units = keras_layer.get_number_of_units(model, layer_idx)
-
-                # value of neuron in all layers except input layer must be real
-                if units != None:
-                    for unit_idx in range(units):
-                        before_activation = f'(declare-fun u_{layer_idx}_{unit_idx} () Real)'
-                        constraints.append(before_activation)
-
-                        after_activation = f'(declare-fun v_{layer_idx}_{unit_idx} () Real)'
-                        constraints.append(after_activation)
-
-    elif keras_model.is_CNN(model):
-        logger.debug(f'Model is not CNN. Does not support!')
-
-    else:
-        logger.debug(f'Unable to detect the type of neural network')
-
-    return constraints
-
-
-def create_feature_constraints_from_an_observation(model_object, x_train, delta=DELTA_PREFIX_NAME):
-    assert (isinstance(model_object, abstract_dataset))
-    constraints = []
-    smt_constraints = []
-
-    model = model_object.get_model()
-    if keras_model.is_ANN(model):
-
-        if isinstance(model, keras.engine.sequential.Sequential):
-            input_shape = model.input_shape  # (None, n_features)
-            constraints.append('; input value')
-            smt_constraints.append('; input value')
-
-            n_features = input_shape[1]
-            x_train = x_train.reshape(-1)
-            if n_features == x_train.shape[0]:
-                for feature_idx in range(n_features):
-                    '''
-                    constraint type 1
-                    '''
-                    constraint = f'feature_{feature_idx}  >= {x_train[feature_idx] * 255}-{delta}_{feature_idx} ' \
-                        f' and ' \
-                        f' feature_{feature_idx} <= {x_train[feature_idx] * 255} + {delta}_{feature_idx}'
-                    constraints.append(constraint)
-
-                    '''
-                    constraint type 2
-                    '''
-                    smt_constraints.append(f'(declare-fun {delta}_{feature_idx} () Int)')
-                    smt_constraint = \
-                        f'(assert(and ' \
-                        + f'(>= feature_{feature_idx} (- {x_train[feature_idx] * 255} {delta}_{feature_idx})) ' \
-                            f'(<= feature_{feature_idx} (+ {x_train[feature_idx] * 255} {delta}_{feature_idx}))' \
-                        + f'))'
-                    smt_constraints.append(smt_constraint)
-            else:
-                logger.debug(f'The size of sample does not match!')
         else:
-            logger.debug(f'The input model must be sequential')
+            logger.debug(f'Unable to detect the type of neural network')
 
-    elif keras_model.is_CNN(model):
-        logger.debug(f'Model is not CNN. Does not support!')
+        return constraints, smt_constraints
 
-    else:
-        logger.debug(f'Unable to detect the type of neural network')
+    def create_bound_of_feature_constraints(self, model_object,
+                                            feature_lower_bound, feature_upper_bound,
+                                            delta_lower_bound, delta_upper_bound, delta_prefix):
+        assert (feature_lower_bound <= feature_upper_bound)
+        assert (delta_lower_bound <= delta_upper_bound)
+        assert (delta_prefix != None and delta_prefix != '')
+        assert (isinstance(model_object, ABSTRACT_DATASET))
+        smt_constraints = []
 
-    return constraints, smt_constraints
+        model = model_object.get_model()
+        if keras_model.is_ANN(model):
+            first_layer = model.layers[0]
+            weights = first_layer.get_weights()  # in which the second are biases, the first is kernel
+            kernel = weights[0]
+            n_features = kernel.shape[0]
 
-
-def create_output_constraints_from_an_observation(model_object, x_train, y_train, thread_config):
-    assert (isinstance(model_object, abstract_dataset))
-    constraints = []
-    smt_constraints = []
-    model = model_object.get_model()
-
-    if keras_model.is_ANN(model):
-        assert (x_train.shape[0] == 1 and len(x_train.shape) == 2)
-
-        last_layer_idx = len(model.layers) - 1
-        last_layer = model.layers[last_layer_idx]
-        true_label = y_train
-        left = f'u_{last_layer_idx}_{true_label}'
-
-        # get the number of hidden units in the output layer
-        n_classes = keras_layer.get_number_of_units(model, last_layer_idx)
-
-        if n_classes != None:
             '''
-            constraint type 1
+            add delta constraint type
             '''
-            right = ''
-            for class_idx in range(n_classes):
-                if class_idx == n_classes - 1:
-                    right += f'u_{last_layer_idx}_{class_idx}'
-                else:
-                    right += f'u_{last_layer_idx}_{class_idx}, '
-            right = f'max({right})'
-            constraint = f'{left} = {right}'
-            constraints.append(f'; output constraints')
-            constraints.append(constraint)
+            # use :.25f to avoid 'e' in the value of bound, for example, 1e-3
+            smt_constraints.append(f'; bound of delta')
+            for feature_idx in range(n_features):
+                delta_constraint = f'(assert(and (<= {delta_prefix}_{feature_idx} {delta_upper_bound:.10f}) (>= {delta_prefix}_{feature_idx} {delta_lower_bound:.10f})))'
+                smt_constraints.append(delta_constraint)
 
-            smt_type_constraint = get_config(["constraint_config", "output_layer_type_constraint"])
-
-            if smt_type_constraint == 'or':
-                smt_constraint = ''
-                for class_idx in range(n_classes):
-                    if class_idx != true_label:
-                        if class_idx == 0:
-                            smt_constraint = f'(< {left} u_{last_layer_idx}_{class_idx}) '
-                        else:
-                            smt_constraint = f'(or {smt_constraint} (< {left} u_{last_layer_idx}_{class_idx})) '
-                smt_constraints.append(f'; output constraints')
-                smt_constraint = f'(assert {smt_constraint})'
+            '''
+            add constraint type 2
+            '''
+            smt_constraints.append(f'; bound of features')
+            for feature_idx in range(n_features):
+                # Note 1: use :.25f to avoid 'e' in the value of bound, for example, 1e-3
+                # for example: '(assert(and (>= feature_494 0) (<= feature_494 0.1)))'
+                # corresponding to: feature_494>=0 and feature_494<=0.1
+                # Note 2: Because the model is ANN, the features fed into a 1-D array.
+                smt_constraint = f'(assert(and ' \
+                                 f'(>= feature_{feature_idx} {feature_lower_bound:.10f}) ' \
+                                 f'(<= feature_{feature_idx} {feature_upper_bound:.10f})' \
+                                 f'))'
                 smt_constraints.append(smt_constraint)
 
-            elif smt_type_constraint == 'upper_bound':
+        elif keras_model.is_CNN(model):
+            logger.debug(f'Does not support CNN')
+
+        else:
+            logger.debug(f'Unable to detect the type of neural network')
+
+        return smt_constraints
+
+    def adversarial_image_generation(self, seeds, thread_config, model_object, just_find_one_seed):
+        assert (isinstance(model_object, ABSTRACT_DATASET))
+        assert (isinstance(thread_config, ThreadConfig))
+        assert (len(seeds.shape) == 1)
+
+        for seed_index in seeds:
+            seed_index = int(seed_index)
+            thread_config.setSeedIndex(seed_index)
+            thread_config.load_config_from_file()
+
+            stop = False
+            if just_find_one_seed:
+                logger.debug(f"just_find_one_seed is turned on")
+                # get selected seed before
+                if os.path.exists(thread_config.selected_seed_index_file_path):
+                    selected_seeds = pd.read_csv(thread_config.selected_seed_index_file_path, header=None).to_numpy()
+                    if len(selected_seeds) >= 1:
+                        logger.debug(f"Found seeds: selected seeds = {selected_seeds}. Terminate!")
+
+                        logger.debug(f"Deleting {thread_config.analyzed_seed_index_file_path}")
+                        if os.path.exists(thread_config.analyzed_seed_index_file_path):
+                            os.remove(thread_config.analyzed_seed_index_file_path)
+
+                        logger.debug(f"Deleting {thread_config.selected_seed_index_file_path}")
+                        if os.path.exists(thread_config.selected_seed_index_file_path):
+                            os.remove(thread_config.selected_seed_index_file_path)
+                        stop = True
+                        break
+            if not stop:
                 '''
-                Add a constraint related to the bound of output. 
+                if the seed is never analyzed before
                 '''
-                tmp = x_train.reshape(1, -1)
-
-                before_softmax = model.layers[-2]
-                intermediate_layer_model = Model(inputs=model.inputs,
-                                                 outputs=before_softmax.output)
+                # append the current seed index to the analyzed seed index file
                 lock.acquire()
-                with thread_config.graph.as_default():
-                    # must use when using thread
-                    prediction = intermediate_layer_model.predict(tmp)
-                lock.release()
-                # logger.debug(f'The prediction of the current seed (before softmax): {prediction}')
-
-                smt_constraints.append(f'; output constraints')
-                true_label = open(thread_config.true_label_seed_file, "r").readline()
-                old_probability = prediction[0][int(true_label)]
-                smt_constraint = f'(assert (< {left} {old_probability}) )'
-                logger.debug(f'Output constraint = {smt_constraint}')
-                smt_constraints.append(smt_constraint)
-
-    elif keras_model.is_CNN(model):
-        logger.debug(f'Does not support CNN')
-
-    else:
-        logger.debug(f'Unable to detect the type of neural network')
-
-    return constraints, smt_constraints
-
-
-def create_bound_of_feature_constraints(model_object,
-                                        feature_lower_bound, feature_upper_bound,
-                                        delta_lower_bound, delta_upper_bound, delta_prefix=DELTA_PREFIX_NAME):
-    assert (feature_lower_bound <= feature_upper_bound)
-    assert (delta_lower_bound <= delta_upper_bound)
-    assert (delta_prefix != None and delta_prefix != '')
-    assert (isinstance(model_object, abstract_dataset))
-    smt_constraints = []
-
-    model = model_object.get_model()
-    if keras_model.is_ANN(model):
-        first_layer = model.layers[0]
-        weights = first_layer.get_weights()  # in which the second are biases, the first is kernel
-        kernel = weights[0]
-        n_features = kernel.shape[0]
-
-        '''
-        add delta constraint type
-        '''
-        # use :.25f to avoid 'e' in the value of bound, for example, 1e-3
-        smt_constraints.append(f'; bound of delta')
-        for feature_idx in range(n_features):
-            delta_constraint = f'(assert(and (<= {delta_prefix}_{feature_idx} {delta_upper_bound:.10f}) (>= {delta_prefix}_{feature_idx} {delta_lower_bound:.10f})))'
-            smt_constraints.append(delta_constraint)
-
-        '''
-        add constraint type 2
-        '''
-        smt_constraints.append(f'; bound of features')
-        for feature_idx in range(n_features):
-            # Note 1: use :.25f to avoid 'e' in the value of bound, for example, 1e-3
-            # for example: '(assert(and (>= feature_494 0) (<= feature_494 0.1)))'
-            # corresponding to: feature_494>=0 and feature_494<=0.1
-            # Note 2: Because the model is ANN, the features fed into a 1-D array.
-            smt_constraint = f'(assert(and ' \
-                f'(>= feature_{feature_idx} {feature_lower_bound:.10f}) ' \
-                f'(<= feature_{feature_idx} {feature_upper_bound:.10f})' \
-                f'))'
-            smt_constraints.append(smt_constraint)
-
-    elif keras_model.is_CNN(model):
-        logger.debug(f'Does not support CNN')
-
-    else:
-        logger.debug(f'Unable to detect the type of neural network')
-
-    return smt_constraints
-
-
-def define_mathematical_function():
-    exp = ['(define-fun exp ((x Real)) Real\n\t(^ 2.718281828459045 x))']
-    return exp
-
-
-def create_constraints_file(model_object, seed_index, thread_config):
-    assert (isinstance(model_object, abstract_dataset))
-    assert (seed_index >= 0)
-
-    # get an observation
-    x_train, y_train = model_object.get_an_observation(seed_index)
-    with open(thread_config.seed_file, mode='w') as f:
-        seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        seed.writerow(x_train[0])
-    with open(thread_config.true_label_seed_file, 'w') as f:
-        f.write(str(y_train))
-
-    # generate constraints
-    smt_exp = define_mathematical_function()
-
-    variable_types = create_variable_declarations(model_object)
-
-    layers_constraints, smt_layers_constraints = create_constraint_between_layers(model_object)
-
-    activation_constraints, smt_activation_constraints = create_activation_constraints(model_object)
-
-    input_constraints, smt_input_constraints = create_feature_constraints_from_an_observation(model_object, x_train)
-
-    output_constraints, smt_output_constraints = create_output_constraints_from_an_observation(model_object, x_train,
-                                                                                               y_train, thread_config)
-    smt_bound_input_constraints = create_bound_of_feature_constraints(model_object=model_object,
-                                                                      delta_prefix=DELTA_PREFIX_NAME,
-                                                                      feature_lower_bound=get_config(
-                                                                          ["constraint_config", "feature_lower_bound"]),
-                                                                      feature_upper_bound=get_config(
-                                                                          ["constraint_config", "feature_upper_bound"]),
-                                                                      delta_lower_bound=get_config(
-                                                                          ["constraint_config", "delta_lower_bound"]),
-                                                                      delta_upper_bound=get_config(
-                                                                          ["constraint_config", "delta_upper_bound"]))
-
-    # create constraint file
-    with open(thread_config.constraints_file, 'w') as f:
-        f.write(f'(set-option :timeout {get_config(["z3", "time_out"])})\n')
-        #f.write(f'(using-params smt :random-seed {ran.randint(1, 101)})\n')
-
-        for constraint in smt_exp:
-            f.write(constraint + '\n')
-
-        for constraint in variable_types:
-            f.write(constraint + '\n')
-
-        for constraint in smt_layers_constraints:
-            f.write(constraint + '\n')
-
-        for constraint in smt_activation_constraints:
-            f.write(constraint + '\n')
-
-        for constraint in smt_input_constraints:
-            f.write(constraint + '\n')
-
-        for constraint in smt_bound_input_constraints:
-            f.write(constraint + '\n')
-
-        for constraint in smt_output_constraints:
-            f.write(constraint + '\n')
-
-        f.write('(check-sat)\n')
-        f.write('(get-model)\n')
-
-
-def image_generation(seeds, thread_config, model_object):
-    assert (isinstance(model_object, abstract_dataset))
-    assert (len(seeds.shape) == 1)
-
-    for seed_index in seeds:
-        seed_index = int(seed_index)
-        '''
-        if the seed is never analyzed before
-        '''
-        # append the current seed index to the analyzed seed index file
-        lock.acquire()
-        with open(thread_config.analyzed_seed_index_file_path, mode='a') as f:
-            f.write(str(seed_index) + ',')
-        lock.release()
-
-        # clean the environment
-        if os.path.exists(thread_config.true_label_seed_file):
-            os.remove(thread_config.true_label_seed_file)
-        if os.path.exists(thread_config.seed_index_file):
-            os.remove(thread_config.seed_index_file)
-        if os.path.exists(thread_config.constraints_file):
-            os.remove(thread_config.constraints_file)
-        if os.path.exists(thread_config.z3_solution_file):
-            os.remove(thread_config.z3_solution_file)
-        if os.path.exists(thread_config.z3_normalized_output_file):
-            os.remove(thread_config.z3_normalized_output_file)
-
-        logger.debug(f'{thread_config.thread_name}: seed index = {seed_index}')
-        with open(thread_config.seed_index_file, mode='w') as f:
-            f.write(str(seed_index))
-
-        # generate constraints
-        logger.debug(f'{thread_config.thread_name}: generate constraints')
-        create_constraints_file(model_object, seed_index, thread_config)
-
-        # call SMT-Solver
-        logger.debug(f'{thread_config.thread_name}: call SMT-Solver to solve the constraints')
-        command = f"{thread_config.z3_path} -smt2 {thread_config.constraints_file} > {thread_config.z3_solution_file}"
-        # logger.debug(f'\t{thread_config.thread_name}: command = {command}')
-        os.system(command)
-
-        # parse solver solution
-        logger.debug(f'{thread_config.thread_name}: parse solver solution')
-        tmp1 = thread_config.z3_solution_file
-        tmp2 = thread_config.z3_normalized_output_file
-        command = get_config(["z3", "z3_solution_parser_command"]) + f' {tmp1} ' + f'{tmp2}'
-
-        logger.debug(f'{thread_config.thread_name}: \t{command}')
-        os.system(command)
-
-        # export the modified image to files
-        max_wait = 10
-        while (max_wait >=0 and not os.path.exists(thread_config.z3_normalized_output_file)):
-            time.sleep(0.5)
-            max_wait = max_wait -1
-
-        modified_image = get_new_image(solution_path=thread_config.z3_normalized_output_file).reshape(-1) # flatten
-        assert (len(modified_image.shape) == 1)
-        if len(modified_image) > 0:
-            csv_new_image_path = get_config(['files', 'new_csv_image_file_path']) \
-                .replace('{seed_index}', str(seed_index))
-            with open(csv_new_image_path, mode='w') as f:
-                csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                csv_writer.writerow(modified_image)
-            png_new_image_path = get_config(['files', 'new_image_file_path']).replace('{seed_index}', str(seed_index))
-            matplotlib.image.imsave(png_new_image_path, modified_image.reshape(model_object.get_image_shape()))
-
-        # export the original image to files
-        original_image = pd.read_csv(thread_config.seed_file, header=None).to_numpy().reshape(-1)  # flatten
-        assert (len(original_image.shape) == 1)
-        if len(original_image) > 0:
-            csv_old_image_path = get_config(['files', 'old_csv_image_file_path']).replace('{seed_index}',
-                                                                                          str(seed_index))
-            with open(csv_old_image_path, mode='w') as f:
-                csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                csv_writer.writerow(original_image)
-            png_old_image_path = get_config(['files', 'old_image_file_path']).replace('{seed_index}', str(seed_index))
-            matplotlib.image.imsave(png_old_image_path, original_image.reshape(model_object.get_image_shape()))
-
-        if len(modified_image) > 0 and len(original_image) > 0 and len(modified_image) == len(original_image):
-            # check the valid property of the modified image
-            is_valid, original_prediction, modified_prediction = is_valid_modified_image(
-                model_object=model_object, config=thread_config,
-                csv_original_image_path=csv_old_image_path,
-                csv_new_image_path=csv_new_image_path)
-            if is_valid:
-                lock.acquire()
-                with open(thread_config.selected_seed_index_file_path, mode='a') as f:
+                with open(thread_config.analyzed_seed_index_file_path, mode='a') as f:
+                    logger.debug(f"Adding seed {seed_index} to {thread_config.analyzed_seed_index_file_path}")
                     f.write(str(seed_index) + ',')
                 lock.release()
 
-                # create figure comparison
-                if thread_config.should_plot:
-                    png_comparison_image_path = get_config(['files', 'comparison_file_path']).replace(
-                        '{seed_index}',
-                        str(seed_index))
-                    create_figure_comparison(model_object, original_image, modified_image, original_prediction,
-                                             modified_prediction,
-                                             png_comparison_image_path)
+                # clean the environment
+                if os.path.exists(thread_config.true_label_seed_file):
+                    os.remove(thread_config.true_label_seed_file)
+                if os.path.exists(thread_config.seed_index_file):
+                    os.remove(thread_config.seed_index_file)
+                if os.path.exists(thread_config.constraints_file):
+                    os.remove(thread_config.constraints_file)
+                if os.path.exists(thread_config.z3_solution_file):
+                    os.remove(thread_config.z3_solution_file)
+                if os.path.exists(thread_config.z3_normalized_output_file):
+                    os.remove(thread_config.z3_normalized_output_file)
 
-                # compute distance
-                l0_distance = compute_L0_distance(original_image, modified_image)
-                l1_distance = compute_L1_distance(original_image, modified_image)
-                l2_distance = compute_L2_distance(original_image, modified_image)
-                linf_distance = compute_inf_distance(original_image, modified_image)
+                logger.debug(
+                    f'{thread_config.thread_name}: seed index = {seed_index}, delta_bound = [{thread_config.delta_lower_bound}, {thread_config.delta_upper_bound}]')
+                if thread_config.attacked_neuron['enabled'] == "True":
+                    logger.debug(
+                        f"attacked neuron: layer index = {thread_config.attacked_neuron['layer_index']}, neuron index = {thread_config.attacked_neuron['neuron_index']}")
 
-                diff_pixels = compute_the_different_pixels(original_image, modified_image)
-                logger.debug(f'diff_pixels = {diff_pixels}')
+                with open(thread_config.seed_index_file, mode='w') as f:
+                    f.write(str(seed_index))
 
-                # add to comparison file
-                with open(thread_config.true_label_seed_file, 'r') as f:
-                    true_label = int(f.read())
+                # generate constraints
+                logger.debug(f'{thread_config.thread_name}: generate constraints')
+                self.create_constraints_file(model_object, seed_index, thread_config)
 
-                lock.acquire()
-                with open(get_config(['files', 'full_comparison']), mode='a') as f:
-                    writer = csv.writer(f)
-                    writer.writerow([seed_index, true_label, original_prediction, modified_prediction, is_valid,
-                                       diff_pixels, l0_distance, l1_distance, l2_distance,linf_distance])
-                lock.release()
-            else:
-                os.remove(csv_old_image_path)
-                os.remove(csv_new_image_path)
-                os.remove(png_new_image_path)
-                os.remove(png_old_image_path)
-        else:
-            logger.debug(f'The constraints have no solution')
-        logger.debug('--------------------------------------------------')
-        # break
+                # call SMT-Solver
+                logger.debug(f'{thread_config.thread_name}: call SMT-Solver to solve the constraints')
+                command = f"{thread_config.z3_path} -smt2 {thread_config.constraints_file} > {thread_config.z3_solution_file}"
+                logger.debug(f'\t{thread_config.thread_name}: command = {command}')
+                os.system(command)
 
+                # parse solver solution
+                logger.debug(f'{thread_config.thread_name}: parse solver solution')
+                command = thread_config.z3_solution_parser_command + f' {thread_config.z3_solution_file} ' + f'{thread_config.z3_normalized_output_file}'
 
-def set_up_config(thread_idx):
-    assert (thread_idx >= 0)
-    OLD = '{thread_idx}'
+                logger.debug(f'{thread_config.thread_name}: \t{command}')
+                os.system(command)
 
-    config = SimpleNamespace(**dict())
-    config.dataset = get_config(["dataset"])
-    config.seed_file = get_config(["files", "seed_file_path"]).replace(OLD, str(thread_idx))
-    config.true_label_seed_file = get_config(["files", "true_label_seed_file_path"]). \
-        replace(OLD, str(thread_idx))
-    config.seed_index_file = get_config(["files", "seed_index_file_path"]).replace(OLD, str(thread_idx))
-    config.constraints_file = get_config(["z3", "constraints_file_path"]).replace(OLD, str(thread_idx))
-    config.z3_solution_file = get_config(["z3", "z3_solution_path"]).replace(OLD, str(thread_idx))
-    config.z3_normalized_output_file = get_config(["z3", "z3_normalized_solution_path"]) \
-        .replace(OLD, str(thread_idx))
-    config.z3_path = get_config(["z3", "z3_solver_path"]).replace(OLD, str(thread_idx))
-    config.graph = tf.get_default_graph()
-    config.analyzed_seed_index_file_path = get_config(["files", "analyzed_seed_index_file_path"])
-    config.selected_seed_index_file_path = get_config(["files", "selected_seed_index_file_path"])
-    config.thread_name = f'thread_{thread_idx}'
-    config.should_plot = False  # by default, it should be False when running in multithread
-    config.z3_solution_parser_command = get_config(["z3", "z3_solution_parser_command"])
-    config.new_image_file_path = get_config(["files", "new_image_file_path"])
-    config.comparison_file_path = get_config(["files", "comparison_file_path"])
-    return config
+                # export the modified image to files
+                max_wait = 20
+                while (max_wait >= 0 and not os.path.exists(thread_config.z3_normalized_output_file)):
+                    time.sleep(0.5)
+                    max_wait = max_wait - 1
 
+                # get the modified image
+                modified_image = get_new_image(solution_path=thread_config.z3_normalized_output_file).reshape(
+                    -1)  # flatten
+                assert (len(modified_image.shape) == 1)
 
-def read_seeds_from_config():
-    start_seed = get_config([model_object.get_name_dataset(), "start_seed"])
-    end_seed = get_config([model_object.get_name_dataset(), "end_seed"])
-    seeds = np.arange(start_seed, end_seed)
-    return seeds
+                # get the original image
+                original_image = pd.read_csv(thread_config.seed_file, header=None).to_numpy().reshape(-1)  # flatten
+                assert (len(original_image.shape) == 1)
 
+                if len(modified_image) > 0 and len(original_image) > 0 and len(modified_image) == len(original_image):
 
-def read_seeds_from_file(csv_file):
-    selected_seed_indexes = pd.read_csv(csv_file, header=None).to_numpy()
-    selected_seed_indexes = selected_seed_indexes.reshape(-1)
-    return selected_seed_indexes
+                    # export the original image to files
+                    if len(original_image) > 0:
+                        csv_old_image_path = thread_config.old_csv_image_file_path
+                        with open(csv_old_image_path, mode='w') as f:
+                            csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                            csv_writer.writerow(original_image)
+                        png_old_image_path = thread_config.old_image_file_path
+                        matplotlib.image.imsave(png_old_image_path,
+                                                original_image.reshape(model_object.get_image_shape()))
 
+                    # export the modified image to file
+                    if len(modified_image) > 0:
+                        csv_new_image_path = thread_config.new_csv_image_file_path
+                        with open(csv_new_image_path, mode='w') as f:
+                            csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                            csv_writer.writerow(modified_image)
+                        png_new_image_path = thread_config.new_image_file_path
+                        matplotlib.image.imsave(png_new_image_path,
+                                                modified_image.reshape(model_object.get_image_shape()))
 
-def generate_samples(model_object, seeds, n_threads):
-    """
-    Generate adversarial samples
-    :return:
-    """
-    # remove the analyzed seeds
-    analyzed_seed_indexes = []
-    analyzed = get_config(['files', 'analyzed_seed_index_file_path'])
-    if os.path.exists(analyzed):
-        analyzed_seed_indexes = pd.read_csv(analyzed, header=None).to_numpy()
-    not_analyzed_seeds = []
-    for seed in seeds:
-        if seed not in analyzed_seed_indexes:
-            not_analyzed_seeds.append(seed)
-    not_analyzed_seeds = np.asarray(not_analyzed_seeds)
-    logger.debug(f'Putting {len(not_analyzed_seeds)} seeds into {n_threads} threads')
+                    # check the valid property of the modified image
+                    is_valid, original_prediction, modified_prediction = is_valid_modified_image(
+                        model_object=model_object, threadconfig=thread_config,
+                        csv_original_image_path=csv_old_image_path,
+                        csv_new_image_path=csv_new_image_path)
+                    #is_valid = not is_valid # for testing
+                    if is_valid:
+                        logger.debug(f"Good news! The modified image is valid")
 
-    # run multithread
-    if n_threads >= 2:
-        # prone to error
-        n_single_thread_seeds = int(np.floor((len(not_analyzed_seeds)) / n_threads))
-        logger.debug(f'n_single_thread_seeds = {n_single_thread_seeds}')
-        threads = []
+                        lock.acquire()
+                        with open(thread_config.selected_seed_index_file_path, mode='a') as f:
+                            logger.debug(f"Appending seed {seed_index} to the selected index file")
+                            f.write(str(seed_index) + ',')
+                        lock.release()
 
-        for thread_idx in range(n_threads):
-            # get range of seed in the current thread
-            if thread_idx == n_threads - 1:
-                thread_seeds = np.arange(n_single_thread_seeds * (n_threads - 1), len(not_analyzed_seeds))
-            else:
-                thread_seeds = np.arange(n_single_thread_seeds * thread_idx, n_single_thread_seeds * (thread_idx + 1))
+                        # create figure comparison
+                        if thread_config.should_plot:
+                            png_comparison_image_path = thread_config.comparison_file_path
+                            logger.debug(f"Creating figure comparison")
+                            create_figure_comparison(model_object, original_image, modified_image, original_prediction,
+                                                     modified_prediction,
+                                                     png_comparison_image_path)
 
-            # read the configuration of a thread
-            thread_config = set_up_config(thread_idx)
-            thread_config.image_shape = model_object.get_image_shape()
-            thread_config.should_plot = False  # if we are running on multi-thread, it should be False
+                        # compute distance
+                        l0_distance = compute_L0_distance(original_image, modified_image)
+                        l1_distance = compute_L1_distance(original_image, modified_image)
+                        l2_distance = compute_L2_distance(original_image, modified_image)
+                        linf_distance = compute_inf_distance(original_image, modified_image)
 
-            # create new thread
-            t = Thread(target=image_generation, args=(thread_seeds, thread_config, model_object))
-            threads.append(t)
+                        diff_pixels = compute_the_different_pixels(original_image, modified_image)
+                        logger.debug(f'diff_pixels = {diff_pixels}')
 
-        # start all threads
-        for thread in threads:
-            thread.start()
+                        # add to comparison file
+                        with open(thread_config.true_label_seed_file, 'r') as f:
+                            true_label = int(f.read())
 
-        for thread in threads:
-            thread.join()
+                        lock.acquire()
+                        with open(thread_config.full_comparison, mode='a') as f:
+                            writer = csv.writer(f)
 
-    elif n_threads == 1:
-        # read the configuration of a thread
-        main_thread_config = set_up_config(0)
-        main_thread_config.image_shape = model_object.get_image_shape()
-        main_thread_config.should_plot = True
-        # run on the main thread
-        image_generation(not_analyzed_seeds, main_thread_config, model_object)
+                            if thread_config.attacked_neuron['enabled'] == 'True':
+                                writer.writerow([seed_index, thread_config.attacked_neuron['layer_index'],
+                                                 thread_config.attacked_neuron['neuron_index'],
+                                                 thread_config.delta_lower_bound, thread_config.delta_upper_bound,
+                                                 true_label, original_prediction, modified_prediction, is_valid,
+                                                 diff_pixels, l0_distance, l1_distance, l2_distance, linf_distance])
+                            else:
+                                writer.writerow(
+                                    [seed_index, thread_config.delta_lower_bound, thread_config.delta_upper_bound,
+                                     true_label, original_prediction, modified_prediction, is_valid,
+                                     diff_pixels, l0_distance, l1_distance, l2_distance, linf_distance])
+                        lock.release()
+                    else:
+                        # the comparison between prediction is invalid
+                        if os.path.exists(csv_old_image_path):
+                            os.remove(csv_old_image_path)
+                        if os.path.exists(csv_new_image_path):
+                            os.remove(csv_new_image_path)
+                        if os.path.exists(png_new_image_path):
+                            os.remove(png_new_image_path)
+                        if os.path.exists(png_old_image_path):
+                            os.remove(png_old_image_path)
+                else:
+                    logger.debug(f'The constraints have no solution')
+                logger.debug('--------------------------------------------------')
+            # break
 
-
-def initialize_dnn_model():
-    # custom code
-    model_object = MNIST()
-    dataset = get_config(["dataset"])
-    model_object.set_num_classes(get_config([dataset, "num_classes"]))
-    model_object.read_data(trainset_path=get_config([dataset, "train_set"]),
-                           testset_path=get_config([dataset, "test_set"]))
-    model_object.load_model(weight_path=get_config([dataset, "weight"]),
-                            structure_path=get_config([dataset, "structure"]),
-                            trainset_path=get_config([dataset, "train_set"]))
-    model_object.set_name_dataset(dataset)
-    model_object.set_image_shape((28, 28))
-    model_object.set_selected_seed_index_file_path(get_config(["files", "selected_seed_index_file_path"]))
-    return model_object
+    def initialize_dnn_model_from_configuration_file(self, model_object):
+        jsonController = ConfigController()
+        dataset = jsonController.get_config(["dataset"])
+        model_object.set_num_classes(jsonController.get_config([dataset, "num_classes"]))
+        model_object.read_data(trainset_path=jsonController.get_config([dataset, "train_set"]),
+                               testset_path=jsonController.get_config([dataset, "test_set"]))
+        model_object.load_model(weight_path=jsonController.get_config([dataset, "weight"]),
+                                structure_path=jsonController.get_config([dataset, "structure"]),
+                                trainset_path=jsonController.get_config([dataset, "train_set"]))
+        model_object.set_name_dataset(dataset)
+        model_object.set_image_shape((28, 28))
+        model_object.set_selected_seed_index_file_path(
+            jsonController.get_config(["files", "selected_seed_index_file_path"]))
+        return model_object
 
 
 if __name__ == '__main__':
-    logging.basicConfig()
+    logging.basicConfig(format='%(process)d-%(levelname)s-%(message)s')
     logging.root.setLevel(logging.DEBUG)
 
-    model_object = initialize_dnn_model()
-    seeds = read_seeds_from_file(csv_file='/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist/seeds.txt')
-    #seeds = read_seeds_from_config()
-    generate_samples(model_object=model_object, seeds=seeds, n_threads=get_config(["n_threads"]))
+    deepconcolic = SMT_DNN()
+    model_object = deepconcolic.initialize_dnn_model_from_configuration_file(FASHION_MNIST())
+    # seeds = deepconcolic.read_seeds_from_file(csv_file='/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist/seeds.txt')
+    seeds = deepconcolic.read_seeds_from_config(model_object)
+    deepconcolic.generate_samples(model_object=model_object, seeds=seeds,
+                                  n_threads=ConfigController().get_config(["n_threads"]))

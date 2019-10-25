@@ -8,7 +8,7 @@ from sklearn.utils import shuffle
 from src.abstract_dataset import *
 
 
-class CIFAR10(abstract_dataset):
+class CIFAR10(ABSTRACT_DATASET):
     def __init__(self):
         super(CIFAR10, self).__init__()
 

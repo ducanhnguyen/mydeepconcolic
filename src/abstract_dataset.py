@@ -6,7 +6,7 @@ from keras.callbacks import ModelCheckpoint
 from keras.models import model_from_json
 
 
-class abstract_dataset:
+class ABSTRACT_DATASET:
     def __init__(self):
         self.__Xtrain = None  # 2-D array: (N_samples, N_features)
         self.__Xtest = None  # 2-D array: (N_samples, N_features)

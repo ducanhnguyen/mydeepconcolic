@@ -7,12 +7,8 @@ from src.abstract_dataset import *
 '''
 Data set: https://www.kaggle.com/c/digit-recognizer
 Train on 42000 samples.
-
-Test the model on kaggle:
-(1) 784 units (input layer), 32 units, 16 units, 10 units 
-    accuracy on original test set = 0.95957 -> 0.95957 (original test set + adversarial samples)
 '''
-class MNIST(abstract_dataset):
+class MNIST(ABSTRACT_DATASET):
 
     def __init__(self):
         super(MNIST, self).__init__()

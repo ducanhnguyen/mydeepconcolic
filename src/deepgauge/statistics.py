@@ -8,10 +8,31 @@ class STATISTICS(abstract_coverage_computation):
     def __init__(self):
         super(STATISTICS, self).__init__()
 
+
+    def get_range_of_neurons(self):
+        bounds = self.draw_boxplot_of_units(plot=False)['bound']
+        neurons = []
+        for key, value in bounds.items():
+            # key: 'layer_idx:1,unit_idx:0'
+            layer_idx_str = key.split(",")[0]
+            layer_idx = int(layer_idx_str.replace("layer_idx:", ""))
+
+            unit_idx_str = key.split(",")[1]
+            unit_idx = int(unit_idx_str.replace("unit_idx:", ""))
+
+            upper = value['upper']
+            lower = value['lower']
+
+            neurons.append([layer_idx, unit_idx, upper, lower])
+
+        keys = ['layer_idx', 'unit_idx', 'upper', 'lower']
+        return neurons, keys
+
     def draw_boxplot_of_layers_over_inputs(self):
         activation_layers, prediction = self.load_model()
         n_coverage_layers = len(activation_layers) - 1  # -1: ignore the last activation layer
         n_observations = len(self.get_X().reshape(len(self.get_X()), -1))
+        print(f"n_observations = {n_observations}")
 
         # compute the layer distribution
         layer_distributions = dict()
@@ -44,6 +65,7 @@ class STATISTICS(abstract_coverage_computation):
         activation_layers, prediction = self.load_model()
         n_coverage_layers = len(activation_layers) - 1  # -1: ignore the last activation layer
         n_observations = len(self.get_X().reshape(len(self.get_X()), -1)) # (None, 1)
+        print(f"n_observations = {n_observations}")
         bounds = dict() # store upper value and lower value of a unit
 
         for idx in range(n_coverage_layers):
@@ -66,7 +88,7 @@ class STATISTICS(abstract_coverage_computation):
 
             if plot:
                 # https://matplotlib.org/3.1.1/gallery/pyplots/boxplot_demo_pyplot.html#sphx-glr-gallery-pyplots-boxplot-demo-pyplot-py
-                plt.boxplot(neuron_values_over_layer, labels=labels, showfliers=False)
+                plt.boxplot(neuron_values_over_layer, labels=labels, showfliers=True)
                 plt.xlabel('unit')
                 plt.ylabel('neuron value')
                 plt.title(f'layer {self.get_model().layers[layer_index_in_model].name}')
@@ -78,17 +100,19 @@ if __name__ == '__main__':
     model_object = FASHION_MNIST()
     model_object.set_num_classes(10)
     model = model_object.load_model(
-        weight_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f1_original.h5',
-        structure_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f1_original.json',
-        trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist_f1/original_train_plus_expansion.csv')
+        weight_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f2_original.h5',
+        structure_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f2_original.json',
+        trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/train.csv')
     model_object.read_data(
         trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/train.csv',
-        testset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/test.csv')
+        #testset_path="/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/test.csv")
+        testset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist_f2_attacked/original_test_plus_expansion.csv')
     print(model.summary())
 
     # compute neuron coverage
     statistics_computator = STATISTICS()
     statistics_computator.set_model(model_object.get_model())
-    statistics_computator.set_X(model_object.get_Xtrain())
-    bounds = statistics_computator.draw_boxplot_of_units()['bound']
+    statistics_computator.set_X(model_object.get_Xtest())
+
+    bounds = statistics_computator.draw_boxplot_of_units(plot=True)['bound']
     print(bounds)

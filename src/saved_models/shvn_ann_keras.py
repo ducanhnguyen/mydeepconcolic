@@ -6,7 +6,7 @@ from skimage import color
 from src.abstract_dataset import *
 
 
-class SHVN(abstract_dataset):
+class SHVN(ABSTRACT_DATASET):
 
     def __init__(self):
         super(SHVN, self).__init__()

@@ -1,7 +1,7 @@
 import csv
 import logging
 import os
-
+import threading
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -10,6 +10,7 @@ from numpy import linalg as LA
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
+lock = threading.Lock()
 
 def get_new_image(solution_path):
     line = open(solution_path, "r").readline()
@@ -37,33 +38,38 @@ def get_new_image(solution_path):
 
         # if the input model is in range of [0..1] and the value of pixel in image is in [0..255], we need to scale the image
         img /= 255
-        logger.debug(img.shape)
         assert (len(img.shape) == 1)
         return img
 
 
-def is_valid_modified_image(model_object, config, csv_original_image_path, csv_new_image_path):
+def is_valid_modified_image(model_object, threadconfig, csv_original_image_path, csv_new_image_path):
     assert (os.path.exists(csv_new_image_path))
     assert (os.path.exists(csv_original_image_path))
-    assert (model_object != None and config != None and config.graph != None)
-    assert (os.path.exists(config.true_label_seed_file))
+    assert (model_object != None and threadconfig != None and threadconfig.graph != None)
+    assert (os.path.exists(threadconfig.true_label_seed_file))
 
     # get the true label
-    with open(config.true_label_seed_file, 'r') as f:
+    with open(threadconfig.true_label_seed_file, 'r') as f:
         true_label = int(f.read())
-    logger.debug(f'{config.thread_name}: True label = {true_label}')
+    logger.debug(f'{threadconfig.thread_name}: True label = {true_label}')
 
     # Make prediction on the original sample
+
     original_image = pd.read_csv(csv_original_image_path, header=None).to_numpy().reshape(1, -1)
-    with config.graph.as_default():
+    lock.acquire()
+    with threadconfig.graph.as_default():
         original_prediction = np.argmax(model_object.get_model().predict(original_image))
-        logger.debug(f'{config.thread_name}: The prediction of the original seed = {original_prediction}')
+        logger.debug(f'{threadconfig.thread_name}: The prediction of the original seed = {original_prediction}')
+    lock.release()
 
     # Make prediction on the modified sample
     modified_image = pd.read_csv(csv_new_image_path, header=None).to_numpy().reshape(1, -1)
-    with config.graph.as_default():
+
+    lock.acquire()
+    with threadconfig.graph.as_default():
         modified_prediction = np.argmax(model_object.get_model().predict(modified_image))
-        logger.debug(f'{config.thread_name}: The prediction of the modified seed = {modified_prediction}')
+        logger.debug(f'{threadconfig.thread_name}: The prediction of the modified seed = {modified_prediction}')
+    lock.release()
 
     assert (len(original_image) == len(modified_image))
 
