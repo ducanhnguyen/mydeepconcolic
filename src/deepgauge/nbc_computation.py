@@ -1,4 +1,6 @@
 from src.deepgauge.statistics import *
+from src.saved_models.mnist_ann_keras import MNIST
+
 
 class NBC_COVERAGE(abstract_coverage_computation):
     def __init__(self):
@@ -53,17 +55,16 @@ class NBC_COVERAGE(abstract_coverage_computation):
 
 if __name__ == '__main__':
     # construct model 1
-    model_object = FASHION_MNIST()
+    model_object = MNIST()
     model_object.set_num_classes(10)
     model = model_object.load_model(
-        weight_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f1_original.h5',
-        structure_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f1_original.json',
-        trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/train.csv')
+        weight_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/mnist_ann_keras_f1_original.h5',
+        structure_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/mnist_ann_keras_f1_original.json',
+        trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/digit-recognizer/train.csv')
     model_object.read_data(
-        trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/train.csv',
-        #testset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/test.csv')
-        testset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist_f1/original_test_plus_expansion.csv')
-    print(model.summary())
+        trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/digit-recognizer/train.csv',
+        testset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/result/mnist fgsm start=0, stop=0.05, step=1: 250/original_test_plus_expansion.csv')
+    model = model_object.get_model()
 
     # compute neuron coverage
     computator = NBC_COVERAGE()

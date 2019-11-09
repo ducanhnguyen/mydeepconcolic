@@ -4,20 +4,23 @@ import os
 import numpy as np
 import pandas as pd
 
+'''
+Given full_comparison file, let generate expansion
+'''
 if __name__ == '__main__':
-    adversarial_samples_file = '/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist_f1/test_expansion.csv'
+    adversarial_samples_file = '/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist_new/expansion.csv'
     assert (adversarial_samples_file.endswith('.csv'))
 
-    full_comparison_csv = '/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist_f1/full_comparison.csv'
+    full_comparison_csv = '/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist_new/full_comparison.csv'
     assert (full_comparison_csv.endswith('.csv') and os.path.exists(full_comparison_csv))
 
     original_train_file = '/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/test.csv'
     assert (original_train_file.endswith('.csv') and os.path.exists(original_train_file))
 
-    expansion_train_file = '/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist_f1/original_test_plus_expansion.csv'
+    expansion_train_file = '/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist_new/original_test_plus_expansion.csv'
     assert (expansion_train_file.endswith('.csv'))
 
-    selected_seeds_folder = '/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist_f1/detail'
+    selected_seeds_folder = '/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist_new'
     assert (os.path.exists(selected_seeds_folder))
 
     # get selected seeds
@@ -33,7 +36,7 @@ if __name__ == '__main__':
                 selected_seeds[seed_index] = dict()
                 selected_seeds[seed_index]['true_label'] = label
             else:
-                print(int(df['seed_index'][idx]))
+                print(f"value = False: {int(df['seed_index'][idx])}")
     print(f'size of selected_seeds = {len(selected_seeds.items())}')
 
     # get selective modified images
@@ -46,12 +49,14 @@ if __name__ == '__main__':
                     absolute_path = os.path.abspath(os.path.join(selected_seeds_folder, file))
                     selected_seeds[seed_index]['absolute_path'] = absolute_path
                     break
-    print(f'selected_seeds = {selected_seeds}')
+    print(f'size of selected_seeds = {len(selected_seeds.items())}')
 
     # create expansion train set
     X_expansion = []
     for seed_index, dict in selected_seeds.items():
+        #print(seed_index)
         label = int(dict['true_label'])
+        #print(dict)
         pixels = pd.read_csv(dict['absolute_path'], header=None).to_numpy().reshape(-1)
         # full = label + pixels
         full = []

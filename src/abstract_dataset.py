@@ -2,6 +2,7 @@ import os
 
 import keras
 import numpy as np
+from keras import Sequential
 from keras.callbacks import ModelCheckpoint
 from keras.models import model_from_json
 
@@ -25,9 +26,13 @@ class ABSTRACT_DATASET:
     def read_data(self, training_path, testing_path):
         pass
 
-    def get_an_observation(self, index):
+    def get_an_observation_from_train_set(self, index):
         assert (index >= 0 and len(self.get_Xtrain().shape) == 2 and len(self.get_ytrain().shape) == 1)
         return self.get_Xtrain()[index].reshape(1, -1), self.get_ytrain()[index]
+
+    def get_an_observation_from_test_set(self, index):
+        assert (index >= 0 and len(self.get_Xtest().shape) == 2)
+        return self.get_Xtest()[index].reshape(1, -1), self.get_ytrain()[index]
 
     def train_model(self, train, kernel_path, model_path, training_path, testing_path, batch_size = 64, nb_epoch = 100, learning_rate=1e-3):
         assert (train == True or train == False)
@@ -35,7 +40,7 @@ class ABSTRACT_DATASET:
 
         self.read_data(training_path, testing_path)
         model = self.create_model(input_shape=len(self.get_Xtrain()[0]))
-
+        assert (isinstance(model, Sequential))
         # train ANN model
         if train:
 

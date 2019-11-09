@@ -1,6 +1,7 @@
 from src.deepgauge.abstract_coverage_computation import *
 
 from src.saved_models.fashion_mnist_ann_keras import *
+from src.saved_models.mnist_ann_keras import MNIST
 from src.utils import keras_layer
 import matplotlib.pyplot as plt
 
@@ -53,16 +54,16 @@ class NC_COMPUTATION(abstract_coverage_computation):
 
 if __name__ == '__main__':
     # construct model
-    model_object = FASHION_MNIST()
+    model_object = MNIST()
     model_object.set_num_classes(10)
     model = model_object.load_model(
-        weight_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f2_original.h5',
-        structure_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f2_original.json',
-        trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/train.csv')
+        weight_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/mnist_ann_keras_f1_original.h5',
+        structure_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/mnist_ann_keras_f1_original.json',
+        trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/digit-recognizer/train.csv')
     model_object.read_data(
-        trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/train.csv',
-        #testset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/test.csv')
-        testset_path = '/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist_f2/original_test_plus_expansion.csv')
+        trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/digit-recognizer/train.csv',
+        #testset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/digit-recognizer/test.csv')
+        testset_path = '/home/pass-la-1/PycharmProjects/mydeepconcolic/result/mnist (delta=0.1) per=0.01/original_test_plus_expansion.csv')
     print(model.summary())
 
     # compute neuron coverage
@@ -70,6 +71,6 @@ if __name__ == '__main__':
     nc_computator.set_model(model_object.get_model())
     nc_computator.set_X(model_object.get_Xtest())
 
-    thresholds = np.arange(start=0, stop = 20, step = 1)
-    coverage = nc_computator.compute_nc_coverage(thresholds=thresholds, plot = True)
+    thresholds = np.arange(start=0, stop = 20, step = 0.1)
+    coverage = nc_computator.compute_nc_coverage(thresholds=thresholds, plot = False)
     print(coverage)

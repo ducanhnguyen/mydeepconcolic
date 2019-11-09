@@ -24,6 +24,7 @@ import matplotlib
 from keras.models import Model
 
 from src.abstract_dnn_analyzer import *
+from src.deepgauge.statistics import STATISTICS
 from src.saved_models.fashion_mnist_ann_keras import *
 from src.test_summarizer import *
 from src.utils import keras_activation, keras_layer, keras_model
@@ -542,6 +543,27 @@ class SMT_DNN(ABSTRACT_DNN_ANALYZER):
             thread_config.setSeedIndex(seed_index)
             thread_config.load_config_from_file()
 
+            logger.debug(
+                f'{thread_config.thread_name}: seed index = {seed_index}, delta_bound = [{thread_config.delta_lower_bound}, {thread_config.delta_upper_bound}]')
+            if thread_config.attacked_neuron['enabled'] == "True":
+                logger.debug(
+                    f"attacked neuron: layer index = {thread_config.attacked_neuron['layer_index']}, neuron index = {thread_config.attacked_neuron['neuron_index']}")
+
+            # just for testing
+            statistics_computator = STATISTICS()
+            statistics_computator.set_model(model_object.get_model())
+            statistics_computator.set_X(model_object.get_Xtest()) # not xtrain
+            neuron_value = statistics_computator.get_range_of_a_neuron_given_an_observation(
+                neuron_unit_index=thread_config.attacked_neuron['neuron_index'],
+                neuron_layer_index=thread_config.attacked_neuron['layer_index'],
+                observation_index=seed_index
+            )
+            logger.debug(f"Value of neuron given the observation {seed_index} "
+                         f"given neuron_layer_index = {thread_config.attacked_neuron['layer_index']} "
+                         f"and neuron_unit_index = {thread_config.attacked_neuron['neuron_index']} "
+                         f"= {neuron_value}")
+            # end
+
             stop = False
             if just_find_one_seed:
                 logger.debug(f"just_find_one_seed is turned on")
@@ -582,12 +604,6 @@ class SMT_DNN(ABSTRACT_DNN_ANALYZER):
                     os.remove(thread_config.z3_solution_file)
                 if os.path.exists(thread_config.z3_normalized_output_file):
                     os.remove(thread_config.z3_normalized_output_file)
-
-                logger.debug(
-                    f'{thread_config.thread_name}: seed index = {seed_index}, delta_bound = [{thread_config.delta_lower_bound}, {thread_config.delta_upper_bound}]')
-                if thread_config.attacked_neuron['enabled'] == "True":
-                    logger.debug(
-                        f"attacked neuron: layer index = {thread_config.attacked_neuron['layer_index']}, neuron index = {thread_config.attacked_neuron['neuron_index']}")
 
                 with open(thread_config.seed_index_file, mode='w') as f:
                     f.write(str(seed_index))
@@ -651,7 +667,7 @@ class SMT_DNN(ABSTRACT_DNN_ANALYZER):
                         model_object=model_object, threadconfig=thread_config,
                         csv_original_image_path=csv_old_image_path,
                         csv_new_image_path=csv_new_image_path)
-                    #is_valid = not is_valid # for testing
+                    is_valid = True # for testing
                     if is_valid:
                         logger.debug(f"Good news! The modified image is valid")
 
@@ -738,4 +754,4 @@ if __name__ == '__main__':
     # seeds = deepconcolic.read_seeds_from_file(csv_file='/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist/seeds.txt')
     seeds = deepconcolic.read_seeds_from_config(model_object)
     deepconcolic.generate_samples(model_object=model_object, seeds=seeds,
-                                  n_threads=ConfigController().get_config(["n_threads"]))
+                                  n_threads=ConfigController().get_config(["n_threads"]), just_find_one_seed=False)

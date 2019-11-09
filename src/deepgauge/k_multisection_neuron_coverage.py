@@ -2,6 +2,7 @@ from src.deepgauge.abstract_coverage_computation import *
 from tensorflow.python import keras
 
 from src.saved_models.fashion_mnist_ann_keras import *
+from src.saved_models.mnist_ann_keras import MNIST
 from src.utils import keras_layer
 from src.deepgauge.statistics import *
 
@@ -75,16 +76,17 @@ class K_MULTISECTION_NEURON_COVERAGE(abstract_coverage_computation):
 
 if __name__ == '__main__':
     # construct model 1
-    model_object = FASHION_MNIST()
+    model_object = MNIST()
     model_object.set_num_classes(10)
     model = model_object.load_model(
-        weight_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f2_original.h5',
-        structure_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/fashion_mnist_ann_keras_f2_original.json',
-        trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/train.csv')
+        weight_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/mnist_ann_keras_f1_original.h5',
+        structure_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/mnist_ann_keras_f1_original.json',
+        trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/digit-recognizer/train.csv')
     model_object.read_data(
-        trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/train.csv',
-        #testset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/fashion_mnist/test.csv')
-        testset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/result/fashion_mnist_f2/original_test_plus_expansion.csv')
+        trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/digit-recognizer/train.csv',
+        testset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/result/mnist fgsm start=0, stop=0.05, step=1: 250/original_test_plus_expansion.csv')
+    model = model_object.get_model()
+    assert (isinstance(model, Sequential))
     print(model.summary())
 
     # compute neuron coverage
@@ -93,5 +95,3 @@ if __name__ == '__main__':
     nc_computator.set_X(model_object.get_Xtest())
     nc_computator.set_Xtrain(model_object.get_Xtrain())
     nc_computator.compute_k_multisection_neuron_coverage(k=1000)
-    # fashion mnist f1: xtest =  (k=50)
-    # xtest_ original + expansion: (k=50)

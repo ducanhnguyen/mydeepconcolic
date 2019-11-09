@@ -95,3 +95,15 @@ def get_activation_layers(model):
                 indexes.append(idx)
 
     return list(zip(activation_layers, indexes))
+
+def get_all_layers(model):
+    assert (isinstance(model, keras.engine.sequential.Sequential))
+    layers = []
+    indexes = []
+
+    if isinstance(model, keras.engine.sequential.Sequential):
+        for idx, layer in enumerate(model.layers):
+            layers.append(layer)
+            indexes.append(idx)
+
+    return list(zip(layers, indexes))

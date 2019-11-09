@@ -1,7 +1,7 @@
 {
     "constraint_config": {
         "delta_lower_bound": 0,
-        "delta_upper_bound": 20,
+        "delta_upper_bound": 10,
         "feature_lower_bound": 0,
         "feature_upper_bound": 255,
         "feature_input_type": "int",
@@ -11,12 +11,12 @@
     "attacked_neuron": {
         "enabled": "True",
         "layer_index": 3,
-        "neuron_index": 6,
-        "lower_bound": 15,
-        "upper_bound": 75
+        "neuron_index": 15,
+        "lower_bound": 0.1,
+        "upper_bound": 0.5
     },
     "n_threads": 1,
-    "dataset": "fashion_mnist",
+    "dataset": "mnist",
     "base_path": "/home/pass-la-1/PycharmProjects/mydeepconcolic",
     "cifar_10": {
         "structure": "{base_path}/src/saved_models/cifar10_ann_keras.json",
@@ -35,16 +35,16 @@
         "test_set": "{base_path}/dataset/fashion_mnist/test.csv",
         "num_classes": 10,
         "start_seed": 0,
-        "end_seed": 60000
+        "end_seed": 10000
     },
     "mnist": {
-        "structure": "{base_path}/src/saved_models/mnist_ann_keras.json",
-        "weight": "{base_path}/src/saved_models/mnist_ann_keras.h5",
+        "structure": "{base_path}/src/saved_models/mnist_ann_keras_f1_original.json",
+        "weight": "{base_path}/src/saved_models/mnist_ann_keras_f1_original.h5",
         "train_set": "{base_path}/dataset/digit-recognizer/train.csv",
         "test_set": "{base_path}/dataset/digit-recognizer/test.csv",
         "num_classes": 10,
         "start_seed": 0,
-        "end_seed": 40000
+        "end_seed": 10000
     },
     "shvn": {
         "structure": "{base_path}/src/saved_models/shvn_ann_keras.json",

@@ -21,13 +21,22 @@ class MNIST(ABSTRACT_DATASET):
             self.set_Xtrain(X[:, 1:])
         self.set_ytrain(X[:, 0].reshape(-1).astype(int))
 
+        #
+        X = pd.read_csv(testset_path).to_numpy()
+        if divided_by_255:
+            self.set_Xtest(X[:, 1:] / 255)
+        else:
+            self.set_Xtest(X[:, 1:])
+        self.set_ytest(X[:, 0].reshape(-1).astype(int))
+
         # we do not know the label of samples in test set
         # to compute the accuracy of the model, we will upload the prediction on kaggle
-        X = pd.read_csv(testset_path).to_numpy()
+        '''
         if divided_by_255:
             self.set_Xtest(X / 255)
         else:
             self.set_Xtest(X)
+        '''
         return self.get_Xtrain(), self.get_ytrain(), self.get_Xtest(), self.get_ytest()
 
     def create_model(self, input_shape):
@@ -62,13 +71,15 @@ if __name__ == '__main__':
     mnist = MNIST()
     mnist.set_num_classes(10)
 
-    '''
-    mnist.train_model(train=True, kernel_path='../saved_models/mnist_ann_keras_expansion.h5',  model_path='../saved_models/mnist_ann_keras_expansion.json',
-                      training_path='/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/digit-recognizer/train_expansion.csv',
-                      testing_path='/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/digit-recognizer/test.csv')
+
+    mnist.train_model(train=True,
+                      kernel_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/mnist_ann_keras_f1_original.h5',
+                      model_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/src/saved_models/mnist_ann_keras_f1_original.json',
+                      training_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/digit-recognizer/train.csv',
+                      testing_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/digit-recognizer/test.csv')
     '''
     # load model
-    model = mnist.load_model(weight_path='../saved_models/mnist_ann_keras_expansion.h5', structure_path='../saved_models/mnist_ann_keras_expansion.json',
+    model = mnist.load_model(weight_path='../saved_models/mnist_ann_keras_f1_original.h5', structure_path='../saved_models/mnist_ann_keras_f1_original.json',
                              trainset_path='/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/digit-recognizer/train_expansion.csv')
     mnist.read_data(trainset_path='/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/digit-recognizer/train_expansion.csv',
                     testset_path='/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/digit-recognizer/test.csv')
@@ -77,9 +88,10 @@ if __name__ == '__main__':
 
     # plot an observation
     import matplotlib.pyplot as plt
-    x_train, y_train = mnist.get_an_observation(index=516)
+    x_train, y_train = mnist.get_an_observation_from_train_set(index=516)
     img = x_train.reshape(28, 28)
     plt.imshow(img, cmap='gray')
     plt.title(f'A sample')
     plt.show()
+    '''
 
