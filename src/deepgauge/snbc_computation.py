@@ -58,7 +58,7 @@ if __name__ == '__main__':
         trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/digit-recognizer/train.csv')
     model_object.read_data(
         trainset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/dataset/digit-recognizer/train.csv',
-        testset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/result/mnist fgsm start=0, stop=0.05, step=1: 250/original_test_plus_expansion.csv')
+        testset_path='/home/pass-la-1/PycharmProjects/mydeepconcolic/result/mnist fgsm e=1:255 *(1 to 9)/original_test_plus_expansion.csv')
     model = model_object.get_model()
 
     # compute neuron coverage
