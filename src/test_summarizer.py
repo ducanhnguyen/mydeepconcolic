@@ -49,8 +49,8 @@ def plot_seed_and_new_image(model_object, config, csv_new_image_path, png_compar
     # Compare the prediction
     seed = pd.read_csv(config.seed_file, header=None).to_numpy().reshape(1, -1)
 
-    with config.graph.as_default():
-        original_prediction = np.argmax(model_object.get_model().predict(seed))
+    # with config.graph.as_default():
+    original_prediction = np.argmax(model_object.get_model().predict(seed))
     logger.debug(f'{config.thread_name}: The prediction of the original seed = {original_prediction}')
 
     new_image = pd.read_csv(csv_new_image_path, header=None)

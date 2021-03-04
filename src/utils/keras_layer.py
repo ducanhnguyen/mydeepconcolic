@@ -9,15 +9,28 @@ logger.setLevel(logging.DEBUG)
 
 
 def is_2dconv(layer_object):
-    assert (layer_object!=None)
+    assert (layer_object != None)
     if isinstance(layer_object, keras.layers.convolutional.Conv2D):
         return True
     else:
         return False
 
 
+def is_conv(layer_object):
+    assert (layer_object != None)
+    if isinstance(layer_object, keras.layers.convolutional.Conv1D) \
+            or isinstance(layer_object, keras.layers.convolutional.Conv2D) \
+            or isinstance(layer_object, keras.layers.convolutional.Conv3D) \
+            or isinstance(layer_object, keras.layers.convolutional.Convolution1D) \
+            or isinstance(layer_object, keras.layers.convolutional.Convolution2D) \
+            or isinstance(layer_object, keras.layers.convolutional.Convolution3D):
+        return True
+    else:
+        return False
+
+
 def is_activation(layer_object):
-    assert (layer_object!=None)
+    assert (layer_object != None)
     if isinstance(layer_object, keras.layers.core.Activation):
         return True
     else:
@@ -42,7 +55,7 @@ def is_dropout(layer_object):
 
 def get_number_of_units(model, layer_idx):
     assert (isinstance(model, keras.engine.sequential.Sequential))
-    assert (layer_idx>=0)
+    assert (layer_idx >= 0)
     units = None
 
     if keras_model.is_ANN(model):
