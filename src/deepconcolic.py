@@ -3,11 +3,11 @@ Command:
 /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/lib/z3-4.8.5-x64-osx-10.14.2/bin/z3 -smt2 /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/constraint.txt > /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/solution.txt
 '''
 import os
-import random as ran
 from threading import Thread
 from types import SimpleNamespace
 
 from keras.models import Model
+
 from src.config_parser import *
 from src.saved_models.mnist_ann_keras import *
 from src.test_summarizer import *
@@ -39,7 +39,7 @@ def create_constraint_between_layers(model_object):
             return
 
         elif current_layer_idx == 0:  # 1: the first layer behind the input layer
-            smt_constraints.append(f'; (input layer, {current_layer.name})')
+            smt_constraints.append(f'\n; (input layer, input of {current_layer.name})')
             weights = current_layer.get_weights()  # the second are biases, the first are weights between two layers
             kernel = weights[0]
             biases = weights[1]
@@ -74,7 +74,7 @@ def create_constraint_between_layers(model_object):
             hidden_units_pre_layer = kernel.shape[0]
             hidden_units_curr_layer = kernel.shape[1]
 
-            smt_constraints.append(f'; ({pre_layer.name}, {current_layer.name})')
+            smt_constraints.append(f'\n; ( output of {pre_layer.name}, input of {current_layer.name})')
 
             if keras_layer.is_dense(pre_layer):  # instance of keras.layers.core.Dense
                 # the current layer and the previous layer is dense
@@ -111,7 +111,7 @@ def create_constraint_between_layers(model_object):
             pre_layer_idx = current_layer_idx - 1
             pre_layer = model.layers[pre_layer_idx]
 
-            smt_constraints.append(f'; ({pre_layer.name}, {current_layer.name})')
+            smt_constraints.append(f'\n; (output of {pre_layer.name}, input of {current_layer.name})')
 
             units = keras_layer.get_number_of_units(model, pre_layer_idx)
             for unit_idx in range(units):
@@ -130,11 +130,13 @@ def create_activation_constraints(model_object):
         for current_layer_idx, current_layer in enumerate(model.layers):
             units = keras_layer.get_number_of_units(model, current_layer_idx)
 
+            smt_constraints.append("\n")
             if keras_activation.is_activation(current_layer):
-                smt_constraints.append(f'; {current_layer.name}')
+                smt_constraints.append(f'; layer {current_layer.name}')
 
                 # Create the formula based on the type of activation
                 if keras_activation.is_relu(current_layer):
+                    smt_constraints.append(f';is relu layer')
                     for unit_idx in range(units):
                         '''
                         constraint type 2
@@ -145,6 +147,7 @@ def create_activation_constraints(model_object):
                         smt_constraints.append(smt_constraint)
 
                 elif keras_activation.is_tanh(current_layer):
+                    smt_constraints.append(f';is tanh layer')
                     for unit_idx in range(units):
                         '''
                         constraint type 2
@@ -156,9 +159,10 @@ def create_activation_constraints(model_object):
                         smt_constraints.append(smt_constraint)
 
                 elif keras_activation.is_softmax(current_layer):
+                    smt_constraints.append(f'; is softmax layer')
                     if current_layer_idx == len(model.layers) - 1:
                         # no need to create constraints for the output layer
-                        smt_constraints.append(f'; The last layer is softmax: no need to create constraints!')
+                        smt_constraints.append(f'; The last layer is softmax: no need to create constraints!\n')
                         continue
                     else:
                         smt_sum_name = f'sum_{current_layer_idx}_{unit_idx}'
@@ -181,10 +185,9 @@ def create_activation_constraints(model_object):
                             smt_constraint = f'(assert{smt_constraint})'
                             smt_constraints.append(smt_constraint)
 
-            elif (keras_layer.is_dense(current_layer) and not keras_layer.is_activation(current_layer)) or \
-                    keras_layer.is_dropout(current_layer):
+            elif keras_layer.is_dense(current_layer) and not keras_layer.is_activation(current_layer):
                 # the current layer is dense and not an activation
-                smt_constraints.append(f'; {current_layer.name}')
+                smt_constraints.append(f'; Layer {current_layer.name}\n; not activation layer')
 
                 for unit_idx in range(units):
                     '''
@@ -229,16 +232,18 @@ def create_variable_declarations(model_object, type_feature=get_config(["constra
 
             # for other layers
             for layer_idx, layer in enumerate(model.layers):
-                constraints.append(f'\n; Layer ' + layer.name + ' declaration (index = ' + str(layer_idx) + ')')
                 # get number of hidden units
                 units = keras_layer.get_number_of_units(model, layer_idx)
+                constraints.append(
+                    f'\n; Layer ' + layer.name + ' declaration (index = ' + str(layer_idx) + ', #neurons = ' + str(
+                        units) + ')')
 
                 # value of neuron in all layers except input layer must be real
                 if units is not None:
                     for unit_idx in range(units):
                         before_activation = f'(declare-fun u_{layer_idx}_{unit_idx} () Real)'
                         after_activation = f'(declare-fun v_{layer_idx}_{unit_idx} () Real)'
-                        constraints.append(after_activation + '\t' + after_activation)
+                        constraints.append(before_activation + '\t\t\t' + after_activation)
 
     elif keras_model.is_CNN(model):
         logger.debug(f'Model is not CNN. Does not support!')
@@ -251,7 +256,6 @@ def create_variable_declarations(model_object, type_feature=get_config(["constra
 
 def create_feature_constraints_from_an_observation(model_object, x_train, delta=DELTA_PREFIX_NAME):
     assert (isinstance(model_object, abstract_dataset))
-    constraints = []
     smt_constraints = []
 
     model = model_object.get_model()
@@ -259,31 +263,29 @@ def create_feature_constraints_from_an_observation(model_object, x_train, delta=
 
         if isinstance(model, keras.engine.sequential.Sequential):
             input_shape = model.input_shape  # (None, n_features)
-            constraints.append('; input value')
-            smt_constraints.append('; input value')
+            smt_constraints.append('; Feature bound constraints')
 
             n_features = input_shape[1]
-            x_train = x_train.reshape(-1)
+            x_train = np.round(x_train.reshape(-1) * 255).astype(int)  # for MNIST, round to integer range
             if n_features == x_train.shape[0]:
                 for feature_idx in range(n_features):
-                    '''
-                    constraint type 1
-                    '''
-                    constraint = f'feature_{feature_idx}  >= {x_train[feature_idx] * 255}-{delta}_{feature_idx} ' \
-                                 f' and ' \
-                                 f' feature_{feature_idx} <= {x_train[feature_idx] * 255} + {delta}_{feature_idx}'
-                    constraints.append(constraint)
-
-                    '''
-                    constraint type 2
-                    '''
-                    smt_constraints.append(f'(declare-fun {delta}_{feature_idx} () Int)')
-                    smt_constraint = \
-                        f'(assert(and ' \
-                        + f'(>= feature_{feature_idx} (- {x_train[feature_idx] * 255} {delta}_{feature_idx})) ' \
-                          f'(<= feature_{feature_idx} (+ {x_train[feature_idx] * 255} {delta}_{feature_idx}))' \
-                        + f'))'
+                    smt_constraint = f'(declare-fun {delta}_{feature_idx} () Int)\t\t\t' + \
+                                     f'(assert(and ' \
+                                     + f'(>= feature_{feature_idx} (- {x_train[feature_idx]} {delta}_{feature_idx})) ' \
+                                       f'(<= feature_{feature_idx} (+ {x_train[feature_idx]} {delta}_{feature_idx}))' \
+                                     + f'))'
                     smt_constraints.append(smt_constraint)
+
+                # minimize
+                # smt = f"(* (-  feature_0 {x_train[0]}) (-  feature_0 {x_train[0]}))"
+                # for i in range(1, n_features):
+                #     smt = f"(+ {smt} (* (-  feature_{i} {x_train[i]}) (-  feature_{i} {x_train[i]})))"
+                # smt_constraints.append(f'(minimize {smt})')
+
+                # smt = f"(-  feature_0 {x_train[0]})"
+                # for i in range(1, n_features):
+                #     smt = f"(+ {smt} (-  feature_{i} {x_train[i]}))"
+                # smt_constraints.append(f'(minimize {smt})')
             else:
                 logger.debug(f'The size of sample does not match!')
         else:
@@ -295,7 +297,7 @@ def create_feature_constraints_from_an_observation(model_object, x_train, delta=
     else:
         logger.debug(f'Unable to detect the type of neural network')
 
-    return constraints, smt_constraints
+    return smt_constraints
 
 
 def create_output_constraints_from_an_observation(model_object, x_train, y_train, thread_config):
@@ -316,20 +318,6 @@ def create_output_constraints_from_an_observation(model_object, x_train, y_train
         n_classes = keras_layer.get_number_of_units(model, last_layer_idx)
 
         if n_classes != None:
-            '''
-            constraint type 1
-            '''
-            right = ''
-            for class_idx in range(n_classes):
-                if class_idx == n_classes - 1:
-                    right += f'u_{last_layer_idx}_{class_idx}'
-                else:
-                    right += f'u_{last_layer_idx}_{class_idx}, '
-            right = f'max({right})'
-            constraint = f'{left} = {right}'
-            constraints.append(f'; output constraints')
-            constraints.append(constraint)
-
             smt_type_constraint = get_config(["constraint_config", "output_layer_type_constraint"])
 
             if smt_type_constraint == 'or':
@@ -340,7 +328,7 @@ def create_output_constraints_from_an_observation(model_object, x_train, y_train
                             smt_constraint = f'(< {left} u_{last_layer_idx}_{class_idx}) '
                         else:
                             smt_constraint = f'(or {smt_constraint} (< {left} u_{last_layer_idx}_{class_idx})) '
-                smt_constraints.append(f'; output constraints')
+                smt_constraints.append(f'\n; output constraints')
                 smt_constraint = f'(assert {smt_constraint})'
                 smt_constraints.append(smt_constraint)
 
@@ -396,9 +384,9 @@ def create_bound_of_feature_constraints(model_object,
         add delta constraint type
         '''
         # use :.25f to avoid 'e' in the value of bound, for example, 1e-3
-        smt_constraints.append(f'; bound of delta')
+        smt_constraints.append(f'\n; bound of delta')
         for feature_idx in range(n_features):
-            delta_constraint = f'(assert(and (<= {delta_prefix}_{feature_idx} {delta_upper_bound:.10f}) (>= {delta_prefix}_{feature_idx} {delta_lower_bound:.10f})))'
+            delta_constraint = f'(assert(and (<= {delta_prefix}_{feature_idx} {delta_upper_bound}) (>= {delta_prefix}_{feature_idx} {delta_lower_bound})))'
             smt_constraints.append(delta_constraint)
 
         '''
@@ -411,8 +399,8 @@ def create_bound_of_feature_constraints(model_object,
             # corresponding to: feature_494>=0 and feature_494<=0.1
             # Note 2: Because the model is ANN, the features fed into a 1-D array.
             smt_constraint = f'(assert(and ' \
-                             f'(>= feature_{feature_idx} {feature_lower_bound:.10f}) ' \
-                             f'(<= feature_{feature_idx} {feature_upper_bound:.10f})' \
+                             f'(>= feature_{feature_idx} {feature_lower_bound}) ' \
+                             f'(<= feature_{feature_idx} {feature_upper_bound})' \
                              f'))'
             smt_constraints.append(smt_constraint)
 
@@ -451,7 +439,7 @@ def create_constraints_file(model_object, seed_index, thread_config):
 
     smt_activation_constraints = create_activation_constraints(model_object)
 
-    input_constraints, smt_input_constraints = create_feature_constraints_from_an_observation(model_object, x_train)
+    smt_input_constraints = create_feature_constraints_from_an_observation(model_object, x_train)
 
     output_constraints, smt_output_constraints = create_output_constraints_from_an_observation(model_object, x_train,
                                                                                                y_train, thread_config)
@@ -606,7 +594,7 @@ def set_up_config(thread_idx):
     config.analyzed_seed_index_file_path = get_config(["files", "analyzed_seed_index_file_path"])
     config.selected_seed_index_file_path = get_config(["files", "selected_seed_index_file_path"])
     config.thread_name = f'thread_{thread_idx}'
-    config.should_plot = False  # should be False when running in multithread
+    config.should_plot = True  # should be False when running in multithread
     config.z3_solution_parser_command = get_config(["z3", "z3_solution_parser_command"])
     config.new_image_file_path = get_config(["files", "new_image_file_path"])
     config.comparison_file_path = get_config(["files", "comparison_file_path"])

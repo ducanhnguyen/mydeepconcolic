@@ -1,12 +1,11 @@
 import csv
 import logging
-import platform
+
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scipy.misc
 
-import matplotlib
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
@@ -65,15 +64,24 @@ def plot_seed_and_new_image(model_object, config, csv_new_image_path, png_compar
         success = False
 
     # Export new image to file
-    if config.should_plot:
+    if success and config.should_plot:
+        l2_dist = np.linalg.norm(new_image / 255 - seed)  # new_image: 0..255, seed: 0..1
+
+        l0_dist = 0
+        for idx in range(0, 255):
+            if int(255 * seed[0][idx]) != new_image[0][idx]:
+                l0_dist += 1
+
         draw_figure(model_object, seed, original_prediction, modified_prediction, png_comparison_image_path,
-                    png_new_image_path, csv_new_image_path)
+                    png_new_image_path, csv_new_image_path, l2_dist, l0_dist)
 
     return success
 
 
 def draw_figure(model_object, seed, original_prediction, modified_prediction, png_comparison_image_path,
-                png_new_image_path, new_image_path):
+                png_new_image_path, new_image_path,
+                l2_dist: float,
+                l0_dist: int):
     new_image = pd.read_csv(new_image_path, header=None).to_numpy().reshape(model_object.get_image_shape())
 
     # if the input model is in range of [0..1] and the value of pixel in image is in [0..255], we need to scale the image
@@ -88,7 +96,7 @@ def draw_figure(model_object, seed, original_prediction, modified_prediction, pn
     else:
         scipy.misc.imsave(new_image, cmin=0.0, cmax=1).save(png_new_image_path)
     '''
-    
+
     fig = plt.figure()
     nrow = 1
     ncol = 2
@@ -99,12 +107,13 @@ def draw_figure(model_object, seed, original_prediction, modified_prediction, pn
         seed = seed.reshape(model_object.get_image_shape())
 
         fig1 = fig.add_subplot(nrow, ncol, 1)
-        fig1.title.set_text(f'The original image\n(prediction = {original_prediction})')
+        fig1.title.set_text(f'original image\n(prediction = {original_prediction})')
         plt.imshow(seed, cmap="gray")
 
         new_image = new_image.reshape(model_object.get_image_shape())
         fig2 = fig.add_subplot(nrow, ncol, 2)
-        fig2.title.set_text(f'The modified image\n(prediction = {modified_prediction})')
+        fig2.title.set_text(
+            f'modified image\n(prediction = {modified_prediction})\n l0 = ' + str(l0_dist) + ', l2 = ' + str(l2_dist))
         plt.imshow(new_image, cmap="gray")
 
     elif len(model_object.get_image_shape()) == 3:
