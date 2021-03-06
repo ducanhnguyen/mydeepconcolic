@@ -597,6 +597,7 @@ def generate_samples(model_object):
                 thread_seeds = np.arange(n_single_thread_seeds * (n_threads - 1), len(seeds))
             else:
                 thread_seeds = np.arange(n_single_thread_seeds * thread_idx, n_single_thread_seeds * (thread_idx + 1))
+                thread_seeds = priority_seeds(thread_seeds, model_object)
 
             # read the configuration of a thread
             thread_config = set_up_config(thread_idx)
@@ -618,7 +619,35 @@ def generate_samples(model_object):
         main_thread_config = set_up_config(0)
         main_thread_config.image_shape = model_object.get_image_shape()
 
+        logger.debug("Before prioritization: len seeds = " + str(len(seeds)))
+        seeds = priority_seeds(seeds, model_object)
+        logger.debug("After prioritization: len seeds = " + str(len(seeds)))
+
         image_generation(seeds, main_thread_config, model_object)
+
+
+
+def priority_seeds(seeds, model_object):
+    delta_arr = []
+    # for seed in seeds:
+    ori = model_object.get_Xtrain()[seeds]
+    pred = model_object.get_model().predict(ori.reshape(-1, 784))
+
+    selected_seeds = []
+    for idx in range(len(seeds)):
+        print(idx)
+        labels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        pred_sort, labels = zip(*sorted(zip(pred[idx], labels)))
+        last_idx = len(pred_sort) - 1
+        delta = pred_sort[last_idx] - pred_sort[last_idx - 1]
+        if delta < 1: #ignore = 1
+            delta_arr.append(delta)
+            selected_seeds.append(seeds[idx])
+
+    # for k, v in zip(delta, seeds):
+    #     print(f'{k}, {v}')
+    delta_arr, selected_seeds = zip(*sorted(zip(delta_arr, selected_seeds)))
+    return np.asarray(selected_seeds) # 1-D array
 
 
 def export_to_image(model_object):
@@ -687,6 +716,29 @@ def initialize_dnn_model():
     return model_object
 
 
+def compute_prob(model_object):
+    # ori_arr = [43, 78, 163, 168, 397, 420, 445, 467, 548, 1014, 1538, 1653, 1935, 2112, 2262, 2316, 2694, 2772, 2776,
+    #            3136,
+    #            3637, 4195, 4271, 5049, 5544, 5584, 6136, 7330, 7340, 7504, 7691]
+    ori_arr = [44, 45, 46, 47, 48, 49, 50]
+    for ori_idx in ori_arr:
+        ori = model_object.get_Xtrain()[ori_idx]
+        pred = model_object.get_model().predict(ori.reshape(1, 784))[0]
+        labels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+        pred, labels = zip(*sorted(zip(pred, labels)))
+        # print(ori_idx)
+        # print(pred)
+
+        last_idx = len(pred) - 1
+        largest = labels[last_idx]
+        second = labels[last_idx - 1]
+        third = labels[last_idx - 2]
+        print(
+            f'{ori_idx}. true label = {largest} ({pred[last_idx]}), second = {second} ({pred[last_idx - 1]}), third = {third} ({pred[last_idx - 2]})')
+        # print()
+
+
 if __name__ == '__main__':
     logging.basicConfig()
     logging.root.setLevel(logging.DEBUG)
@@ -694,3 +746,7 @@ if __name__ == '__main__':
     model_object = initialize_dnn_model()
     generate_samples(model_object)
     # export_to_image(model_object)
+
+    # compute_prob(model_object)
+    # seeds = priority_seeds([1, 2, 3, 4, 5], model_object)
+    # print(seeds)
