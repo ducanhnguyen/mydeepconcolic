@@ -68,7 +68,7 @@ def plot_seed_and_new_image(model_object, config, csv_new_image_path, png_compar
         l2_dist = np.linalg.norm(new_image / 255 - seed)  # new_image: 0..255, seed: 0..1
 
         l0_dist = 0
-        for idx in range(0, 255):
+        for idx in range(0, 784):
             if int(255 * seed[0][idx]) != new_image[0][idx]:
                 l0_dist += 1
 
