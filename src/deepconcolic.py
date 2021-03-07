@@ -10,8 +10,11 @@ from keras.models import Model
 
 from src.config_parser import *
 from src.saved_models.mnist_ann_keras import *
+from src.saved_models.mnist_simard import MNIST_SIMARD
+from src.saved_models.mnist_simple import MNIST_SIMPLE
 from src.test_summarizer import *
 from src.utils import keras_activation, keras_layer, keras_model
+import tensorflow as tf
 
 MINUS_INF = -10000000
 INF = 10000000
@@ -558,11 +561,13 @@ def set_up_config(thread_idx):
     config.z3_normalized_output_file = get_config(["z3", "z3_normalized_solution_path"]) \
         .replace(OLD, str(thread_idx))
     config.z3_path = get_config(["z3", "z3_solver_path"]).replace(OLD, str(thread_idx))
-    # config.graph = tf.compat.v1.get_default_graph()
-    config.analyzed_seed_index_file_path = get_config(["files", "analyzed_seed_index_file_path"])
-    config.selected_seed_index_file_path = get_config(["files", "selected_seed_index_file_path"])
+    config.graph = tf.compat.v1.get_default_graph()
+    config.analyzed_seed_index_file_path = get_config(["files", "analyzed_seed_index_file_path"]).replace(OLD, str(
+        thread_idx))
+    config.selected_seed_index_file_path = get_config(["files", "selected_seed_index_file_path"]).replace(OLD, str(
+        thread_idx))
     config.thread_name = f'thread_{thread_idx}'
-    config.should_plot = True  # should be False when running in multithread
+    config.should_plot = False  # should be False when running in multithread
     config.z3_solution_parser_command = get_config(["z3", "z3_solution_parser_command"])
     config.new_image_file_path = get_config(["files", "new_image_file_path"])
     config.comparison_file_path = get_config(["files", "comparison_file_path"])
@@ -579,7 +584,11 @@ def generate_samples(model_object):
     '''
     start_seed = get_config([model_object.get_name_dataset(), "start_seed"])
     end_seed = get_config([model_object.get_name_dataset(), "end_seed"])
+
     seeds = np.arange(start_seed, end_seed)
+    logger.debug("Before prioritization: len seeds = " + str(len(seeds)))
+    seeds = priority_seeds(seeds, model_object)
+    logger.debug("After prioritization: len seeds = " + str(len(seeds)))
 
     '''
     generate adversarial samples
@@ -587,7 +596,7 @@ def generate_samples(model_object):
     n_threads = get_config(["n_threads"])
     if n_threads >= 2:
         # prone to error
-        n_single_thread_seeds = int(np.floor((end_seed - start_seed) / n_threads))
+        n_single_thread_seeds = int(np.floor((len(seeds)) / n_threads))
         logger.debug(f'n_single_thread_seeds = {n_single_thread_seeds}')
         threads = []
 
@@ -597,7 +606,6 @@ def generate_samples(model_object):
                 thread_seeds = np.arange(n_single_thread_seeds * (n_threads - 1), len(seeds))
             else:
                 thread_seeds = np.arange(n_single_thread_seeds * thread_idx, n_single_thread_seeds * (thread_idx + 1))
-                thread_seeds = priority_seeds(thread_seeds, model_object)
 
             # read the configuration of a thread
             thread_config = set_up_config(thread_idx)
@@ -618,13 +626,7 @@ def generate_samples(model_object):
         # read the configuration of a thread
         main_thread_config = set_up_config(0)
         main_thread_config.image_shape = model_object.get_image_shape()
-
-        logger.debug("Before prioritization: len seeds = " + str(len(seeds)))
-        seeds = priority_seeds(seeds, model_object)
-        logger.debug("After prioritization: len seeds = " + str(len(seeds)))
-
         image_generation(seeds, main_thread_config, model_object)
-
 
 
 def priority_seeds(seeds, model_object):
@@ -635,7 +637,7 @@ def priority_seeds(seeds, model_object):
 
     selected_seeds = []
     for idx in range(len(seeds)):
-        print(idx)
+        # print(idx)
         labels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         pred_sort, labels = zip(*sorted(zip(pred[idx], labels)))
         last_idx = len(pred_sort) - 1
@@ -716,6 +718,38 @@ def initialize_dnn_model():
     return model_object
 
 
+def initialize_dnn_model_simple():
+    # custom code
+    model_object = MNIST_SIMPLE()
+    dataset = get_config(["dataset"])
+    model_object.set_num_classes(get_config([dataset, "num_classes"]))
+    model_object.read_data(trainset_path=get_config([dataset, "train_set"]),
+                           testset_path=get_config([dataset, "test_set"]))
+    model_object.load_model(weight_path=get_config([dataset, "weight"]),
+                            structure_path=get_config([dataset, "structure"]),
+                            trainset_path=get_config([dataset, "train_set"]))
+    model_object.set_name_dataset(dataset)
+    model_object.set_image_shape((28, 28))
+    model_object.set_selected_seed_index_file_path(get_config(["files", "selected_seed_index_file_path"]))
+    return model_object
+
+
+def initialize_dnn_model_simard():
+    # custom code
+    model_object = MNIST_SIMARD()
+    dataset = get_config(["dataset"])
+    model_object.set_num_classes(get_config([dataset, "num_classes"]))
+    model_object.read_data(trainset_path=get_config([dataset, "train_set"]),
+                           testset_path=get_config([dataset, "test_set"]))
+    model_object.load_model(weight_path=get_config([dataset, "weight"]),
+                            structure_path=get_config([dataset, "structure"]),
+                            trainset_path=get_config([dataset, "train_set"]))
+    model_object.set_name_dataset(dataset)
+    model_object.set_image_shape((28, 28))
+    model_object.set_selected_seed_index_file_path(get_config(["files", "selected_seed_index_file_path"]))
+    return model_object
+
+
 def compute_prob(model_object):
     # ori_arr = [43, 78, 163, 168, 397, 420, 445, 467, 548, 1014, 1538, 1653, 1935, 2112, 2262, 2316, 2694, 2772, 2776,
     #            3136,
@@ -743,7 +777,7 @@ if __name__ == '__main__':
     logging.basicConfig()
     logging.root.setLevel(logging.DEBUG)
 
-    model_object = initialize_dnn_model()
+    model_object = initialize_dnn_model_simple()
     generate_samples(model_object)
     # export_to_image(model_object)
 
