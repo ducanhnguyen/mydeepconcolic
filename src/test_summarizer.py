@@ -52,7 +52,11 @@ def plot_seed_and_new_image(model_object, config, csv_new_image_path, png_compar
     original_prediction = np.argmax(model_object.get_model().predict(seed))
     logger.debug(f'{config.thread_name}: The prediction of the original seed = {original_prediction}')
 
-    new_image = pd.read_csv(csv_new_image_path, header=None)
+    if true_label != original_prediction:
+        logger.debug("Original prediction != true label")
+
+    new_image = pd.read_csv(csv_new_image_path, header=None) # [0..255]
+    new_image = new_image / 255
     new_image = new_image.to_numpy()
     new_image = new_image.reshape(1, -1)
     modified_prediction = np.argmax(model_object.get_model().predict(new_image))

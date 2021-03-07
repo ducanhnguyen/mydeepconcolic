@@ -6,6 +6,7 @@ import os
 from threading import Thread
 from types import SimpleNamespace
 
+import tensorflow as tf
 from keras.models import Model
 
 from src.config_parser import *
@@ -14,7 +15,7 @@ from src.saved_models.mnist_simard import MNIST_SIMARD
 from src.saved_models.mnist_simple import MNIST_SIMPLE
 from src.test_summarizer import *
 from src.utils import keras_activation, keras_layer, keras_model
-import tensorflow as tf
+from src.utils.utilities import compute_l0, compute_l2, compute_minimum_change, compute_linf
 
 MINUS_INF = -10000000
 INF = 10000000
@@ -374,7 +375,7 @@ def create_output_constraints_from_an_observation(model_object, x_train, y_train
                         second_value = prediction[0][idx]
                         second_idx = idx
 
-                smt_constraint = f'(assert (< {left } u_{last_layer_idx}_{second_idx}) )'
+                smt_constraint = f'(assert (< {left} u_{last_layer_idx}_{second_idx}) )'
                 logger.debug(f'Output constraint = {smt_constraint}')
                 smt_constraints.append(smt_constraint)
 
@@ -562,6 +563,7 @@ def set_up_config(thread_idx):
         .replace(OLD, str(thread_idx))
     config.z3_path = get_config(["z3", "z3_solver_path"]).replace(OLD, str(thread_idx))
     config.graph = tf.compat.v1.get_default_graph()
+    config.graph.finalize()  # make graph read-only
     config.analyzed_seed_index_file_path = get_config(["files", "analyzed_seed_index_file_path"]).replace(OLD, str(
         thread_idx))
     config.selected_seed_index_file_path = get_config(["files", "selected_seed_index_file_path"]).replace(OLD, str(
@@ -603,16 +605,17 @@ def generate_samples(model_object):
         for thread_idx in range(n_threads):
             # get range of seed in the current thread
             if thread_idx == n_threads - 1:
-                thread_seeds = np.arange(n_single_thread_seeds * (n_threads - 1), len(seeds))
+                thread_seeds_idx = np.arange(n_single_thread_seeds * (n_threads - 1), len(seeds))
             else:
-                thread_seeds = np.arange(n_single_thread_seeds * thread_idx, n_single_thread_seeds * (thread_idx + 1))
+                thread_seeds_idx = np.arange(n_single_thread_seeds * thread_idx,
+                                             n_single_thread_seeds * (thread_idx + 1))
 
             # read the configuration of a thread
             thread_config = set_up_config(thread_idx)
             thread_config.image_shape = model_object.get_image_shape()
 
             # create new thread
-            t = Thread(target=image_generation, args=(thread_seeds, thread_config, model_object))
+            t = Thread(target=image_generation, args=(seeds[thread_seeds_idx], thread_config, model_object))
             threads.append(t)
 
         # start all threads
@@ -630,38 +633,58 @@ def generate_samples(model_object):
 
 
 def priority_seeds(seeds, model_object):
+    '''
+    Remove wrongly predicted samples and ranking the others
+    :param seeds:
+    :param model_object:
+    :return:
+    '''
     delta_arr = []
     # for seed in seeds:
     ori = model_object.get_Xtrain()[seeds]
+    true_labels = model_object.get_ytrain()[seeds]
     pred = model_object.get_model().predict(ori.reshape(-1, 784))
 
     selected_seeds = []
     for idx in range(len(seeds)):
+
+        # ignore wrongly predicted sample
+        predicted_label = np.argmax(pred[idx])
+        if predicted_label != true_labels[idx]:
+            print(f'Seed {seeds[idx]}: Predict wrongly. Ignoring...')
+            continue
+
         # print(idx)
         labels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         pred_sort, labels = zip(*sorted(zip(pred[idx], labels)))
         last_idx = len(pred_sort) - 1
         delta = pred_sort[last_idx] - pred_sort[last_idx - 1]
-        if delta < 1: #ignore = 1
+
+        # if delta < 1: # to reduce the size of attacking set
+        if delta < 0.98:  # ignore
             delta_arr.append(delta)
             selected_seeds.append(seeds[idx])
 
     # for k, v in zip(delta, seeds):
     #     print(f'{k}, {v}')
     delta_arr, selected_seeds = zip(*sorted(zip(delta_arr, selected_seeds)))
-    return np.asarray(selected_seeds) # 1-D array
+    for idx in range(len(delta_arr)):
+        print(f'{idx}: prob(true label) - prob(second largest label) = {delta_arr[idx]}')
+    return np.asarray(selected_seeds)  # 1-D array
 
 
-def export_to_image(model_object):
+def confirm_and_export_adv_to_csv(seed_path: str, model_object):
+    adv_arr_path = []
     # load selected indexes
     import pandas as pd
-    selected_seed_indexes = pd.read_csv(get_config(["files", "selected_seed_index_file_path"]), header=None).to_numpy()
+    selected_seed_indexes = pd.read_csv(seed_path, header=None).to_numpy()
     selected_seed_indexes = selected_seed_indexes.reshape(-1)
 
     # config
     config = set_up_config(1235678910)  # can use any number
     config.should_plot = True
 
+    # Export adv to csv
     for seed_index in selected_seed_indexes:
         seed_index = int(seed_index)
         logger.debug(f'Seed index = {seed_index}')
@@ -672,7 +695,7 @@ def export_to_image(model_object):
         logger.debug(f'{config.thread_name}: generate constraints')
         create_constraints_file(model_object, seed_index, config)
 
-        # ecall SMT-Solver
+        # call SMT-Solver
         logger.debug(f'{config.thread_name}: call SMT-Solver to solve the constraints')
         command = f"{config.z3_path} -smt2 {config.constraints_file} > {config.z3_solution_file}"
         logger.debug(f'\t{config.thread_name}: command = {command}')
@@ -684,22 +707,137 @@ def export_to_image(model_object):
         logger.debug(f'{config.thread_name}: {command}')
         os.system(command)
 
-        # comparison
+        # compare
         img = get_new_image(solution_path=config.z3_normalized_output_file)
-
         if len(img) > 0:
             csv_new_image_path = f'../result/{model_object.get_name_dataset()}/{seed_index}.csv'
+            adv_arr_path.append(csv_new_image_path)
             with open(csv_new_image_path, mode='w') as f:
                 seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 seed.writerow(img)
 
             # plot the seed and the new image
-            png_comparison_image_path = str(config.comparison_file_path).replace('{seed_index}', str(seed_index))
-            png_new_image_path = str(config.new_image_file_path).replace('{seed_index}', str(seed_index))
-            plot_seed_and_new_image(model_object=model_object, config=config,
-                                    csv_new_image_path=csv_new_image_path,
-                                    png_comparison_image_path=png_comparison_image_path,
-                                    png_new_image_path=png_new_image_path)
+            # png_comparison_image_path = str(config.comparison_file_path).replace('{seed_index}', str(seed_index))
+            # png_new_image_path = str(config.new_image_file_path).replace('{seed_index}', str(seed_index))
+            # plot_seed_and_new_image(model_object=model_object, config=config,
+            #                         csv_new_image_path=csv_new_image_path,
+            #                         png_comparison_image_path=png_comparison_image_path,
+            #                         png_new_image_path=png_new_image_path)
+    return adv_arr_path
+
+
+def create_summary(directory: str, model_object):
+    def is_int(s: str):
+        try:
+            int(s)
+            return True
+        except ValueError:
+            return False
+
+    # get path of all adv files
+    adv_arr_path = []
+    for filename in os.listdir(directory):
+        if filename.endswith(".csv"):
+            adv_arr_path.append(os.path.join(directory, filename))
+        else:
+            continue
+
+    adv_dict = {}  # key: seed index, value: array of pixels
+    seed_index_arr = []
+    for idx in range(len(adv_arr_path)):
+        seed_index = os.path.basename(adv_arr_path[idx]).replace(".csv", "")
+        if not is_int(seed_index):
+            continue
+        seed_index = int(seed_index)
+        seed_index_arr.append(seed_index)
+
+        with open(adv_arr_path[idx]) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
+            line_count = 0
+            for row in csv_reader:
+                adv_dict[seed_index] = np.asarray(row).astype(int)
+
+    # load model
+    X_train = model_object.get_Xtrain()  # for MNIST: shape = (42000, 784)
+    l0_arr = []
+    l2_arr = []
+    linf_arr = []
+    seed_arr = []
+    minimum_change_arr = []
+    true_label_arr = []
+    adv_label_arr = []
+    position_adv_arr = []
+
+    for seed_index in seed_index_arr:
+        seed_arr.append(seed_index)
+
+        ori = X_train[seed_index]  # [0..1]
+        adv = adv_dict[seed_index]  # [0..255]
+
+        # compute distance of adv and its ori
+        l0 = compute_l0((ori * 255).astype(int), adv)
+        l0_arr.append(l0)
+
+        l2 = compute_l2(ori, adv / 255)
+        l2_arr.append(l2)
+
+        linf = compute_linf(ori, adv / 255)
+        linf_arr.append(linf)
+
+        minimum_change = compute_minimum_change(ori, adv / 255)
+        minimum_change_arr.append(minimum_change)
+
+        # compute prediction
+        true_pred = model_object.get_model().predict(ori.reshape(-1, 784))[0]
+        true_label = np.argmax(true_pred)
+        true_label_arr.append(true_label)
+
+        adv_pred = model_object.get_model().predict((adv/255).reshape(-1, 784))[0]
+        adv_label = np.argmax(adv_pred)
+        adv_label_arr.append(adv_label)
+        if true_label == adv_label:  # just confirm
+            print("PROBLEM!")
+            exit
+
+        # position of adv in the probability of original prediction
+        position_adv = -9999999999999
+        labels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        _, labels_sorted_by_prob = zip(*sorted(zip(true_pred, labels), reverse=True))
+        for j in range(len(labels_sorted_by_prob)):
+            if labels_sorted_by_prob[j] == adv_label:
+                position_adv = j + 1  # start from 1
+                break
+        position_adv_arr.append(position_adv)
+
+        # export image comparison
+        fig = plt.figure()
+        nrow = 1
+        ncol = 2
+        ori = ori.reshape(28, 28)
+        fig1 = fig.add_subplot(nrow, ncol, 1)
+        fig1.title.set_text(f'origin \nindex = {seed_index},\nlabel {true_label}, acc = {true_pred[true_label]}')
+        plt.imshow(ori, cmap="gray")
+
+        adv = (adv/255).reshape(28, 28)
+        fig2 = fig.add_subplot(nrow, ncol, 2)
+        fig2.title.set_text(
+            f'adv\nlabel {adv_label}, acc = {adv_pred[adv_label]}\n l0 = {l0}, l2 = ~{np.round(l2, 2)}')
+        plt.imshow(adv, cmap="gray")
+
+        png_comparison_image_path = directory + f'/{seed_index}_comparison.png'
+        plt.savefig(png_comparison_image_path, pad_inches=0, bbox_inches='tight')
+
+    # export to csv
+    summary_path = directory + '/summary.csv'
+    with open(summary_path, mode='w') as f:
+        seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        seed.writerow(['seed', 'l0', 'l2', 'l_inf', 'minimum_change', 'true_label', 'adv_label',
+                       'position_adv_label_in_original_pred'])
+        for i in range(len(l0_arr)):
+            seed.writerow([seed_arr[i], l0_arr[i], l2_arr[i], linf_arr[i], minimum_change_arr[i], true_label_arr[i],
+                           adv_label_arr[i], position_adv_arr[i]])
+
+    return summary_path
 
 
 def initialize_dnn_model():
@@ -751,9 +889,6 @@ def initialize_dnn_model_simard():
 
 
 def compute_prob(model_object):
-    # ori_arr = [43, 78, 163, 168, 397, 420, 445, 467, 548, 1014, 1538, 1653, 1935, 2112, 2262, 2316, 2694, 2772, 2776,
-    #            3136,
-    #            3637, 4195, 4271, 5049, 5544, 5584, 6136, 7330, 7340, 7504, 7691]
     ori_arr = [44, 45, 46, 47, 48, 49, 50]
     for ori_idx in ori_arr:
         ori = model_object.get_Xtrain()[ori_idx]
@@ -779,7 +914,10 @@ if __name__ == '__main__':
 
     model_object = initialize_dnn_model_simple()
     generate_samples(model_object)
-    # export_to_image(model_object)
+    # adv_arr_path = confirm_and_export_adv_to_csv(
+    #     "/Users/ducanhnguyen/Documents/mydeepconcolic/result/mnist/selected_seed_index.txt",
+    #     model_object)
+    # create_summary('/Users/ducanhnguyen/Documents/mydeepconcolic/result/mnist', model_object)
 
     # compute_prob(model_object)
     # seeds = priority_seeds([1, 2, 3, 4, 5], model_object)
