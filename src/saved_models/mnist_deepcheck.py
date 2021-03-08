@@ -10,10 +10,10 @@ Accuracy on train set: 0.9676166772842407
 Overall test score: 0.22557860612869263
 Accuracy on test set: 0.9440000057220459
 '''
-class MNIST(mnist_dataset):
+class MNIST_DEEPCHECK(mnist_dataset):
 
     def __init__(self):
-        super(MNIST, self).__init__()
+        super(MNIST_DEEPCHECK, self).__init__()
 
     def create_model(self, input_shape):
         model = Sequential()
@@ -36,7 +36,7 @@ class MNIST(mnist_dataset):
 
 if __name__ == '__main__':
     # train model
-    mnist = MNIST()
+    mnist = MNIST_DEEPCHECK()
     mnist.set_num_classes(10)
 
     mnist.train_model(train=True,
