@@ -25,7 +25,7 @@
     "test_set": "{base_path}/dataset/digit-recognizer/test.csv",
     "num_classes": 10,
     "start_seed": 0,
-    "end_seed": 40000
+    "end_seed": 10000
   },
   "shvn": {
     "structure": "{base_path}/src/saved_models/shvn_ann_keras.json",
@@ -51,19 +51,19 @@
     "seed_file_path": "{base_path}/result/{dataset}/seed{thread_idx}.csv",
     "true_label_seed_file_path": "{base_path}/result/{dataset}/true_label{thread_idx}.txt",
     "seed_index_file_path": "{base_path}/result/{dataset}/seed_index{thread_idx}.txt",
-    "analyzed_seed_index_file_path": "{base_path}/result/{dataset}/analyzed_seed_index.txt",
-    "selected_seed_index_file_path": "{base_path}/result/{dataset}/selected_seed_index.txt"
+    "analyzed_seed_index_file_path": "{base_path}/result/{dataset}/analyzed_seed_index{thread_idx}.txt",
+    "selected_seed_index_file_path": "{base_path}/result/{dataset}/selected_seed_index{thread_idx}.txt"
   },
   "constraint_config": {
-    "delta_lower_bound": 0,
-    "delta_upper_bound": 50,
+    "delta_lower_bound": 100,
+    "delta_upper_bound": 100,
     "feature_lower_bound": 0,
     "feature_upper_bound": 255,
     "feature_input_type": "int",
     "delta_prefix_name": "delta",
     "output_layer_type_constraint": "upper_bound"
   },
-  "n_threads": 1,
+  "n_threads": 4,
   "dataset": "mnist",
-  "base_path": "/Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic"
+  "base_path": "/Users/ducanhnguyen/Documents/mydeepconcolic"
 }

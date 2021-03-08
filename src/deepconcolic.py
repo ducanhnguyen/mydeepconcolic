@@ -8,7 +8,9 @@ from types import SimpleNamespace
 
 import tensorflow as tf
 from keras.models import Model
+import keras
 
+from src.abstract_dataset import abstract_dataset
 from src.config_parser import *
 from src.saved_models.mnist_ann_keras import *
 from src.saved_models.mnist_simard import MNIST_SIMARD
@@ -632,7 +634,7 @@ def generate_samples(model_object):
         image_generation(seeds, main_thread_config, model_object)
 
 
-def priority_seeds(seeds, model_object):
+def priority_seeds(seeds, model_object, threshold = 9999):
     '''
     Remove wrongly predicted samples and ranking the others
     :param seeds:
@@ -661,7 +663,7 @@ def priority_seeds(seeds, model_object):
         delta = pred_sort[last_idx] - pred_sort[last_idx - 1]
 
         # if delta < 1: # to reduce the size of attacking set
-        if delta < 0.98:  # ignore
+        if delta < threshold:  # ignore
             delta_arr.append(delta)
             selected_seeds.append(seeds[idx])
 
@@ -912,7 +914,7 @@ if __name__ == '__main__':
     logging.basicConfig()
     logging.root.setLevel(logging.DEBUG)
 
-    model_object = initialize_dnn_model_simple()
+    model_object = initialize_dnn_model()
     generate_samples(model_object)
     # adv_arr_path = confirm_and_export_adv_to_csv(
     #     "/Users/ducanhnguyen/Documents/mydeepconcolic/result/mnist/selected_seed_index.txt",
