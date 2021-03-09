@@ -6,9 +6,9 @@ import os
 from threading import Thread
 from types import SimpleNamespace
 
+import keras
 import tensorflow as tf
 from keras.models import Model
-import keras
 
 from src.abstract_dataset import abstract_dataset
 from src.config_parser import *
@@ -518,35 +518,24 @@ def image_generation(seeds, thread_config, model_object):
             os.system(command)
 
             # comparison
-            img = get_new_image(solution_path=thread_config.z3_normalized_output_file)
-
-            if len(img) > 0:  # 16627, 1121
-                csv_new_image_path = f'../result/{thread_config.dataset}/{seed_index}.csv'
-                with open(csv_new_image_path, mode='w') as f:
+            candidate_adv = analyze_smt_output(solution_path=thread_config.z3_normalized_output_file)
+            if candidate_adv is not None:
+                # export candidate adv to file
+                candidate_adv_csv_path = f'../result/{thread_config.dataset}/{seed_index}.csv'
+                with open(candidate_adv_csv_path, mode='w') as f:
                     seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                    seed.writerow(img)
+                    seed.writerow(candidate_adv)
 
-                # plot the seed and the new image
-                png_comparison_image_path = f'../result/{thread_config.dataset}/{seed_index}_comparison.png'
-                png_new_image_path = f'../result/{thread_config.dataset}/{seed_index}_new.png'
-                png_old_image_path = f'../result/{thread_config.dataset}/{seed_index}_old.png'
-                keep = plot_seed_and_new_image(model_object=model_object, config=thread_config,
-                                               csv_new_image_path=csv_new_image_path,
-                                               png_comparison_image_path=png_comparison_image_path,
-                                               png_new_image_path=png_new_image_path)
-                os.remove(csv_new_image_path)
-                if keep:
+                # check
+                is_valid = is_valid_adv(model_object=model_object, config=thread_config,
+                                        csv_new_image_path=candidate_adv_csv_path)
+                os.remove(candidate_adv_csv_path)
+                if is_valid:
                     with open(thread_config.selected_seed_index_file_path, mode='a') as f:
                         f.write(str(seed_index) + ',')
-                '''
-                if not keep:
-                    os.remove(png_comparison_image_path)
-                    os.remove(png_new_image_path)
-                '''
             else:
                 logger.debug(f'The constraints have no solution')
             logger.debug('--------------------------------------------------')
-            # break
 
 
 def set_up_config(thread_idx):
@@ -710,21 +699,22 @@ def confirm_and_export_adv_to_csv(seed_path: str, model_object):
         os.system(command)
 
         # compare
-        img = get_new_image(solution_path=config.z3_normalized_output_file)
-        if len(img) > 0:
+        candidate_adv = analyze_smt_output(solution_path=config.z3_normalized_output_file)
+        if candidate_adv is not None:
             csv_new_image_path = f'../result/{model_object.get_name_dataset()}/{seed_index}.csv'
             adv_arr_path.append(csv_new_image_path)
             with open(csv_new_image_path, mode='w') as f:
                 seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                seed.writerow(img)
+                seed.writerow(candidate_adv)
 
-            # plot the seed and the new image
-            # png_comparison_image_path = str(config.comparison_file_path).replace('{seed_index}', str(seed_index))
-            # png_new_image_path = str(config.new_image_file_path).replace('{seed_index}', str(seed_index))
-            # plot_seed_and_new_image(model_object=model_object, config=config,
-            #                         csv_new_image_path=csv_new_image_path,
-            #                         png_comparison_image_path=png_comparison_image_path,
-            #                         png_new_image_path=png_new_image_path)
+            # predict adv again to confirm
+            is_valid = is_valid_adv(model_object=model_object, config=config,
+                                    csv_new_image_path=csv_new_image_path)
+            if not is_valid:
+                os.remove(csv_new_image_path)
+            else:
+                xxx.append(seed_index)
+    print(xxx)
     return adv_arr_path
 
 
@@ -755,7 +745,6 @@ def create_summary(directory: str, model_object):
 
         with open(adv_arr_path[idx]) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
-            line_count = 0
             for row in csv_reader:
                 adv_dict[seed_index] = np.asarray(row).astype(int)
 
@@ -798,8 +787,8 @@ def create_summary(directory: str, model_object):
         adv_label = np.argmax(adv_pred)
         adv_label_arr.append(adv_label)
         if true_label == adv_label:  # just confirm
-            print("PROBLEM!")
-            exit
+            print(f"PROBLEM with seed {seed_index}!")
+            continue
 
         # position of adv in the probability of original prediction
         position_adv = -9999999999999
@@ -914,10 +903,10 @@ if __name__ == '__main__':
     logging.basicConfig()
     logging.root.setLevel(logging.DEBUG)
 
-    model_object = initialize_dnn_model()
+    model_object = initialize_dnn_model_simard()
     generate_samples(model_object)
     # adv_arr_path = confirm_and_export_adv_to_csv(
-    #     "/Users/ducanhnguyen/Documents/mydeepconcolic/result/mnist/selected_seed_index.txt",
+    #     "/Users/ducanhnguyen/Documents/mydeepconcolic/result/10k_first_mnist_simard/selected_seed_index0.txt",
     #     model_object)
     # create_summary('/Users/ducanhnguyen/Documents/mydeepconcolic/result/mnist', model_object)
 

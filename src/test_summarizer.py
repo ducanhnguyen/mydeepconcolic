@@ -10,7 +10,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
 
-def get_new_image(solution_path):
+def analyze_smt_output(solution_path):
     line = open(solution_path, "r").readline()
     if 'error' in line or 'unknown' in line or 'unsat' in line:
         return []
@@ -36,11 +36,12 @@ def get_new_image(solution_path):
 
         logger.debug(img.shape)
         assert (len(img.shape) == 1)
+        if len(img) == 0:
+            img = None
         return img
 
 
-def plot_seed_and_new_image(model_object, config, csv_new_image_path, png_comparison_image_path,
-                            png_new_image_path):
+def is_valid_adv(model_object, config, csv_new_image_path: str):
     with open(config.true_label_seed_file, 'r') as f:
         true_label = int(f.read())
     logger.debug(f'{config.thread_name}: True label = {true_label}')
@@ -55,7 +56,7 @@ def plot_seed_and_new_image(model_object, config, csv_new_image_path, png_compar
     if true_label != original_prediction:
         logger.debug("Original prediction != true label")
 
-    new_image = pd.read_csv(csv_new_image_path, header=None) # [0..255]
+    new_image = pd.read_csv(csv_new_image_path, header=None)  # [0..255]
     new_image = new_image / 255
     new_image = new_image.to_numpy()
     new_image = new_image.reshape(1, -1)
@@ -66,18 +67,6 @@ def plot_seed_and_new_image(model_object, config, csv_new_image_path, png_compar
         success = True
     else:
         success = False
-
-    # Export new image to file
-    if success and config.should_plot:
-        l2_dist = np.linalg.norm(new_image / 255 - seed)  # new_image: 0..255, seed: 0..1
-
-        l0_dist = 0
-        for idx in range(0, 784):
-            if int(255 * seed[0][idx]) != new_image[0][idx]:
-                l0_dist += 1
-
-        draw_figure(model_object, seed, original_prediction, modified_prediction, png_comparison_image_path,
-                    png_new_image_path, csv_new_image_path, l2_dist, l0_dist)
 
     return success
 
@@ -166,7 +155,7 @@ if __name__ == '__main__':
     true_label_seed_file = f'../data/true_label.txt'
     constraint_file = f'../data/constraint.txt'
 
-    img = get_new_image(solution_path="../data/norm_solution.txt")
+    img = analyze_smt_output(solution_path="../data/norm_solution.txt")
 
     # export new image to file for later usage
     new_image_path = f'../data/new_image.csv'
@@ -175,5 +164,5 @@ if __name__ == '__main__':
         seed.writerow(img)
 
     # plot the seed and the new image
-    seed, new_image, similar = plot_seed_and_new_image(seed_path=seed_file,
-                                                       csv_new_image_path=new_image_path)
+    seed, new_image, similar = is_valid_adv(seed_path=seed_file,
+                                            csv_new_image_path=new_image_path)
