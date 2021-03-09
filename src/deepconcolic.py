@@ -855,7 +855,8 @@ def initialize_dnn_model():
     model_object.set_name_dataset(name_model)
     model_object.set_image_shape((28, 28))
     model_object.set_selected_seed_index_file_path(get_config(["files", "selected_seed_index_file_path"]))
-    os.makedirs(get_config(["output_folder"]))
+    if not os.path.exists(get_config(["output_folder"])):
+        os.makedirs(get_config(["output_folder"]))
     return model_object
 
 
