@@ -738,18 +738,27 @@ def create_summary(directory: str, model_object, all_seeds):
             delta_first_prod_vs_third_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[2]))
             delta_first_prod_vs_fourth_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[3]))
         else:
-            # the seed must be predicted correctly
+            # the adv must be valid and the seed must be predicted correctly
             pred_label = np.argmax(predicted_prob)
-            if pred_label != y_true[seed_index]:
-                print(f"PROBLEM with seed {seed_index}!")
-                continue
-
-            # the adv must be valid
             adv = adv_dict[seed_index]  # [0..255]
             adv_pred = model_object.get_model().predict((adv / 255).reshape(-1, 784))[0]
             adv_label = np.argmax(adv_pred)
-            if pred_label == adv_label:  # just confirm
+            if pred_label == adv_label or pred_label != y_true[seed_index]:  # just confirm
                 print(f"PROBLEM with seed {seed_index}!")
+
+                l0_arr.append(None)
+                l2_arr.append(None)
+                linf_arr.append(None)
+                minimum_change_arr.append(None)
+                adv_label_arr.append(None)
+                position_adv_arr.append(None)
+                pred_label_arr.append(None)
+
+                true_pred_sorted = sorted(predicted_prob, reverse=True)
+                delta_first_prod_vs_second_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[1]))
+                delta_first_prod_vs_third_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[2]))
+                delta_first_prod_vs_fourth_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[3]))
+
                 continue
 
             adv_label_arr.append(adv_label)
