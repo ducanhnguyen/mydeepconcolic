@@ -712,9 +712,6 @@ def confirm_and_export_adv_to_csv(seed_path: str, model_object):
                                     csv_new_image_path=csv_new_image_path)
             if not is_valid:
                 os.remove(csv_new_image_path)
-            else:
-                xxx.append(seed_index)
-    print(xxx)
     return adv_arr_path
 
 
@@ -903,7 +900,7 @@ if __name__ == '__main__':
     logging.basicConfig()
     logging.root.setLevel(logging.DEBUG)
 
-    model_object = initialize_dnn_model_simard()
+    model_object = initialize_dnn_model()
     generate_samples(model_object)
     # adv_arr_path = confirm_and_export_adv_to_csv(
     #     "/Users/ducanhnguyen/Documents/mydeepconcolic/result/10k_first_mnist_simard/selected_seed_index0.txt",
