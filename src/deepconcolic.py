@@ -13,6 +13,7 @@ from keras.models import Model
 from src.abstract_dataset import abstract_dataset
 from src.config_parser import *
 from src.saved_models.mnist_ann_keras import *
+from src.saved_models.mnist_deepcheck import MNIST_DEEPCHECK
 from src.saved_models.mnist_simard import MNIST_SIMARD
 from src.saved_models.mnist_simple import MNIST_SIMPLE
 from src.test_summarizer import *
@@ -479,6 +480,7 @@ def image_generation(seeds, thread_config, model_object):
             if the seed is never analyzed before
             '''
             # append the current seed index to the analyzed seed index file
+
             with open(thread_config.analyzed_seed_index_file_path, mode='a') as f:
                 f.write(str(seed_index) + ',')
 
@@ -623,7 +625,7 @@ def generate_samples(model_object):
         image_generation(seeds, main_thread_config, model_object)
 
 
-def priority_seeds(seeds, model_object, threshold = 9999):
+def priority_seeds(seeds, model_object, threshold=9999):
     '''
     Remove wrongly predicted samples and ranking the others
     :param seeds:
@@ -780,7 +782,7 @@ def create_summary(directory: str, model_object):
         true_label = np.argmax(true_pred)
         true_label_arr.append(true_label)
 
-        adv_pred = model_object.get_model().predict((adv/255).reshape(-1, 784))[0]
+        adv_pred = model_object.get_model().predict((adv / 255).reshape(-1, 784))[0]
         adv_label = np.argmax(adv_pred)
         adv_label_arr.append(adv_label)
         if true_label == adv_label:  # just confirm
@@ -806,7 +808,7 @@ def create_summary(directory: str, model_object):
         fig1.title.set_text(f'origin \nindex = {seed_index},\nlabel {true_label}, acc = {true_pred[true_label]}')
         plt.imshow(ori, cmap="gray")
 
-        adv = (adv/255).reshape(28, 28)
+        adv = (adv / 255).reshape(28, 28)
         fig2 = fig.add_subplot(nrow, ncol, 2)
         fig2.title.set_text(
             f'adv\nlabel {adv_label}, acc = {adv_pred[adv_label]}\n l0 = {l0}, l2 = ~{np.round(l2, 2)}')
@@ -830,49 +832,30 @@ def create_summary(directory: str, model_object):
 
 def initialize_dnn_model():
     # custom code
-    model_object = MNIST()
-    dataset = get_config(["dataset"])
-    model_object.set_num_classes(get_config([dataset, "num_classes"]))
-    model_object.read_data(trainset_path=get_config([dataset, "train_set"]),
-                           testset_path=get_config([dataset, "test_set"]))
-    model_object.load_model(weight_path=get_config([dataset, "weight"]),
-                            structure_path=get_config([dataset, "structure"]),
-                            trainset_path=get_config([dataset, "train_set"]))
-    model_object.set_name_dataset(dataset)
+    name_model = get_config(attributes=["dataset"], config_path='./config_osx.json', recursive=True)
+    print(f'Model {name_model}')
+    model_object = None
+    if name_model == "mnist_ann_keras":
+        model_object = MNIST()
+    elif name_model == "mnist_simard":
+        model_object = MNIST_SIMARD()
+    elif name_model == "mnist_simple":
+        model_object = MNIST_SIMPLE()
+    elif name_model == "mnist_deepcheck":
+        model_object = MNIST_DEEPCHECK()
+    if model_object is None:
+        return
+
+    model_object.set_num_classes(get_config([name_model, "num_classes"]))
+    model_object.read_data(trainset_path=get_config([name_model, "train_set"]),
+                           testset_path=get_config([name_model, "test_set"]))
+    model_object.load_model(weight_path=get_config([name_model, "weight"]),
+                            structure_path=get_config([name_model, "structure"]),
+                            trainset_path=get_config([name_model, "train_set"]))
+    model_object.set_name_dataset(name_model)
     model_object.set_image_shape((28, 28))
     model_object.set_selected_seed_index_file_path(get_config(["files", "selected_seed_index_file_path"]))
-    return model_object
-
-
-def initialize_dnn_model_simple():
-    # custom code
-    model_object = MNIST_SIMPLE()
-    dataset = get_config(["dataset"])
-    model_object.set_num_classes(get_config([dataset, "num_classes"]))
-    model_object.read_data(trainset_path=get_config([dataset, "train_set"]),
-                           testset_path=get_config([dataset, "test_set"]))
-    model_object.load_model(weight_path=get_config([dataset, "weight"]),
-                            structure_path=get_config([dataset, "structure"]),
-                            trainset_path=get_config([dataset, "train_set"]))
-    model_object.set_name_dataset(dataset)
-    model_object.set_image_shape((28, 28))
-    model_object.set_selected_seed_index_file_path(get_config(["files", "selected_seed_index_file_path"]))
-    return model_object
-
-
-def initialize_dnn_model_simard():
-    # custom code
-    model_object = MNIST_SIMARD()
-    dataset = get_config(["dataset"])
-    model_object.set_num_classes(get_config([dataset, "num_classes"]))
-    model_object.read_data(trainset_path=get_config([dataset, "train_set"]),
-                           testset_path=get_config([dataset, "test_set"]))
-    model_object.load_model(weight_path=get_config([dataset, "weight"]),
-                            structure_path=get_config([dataset, "structure"]),
-                            trainset_path=get_config([dataset, "train_set"]))
-    model_object.set_name_dataset(dataset)
-    model_object.set_image_shape((28, 28))
-    model_object.set_selected_seed_index_file_path(get_config(["files", "selected_seed_index_file_path"]))
+    os.makedirs(get_config(["output_folder"]))
     return model_object
 
 
@@ -906,7 +889,3 @@ if __name__ == '__main__':
     #     "/Users/ducanhnguyen/Documents/mydeepconcolic/result/10k_first_mnist_simard/selected_seed_index0.txt",
     #     model_object)
     # create_summary('/Users/ducanhnguyen/Documents/mydeepconcolic/result/mnist', model_object)
-
-    # compute_prob(model_object)
-    # seeds = priority_seeds([1, 2, 3, 4, 5], model_object)
-    # print(seeds)
