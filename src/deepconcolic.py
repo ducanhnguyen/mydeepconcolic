@@ -531,10 +531,11 @@ def image_generation(seeds, thread_config, model_object):
                 # check
                 is_valid = is_valid_adv(model_object=model_object, config=thread_config,
                                         csv_new_image_path=candidate_adv_csv_path)
-                os.remove(candidate_adv_csv_path)
                 if is_valid:
                     with open(thread_config.selected_seed_index_file_path, mode='a') as f:
                         f.write(str(seed_index) + ',')
+                else:
+                    os.remove(candidate_adv_csv_path)
             else:
                 logger.debug(f'The constraints have no solution')
             logger.debug('--------------------------------------------------')
@@ -666,58 +667,7 @@ def priority_seeds(seeds, model_object, threshold=9999):
     return np.asarray(selected_seeds)  # 1-D array
 
 
-def confirm_and_export_adv_to_csv(seed_path: str, model_object):
-    adv_arr_path = []
-    # load selected indexes
-    import pandas as pd
-    selected_seed_indexes = pd.read_csv(seed_path, header=None).to_numpy()
-    selected_seed_indexes = selected_seed_indexes.reshape(-1)
-
-    # config
-    config = set_up_config(1235678910)  # can use any number
-    config.should_plot = True
-
-    # Export adv to csv
-    for seed_index in selected_seed_indexes:
-        seed_index = int(seed_index)
-        logger.debug(f'Seed index = {seed_index}')
-        with open(config.seed_index_file, mode='w') as f:
-            f.write(str(seed_index))
-
-        # generate constraints
-        logger.debug(f'{config.thread_name}: generate constraints')
-        create_constraints_file(model_object, seed_index, config)
-
-        # call SMT-Solver
-        logger.debug(f'{config.thread_name}: call SMT-Solver to solve the constraints')
-        command = f"{config.z3_path} -smt2 {config.constraints_file} > {config.z3_solution_file}"
-        logger.debug(f'\t{config.thread_name}: command = {command}')
-        os.system(command)
-
-        # parse the solution of constraints
-        logger.debug(f'{config.thread_name}: parse solver solution')
-        command = f'{config.z3_solution_parser_command} {config.z3_solution_file} {config.z3_normalized_output_file}'
-        logger.debug(f'{config.thread_name}: {command}')
-        os.system(command)
-
-        # compare
-        candidate_adv = analyze_smt_output(solution_path=config.z3_normalized_output_file)
-        if candidate_adv is not None:
-            csv_new_image_path = f'../result/{model_object.get_name_dataset()}/{seed_index}.csv'
-            adv_arr_path.append(csv_new_image_path)
-            with open(csv_new_image_path, mode='w') as f:
-                seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                seed.writerow(candidate_adv)
-
-            # predict adv again to confirm
-            is_valid = is_valid_adv(model_object=model_object, config=config,
-                                    csv_new_image_path=csv_new_image_path)
-            if not is_valid:
-                os.remove(csv_new_image_path)
-    return adv_arr_path
-
-
-def create_summary(directory: str, model_object):
+def create_summary(directory: str, model_object, all_seeds):
     def is_int(s: str):
         try:
             int(s)
@@ -734,13 +684,13 @@ def create_summary(directory: str, model_object):
             continue
 
     adv_dict = {}  # key: seed index, value: array of pixels
-    seed_index_arr = []
+    selected_seed_index_arr = []
     for idx in range(len(adv_arr_path)):
         seed_index = os.path.basename(adv_arr_path[idx]).replace(".csv", "")
         if not is_int(seed_index):
             continue
         seed_index = int(seed_index)
-        seed_index_arr.append(seed_index)
+        selected_seed_index_arr.append(seed_index)
 
         with open(adv_arr_path[idx]) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
@@ -748,91 +698,129 @@ def create_summary(directory: str, model_object):
                 adv_dict[seed_index] = np.asarray(row).astype(int)
 
     # load model
-    X_train = model_object.get_Xtrain()  # for MNIST: shape = (42000, 784)
+    X_train = model_object.get_Xtrain()  # for MNIST: shape = (60k, 784)
+    Y_pred = model_object.get_model().predict(X_train.reshape(-1, 784))  # for MNIST: shape = (N, 10)
+
+    before_softmax = model_object.get_model().layers[-2]
+    intermediate_layer_model = Model(inputs=model_object.get_model().inputs,
+                                     outputs=before_softmax.output)
+    Y_pred_intermediate_layer_model = intermediate_layer_model.predict(X_train.reshape(-1, 784))
+
+    y_true = model_object.get_ytrain()  # for MNIST: shape = (, N)
     l0_arr = []
     l2_arr = []
     linf_arr = []
     seed_arr = []
     minimum_change_arr = []
-    true_label_arr = []
+    pred_label_arr = []
     adv_label_arr = []
     position_adv_arr = []
+    delta_first_prod_vs_second_prob = []
+    delta_first_prod_vs_third_prob = []
+    delta_first_prod_vs_fourth_prob = []
 
-    for seed_index in seed_index_arr:
+    for seed_index in all_seeds:
+        print(seed_index)
+        predicted_prob = Y_pred_intermediate_layer_model[seed_index]
         seed_arr.append(seed_index)
 
-        ori = X_train[seed_index]  # [0..1]
-        adv = adv_dict[seed_index]  # [0..255]
+        if seed_index not in selected_seed_index_arr:
+            l0_arr.append(None)
+            l2_arr.append(None)
+            linf_arr.append(None)
+            minimum_change_arr.append(None)
+            adv_label_arr.append(None)
+            position_adv_arr.append(None)
+            pred_label_arr.append(None)
 
-        # compute distance of adv and its ori
-        l0 = compute_l0((ori * 255).astype(int), adv)
-        l0_arr.append(l0)
+            true_pred_sorted = sorted(predicted_prob, reverse=True)
+            delta_first_prod_vs_second_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[1]))
+            delta_first_prod_vs_third_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[2]))
+            delta_first_prod_vs_fourth_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[3]))
+        else:
+            # the seed must be predicted correctly
+            pred_label = np.argmax(predicted_prob)
+            if pred_label != y_true[seed_index]:
+                print(f"PROBLEM with seed {seed_index}!")
+                continue
 
-        l2 = compute_l2(ori, adv / 255)
-        l2_arr.append(l2)
+            # the adv must be valid
+            adv = adv_dict[seed_index]  # [0..255]
+            adv_pred = model_object.get_model().predict((adv / 255).reshape(-1, 784))[0]
+            adv_label = np.argmax(adv_pred)
+            if pred_label == adv_label:  # just confirm
+                print(f"PROBLEM with seed {seed_index}!")
+                continue
 
-        linf = compute_linf(ori, adv / 255)
-        linf_arr.append(linf)
+            adv_label_arr.append(adv_label)
+            pred_label_arr.append(pred_label)
 
-        minimum_change = compute_minimum_change(ori, adv / 255)
-        minimum_change_arr.append(minimum_change)
+            # compute distance of adv and its ori
+            ori = X_train[seed_index]  # [0..1]
 
-        # compute prediction
-        true_pred = model_object.get_model().predict(ori.reshape(-1, 784))[0]
-        true_label = np.argmax(true_pred)
-        true_label_arr.append(true_label)
+            l0 = compute_l0((ori * 255).astype(int), adv)
+            l0_arr.append(l0)
 
-        adv_pred = model_object.get_model().predict((adv / 255).reshape(-1, 784))[0]
-        adv_label = np.argmax(adv_pred)
-        adv_label_arr.append(adv_label)
-        if true_label == adv_label:  # just confirm
-            print(f"PROBLEM with seed {seed_index}!")
-            continue
+            l2 = compute_l2(ori, adv / 255)
+            l2_arr.append(l2)
 
-        # position of adv in the probability of original prediction
-        position_adv = -9999999999999
-        labels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-        _, labels_sorted_by_prob = zip(*sorted(zip(true_pred, labels), reverse=True))
-        for j in range(len(labels_sorted_by_prob)):
-            if labels_sorted_by_prob[j] == adv_label:
-                position_adv = j + 1  # start from 1
-                break
-        position_adv_arr.append(position_adv)
+            linf = compute_linf(ori, adv / 255)
+            linf_arr.append(linf)
 
-        # export image comparison
-        fig = plt.figure()
-        nrow = 1
-        ncol = 2
-        ori = ori.reshape(28, 28)
-        fig1 = fig.add_subplot(nrow, ncol, 1)
-        fig1.title.set_text(f'origin \nindex = {seed_index},\nlabel {true_label}, acc = {true_pred[true_label]}')
-        plt.imshow(ori, cmap="gray")
+            minimum_change = compute_minimum_change(ori, adv / 255)
+            minimum_change_arr.append(minimum_change)
 
-        adv = (adv / 255).reshape(28, 28)
-        fig2 = fig.add_subplot(nrow, ncol, 2)
-        fig2.title.set_text(
-            f'adv\nlabel {adv_label}, acc = {adv_pred[adv_label]}\n l0 = {l0}, l2 = ~{np.round(l2, 2)}')
-        plt.imshow(adv, cmap="gray")
+            # position of adv in the probability of original prediction
+            position_adv = -9999999999999
+            labels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+            true_pred_sorted, labels_sorted_by_prob = zip(*sorted(zip(predicted_prob, labels), reverse=True))
+            for j in range(len(labels_sorted_by_prob)):
+                if labels_sorted_by_prob[j] == adv_label:
+                    position_adv = j + 1  # start from 1
+                    break
+            position_adv_arr.append(position_adv)
+            delta_first_prod_vs_second_prob.append(true_pred_sorted[0] - true_pred_sorted[1])
+            delta_first_prod_vs_third_prob.append(true_pred_sorted[0] - true_pred_sorted[2])
+            delta_first_prod_vs_fourth_prob.append(true_pred_sorted[0] - true_pred_sorted[3])
 
-        png_comparison_image_path = directory + f'/{seed_index}_comparison.png'
-        plt.savefig(png_comparison_image_path, pad_inches=0, bbox_inches='tight')
+            # export image comparison
+            fig = plt.figure()
+            nrow = 1
+            ncol = 2
+            ori = ori.reshape(28, 28)
+            fig1 = fig.add_subplot(nrow, ncol, 1)
+            fig1.title.set_text(
+                f'origin \nindex = {seed_index},\nlabel {pred_label}, acc = {predicted_prob[pred_label]}')
+            plt.imshow(ori, cmap="gray")
+
+            adv = (adv / 255).reshape(28, 28)
+            fig2 = fig.add_subplot(nrow, ncol, 2)
+            fig2.title.set_text(
+                f'adv\nlabel {adv_label}, acc = {adv_pred[adv_label]}\n l0 = {l0}, l2 = ~{np.round(l2, 2)}')
+            plt.imshow(adv, cmap="gray")
+
+            png_comparison_image_path = directory + f'/{seed_index}_comparison.png'
+            plt.savefig(png_comparison_image_path, pad_inches=0, bbox_inches='tight')
 
     # export to csv
     summary_path = directory + '/summary.csv'
     with open(summary_path, mode='w') as f:
         seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         seed.writerow(['seed', 'l0', 'l2', 'l_inf', 'minimum_change', 'true_label', 'adv_label',
-                       'position_adv_label_in_original_pred'])
-        for i in range(len(l0_arr)):
-            seed.writerow([seed_arr[i], l0_arr[i], l2_arr[i], linf_arr[i], minimum_change_arr[i], true_label_arr[i],
-                           adv_label_arr[i], position_adv_arr[i]])
+                       'position_adv_label_in_original_pred', 'delta_first_prod_vs_second_prob',
+                       'delta_first_prod_vs_third_prob', 'delta_first_prod_vs_fourth_prob'])
+        for i in range(len(seed_arr)):
+            seed.writerow([seed_arr[i], l0_arr[i], l2_arr[i], linf_arr[i], minimum_change_arr[i], pred_label_arr[i],
+                           adv_label_arr[i], position_adv_arr[i], delta_first_prod_vs_second_prob[i],
+                           delta_first_prod_vs_third_prob[i],
+                           delta_first_prod_vs_fourth_prob[i]])
 
     return summary_path
 
 
 def initialize_dnn_model():
     # custom code
-    name_model = get_config(attributes=["dataset"], config_path='./config_osx.json', recursive=True)
+    name_model = get_config(attributes=["dataset"], recursive=True)
     print(f'Model {name_model}')
     model_object = None
     if name_model == "mnist_ann_keras":
@@ -885,8 +873,9 @@ if __name__ == '__main__':
     logging.root.setLevel(logging.DEBUG)
 
     model_object = initialize_dnn_model()
-    generate_samples(model_object)
-    # adv_arr_path = confirm_and_export_adv_to_csv(
-    #     "/Users/ducanhnguyen/Documents/mydeepconcolic/result/10k_first_mnist_simard/selected_seed_index0.txt",
-    #     model_object)
-    # create_summary('/Users/ducanhnguyen/Documents/mydeepconcolic/result/mnist', model_object)
+    # generate_samples(model_object)
+
+    start_seed = int(get_config([model_object.get_name_dataset(), "start_seed"]))
+    end_seed = int(get_config([model_object.get_name_dataset(), "end_seed"]))
+    create_summary(get_config(["output_folder"]), model_object,
+                   all_seeds=range(start_seed, end_seed))

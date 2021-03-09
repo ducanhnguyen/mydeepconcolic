@@ -1,11 +1,7 @@
 import csv
-import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-
-from src.deepconcolic import initialize_dnn_model
-from src.utils.utilities import compute_l0, compute_l2, compute_linf, compute_minimum_change
 
 
 def is_int(s: str):
@@ -15,115 +11,59 @@ def is_int(s: str):
     except ValueError:
         return False
 
+
+def is_float(s: str):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+
 if __name__ == '__main__':
-    DIRECTORY = '/Users/ducanhnguyen/Documents/mydeepconcolic/result/mnist_1'
+    with open('/Users/ducanhnguyen/Documents/mydeepconcolic/result/mnist_ann_keras/summary.csv') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        next(csv_reader, None)
+        arr = []
+        for row in csv_reader:
+            arr_row = []
+            for item in row:
+                if is_float(item):
+                    arr_row.append(float(item))
+                else:
+                    arr_row.append(None)
+            arr.append(arr_row)
+        # print(arr)
 
-    # get path of all adv files
-    adv_arr_path = []
-    for filename in os.listdir(DIRECTORY):
-        if filename.endswith(".csv"):
-            adv_arr_path.append(os.path.join(DIRECTORY, filename))
-        else:
-            continue
+    IDX_delta_first_prod_vs_second_prob = 8
+    IDX_seed = 0
+    IDX_adv_label = 6
+    threshold_arr = np.arange(0, 100, 0.1)
+    num_adv_arr = []
+    total_samples = []
+    for threshold in threshold_arr:
+        num_adv = 0
+        n_sample = 0
+        for row in arr:
+            if row[IDX_delta_first_prod_vs_second_prob] <= threshold:
+                if row[IDX_adv_label] is not None:
+                    num_adv += 1
+                n_sample += 1
+        print(f'threshold = {threshold}:  #adv = {num_adv}, # samples = {n_sample}')
+        num_adv_arr.append(num_adv)
+        total_samples.append(n_sample)
 
-    # load pixel
-    adv_dict = {} # key: seed index, value: array of pixels
-    seed_index_arr = []
-    for idx in range(len(adv_arr_path)):
-        seed_index = os.path.basename(adv_arr_path[idx]).replace(".csv", "")
-        if not is_int(seed_index):
-            continue
-        seed_index = int(seed_index)
-        seed_index_arr.append(seed_index)
+    # plot
+    num_adv_arr = np.asarray(num_adv_arr)
+    num_adv_arr = np.round(num_adv_arr/num_adv_arr[len(num_adv_arr)-1] * 100,1)
+    plt.plot(threshold_arr, num_adv_arr, label = 'percentage of adversaries')
 
-        with open(adv_arr_path[idx]) as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
-            line_count = 0
-            for row in csv_reader:
-                adv_dict[seed_index] = np.asarray(row).astype(int)
+    total_samples = np.asarray(total_samples)
+    total_samples = np.round(total_samples/total_samples[len(total_samples)-1] * 100,1)
+    plt.plot(threshold_arr, total_samples, label = 'percentage of samples used to attack\n(10k first samples on MNSIT)')
 
-    # load model
-    model_object = initialize_dnn_model()
-    X_train = model_object.get_Xtrain()  # for MNIST: shape = (42000, 784)
-    l0_arr = []
-    l2_arr = []
-    linf_arr = []
-    seed_arr = []
-    minimum_change_arr = []
-    true_label_arr = []
-    adv_label_arr = []
-    position_adv_arr = []
-
-    # kk = 0
-    for seed_index in seed_index_arr:
-        # kk += 1
-        # if kk == 10:
-        #     break
-
-        seed_arr.append(seed_index)
-
-        ori = X_train[seed_index]  # [0..1]
-        adv = adv_dict[seed_index]  # [0..255]
-
-        # compute distance of adv and its ori
-        l0 = compute_l0((ori * 255).astype(int), adv)
-        l0_arr.append(l0)
-
-        l2 = compute_l2(ori, adv / 255)
-        l2_arr.append(l2)
-
-        linf = compute_linf(ori, adv / 255)
-        linf_arr.append(linf)
-
-        minimum_change = compute_minimum_change(ori, adv / 255)
-        minimum_change_arr.append(minimum_change)
-
-        # compute prediction
-        true_pred = model_object.get_model().predict(ori.reshape(-1, 784))[0]
-        true_label = np.argmax(true_pred)
-        true_label_arr.append(true_label)
-
-        adv_pred = model_object.get_model().predict(adv.reshape(-1, 784))[0]
-        adv_label = np.argmax(adv_pred)
-        adv_label_arr.append(adv_label)
-        if true_label == adv_label: # just confirm
-            print("PROBLEM!")
-            exit
-
-        # position of adv in the probability of original prediction
-        position_adv = -9999999999999
-        labels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-        _, labels_sorted_by_prob = zip(*sorted(zip(true_pred, labels), reverse=True))
-        for j in range(len(labels_sorted_by_prob)):
-            if labels_sorted_by_prob[j] == adv_label:
-                position_adv = j + 1  # start from 1
-                break
-        position_adv_arr.append(position_adv)
-
-        # export image comparison
-        fig = plt.figure()
-        nrow = 1
-        ncol = 2
-        ori = ori.reshape(28, 28)
-        fig1 = fig.add_subplot(nrow, ncol, 1)
-        fig1.title.set_text(f'origin \nindex = {seed_index},\nlabel {true_label}, acc = {true_pred[true_label]}')
-        plt.imshow(ori, cmap="gray")
-
-        adv = adv.reshape(28, 28)
-        fig2 = fig.add_subplot(nrow, ncol, 2)
-        fig2.title.set_text(
-            f'adv\nlabel {adv_label}, acc = {adv_pred[adv_label]}\n l0 = {l0}, l2 = ~{np.round(l2, 2)}')
-        plt.imshow(adv, cmap="gray")
-
-        png_comparison_image_path = DIRECTORY + f'/{seed_index}_comparison.png'
-        plt.savefig(png_comparison_image_path, pad_inches=0, bbox_inches='tight')
-
-    # export to csv
-    summary_path = DIRECTORY + '/summary.csv'
-    with open(summary_path, mode='w') as f:
-        seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        seed.writerow(['seed', 'l0', 'l2', 'l_inf', 'minimum_change', 'true_label', 'adv_label',
-                       'position_adv_label_in_original_pred'])
-        for i in range(len(l0_arr)):
-            seed.writerow([seed_arr[i], l0_arr[i], l2_arr[i], linf_arr[i], minimum_change_arr[i], true_label_arr[i],
-                           adv_label_arr[i], position_adv_arr[i]])
+    plt.xlabel('threshold')
+    plt.ylabel('percentage')
+    plt.tight_layout()
+    plt.legend()
+    plt.show()

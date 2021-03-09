@@ -1,6 +1,15 @@
 import json
+import platform
 
-def get_config(attributes, config_path = './config_osx.json', recursive = True):
+
+def get_config(attributes, recursive=True):
+    if platform.system() == 'Darwin':  # macosx
+        config_path = './config_osx.json'
+    elif platform.system() == 'Linux':  # hpc
+        config_path = './config_hpc.json'
+    else:
+        return
+
     with open(config_path, 'r') as f:
         config = json.load(f)
 
@@ -8,16 +17,17 @@ def get_config(attributes, config_path = './config_osx.json', recursive = True):
         for attribute in attributes:
             con = con[attribute]
 
-        if isinstance(con,str) and recursive:
+        if isinstance(con, str) and recursive:
             DATASET_SIGNAL = '{dataset}'
             if DATASET_SIGNAL in con:
-                con = con.replace(DATASET_SIGNAL, get_config(['dataset'], config_path, False))
+                con = con.replace(DATASET_SIGNAL, get_config(['dataset'], False))
 
             BASE_PATH = '{base_path}'
             if BASE_PATH in con:
-                con = con.replace(BASE_PATH, get_config(['base_path'], config_path, False))
+                con = con.replace(BASE_PATH, get_config(['base_path'], False))
 
         return con
+
 
 if __name__ == '__main__':
     print(get_config(["solver", "z3_solution_parser_command"]))
