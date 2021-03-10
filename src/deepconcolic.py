@@ -12,12 +12,11 @@ from keras.models import Model
 
 from src.abstract_dataset import abstract_dataset
 from src.config_parser import *
-from src.saved_models.mnist_ann_keras import *
-from src.saved_models.mnist_deepcheck import MNIST_DEEPCHECK
-from src.saved_models.mnist_simard import MNIST_SIMARD
-from src.saved_models.mnist_simple import MNIST_SIMPLE
+from src.model_loader import initialize_dnn_model
 from src.test_summarizer import *
 from src.utils import keras_activation, keras_layer, keras_model
+from src.utils.feature_ranker1d import feature_ranker1d
+from src.utils.feature_ranker_2d import RANKING_ALGORITHM
 from src.utils.utilities import compute_l0, compute_l2, compute_minimum_change, compute_linf
 
 MINUS_INF = -10000000
@@ -30,7 +29,7 @@ logger = logging.getLogger()
 
 global graph
 
-global NORMALIZATION_FACTOR
+NORMALIZATION_FACTOR = 255
 
 
 def create_constraint_between_layers(model_object):
@@ -265,13 +264,27 @@ def create_variable_declarations(model_object, type_feature=get_config(["constra
 
 def create_feature_constraints_from_an_observation(model_object,
                                                    x_train,
+                                                   y_train,
                                                    delta_lower_bound: int,
                                                    delta_upper_bound: int,
                                                    feature_lower_bound: int,
-                                                   feature_upper_bound: int):
+                                                   feature_upper_bound: int,
+                                                   n_importances = get_config(
+                                                       ['constraint_config', 'fix_important_pixel']),
+                                                   fix_all_zero_pixel = get_config(
+                                                       ['constraint_config', 'fix_zero_pixel']) == "yes"):
     assert (isinstance(model_object, abstract_dataset))
-    smt_constraints = []
 
+    important_features = []
+    if n_importances > 0:
+        important_features = feature_ranker1d.find_important_features_of_a_sample(
+            input_image=x_train,
+            n_important_features=n_importances,
+            algorithm=RANKING_ALGORITHM.COI,
+            gradient_label=y_train,
+            classifier=model_object.get_model())
+
+    smt_constraints = []
     model = model_object.get_model()
     if keras_model.is_ANN(model):
 
@@ -283,24 +296,50 @@ def create_feature_constraints_from_an_observation(model_object,
             x_train = np.round(x_train.reshape(-1) * NORMALIZATION_FACTOR).astype(
                 int)  # for MNIST, round to integer range
             if n_features == x_train.shape[0]:
-                for feature_idx in range(n_features):
-                    if x_train[feature_idx] == 0:
-                        smt_constraint = f'(assert(and (>= feature_{feature_idx} 0) (<= feature_{feature_idx} 0)))'
-                        smt_constraints.append(smt_constraint)
-                    else:
-                        if feature_lower_bound > x_train[feature_idx] - delta_lower_bound:
-                            lower = feature_lower_bound
-                        else:
-                            lower = x_train[feature_idx] - delta_lower_bound
 
-                        # get upper
-                        if feature_upper_bound > x_train[feature_idx] + delta_upper_bound:
-                            upper = x_train[feature_idx] + delta_upper_bound
-                        else:
-                            upper = feature_upper_bound
+                # IF we only change important pixels
+                if len(important_features) > 0:
+                    for feature_idx in range(n_features):
+                        if feature_idx not in important_features: # fix value
+                            smt_constraint = f'(assert(and (>= feature_{feature_idx} {x_train[feature_idx]}) (<= feature_{feature_idx} {x_train[feature_idx]})))'
+                            smt_constraints.append(smt_constraint)
+                        elif fix_all_zero_pixel and x_train[feature_idx] == 0: # fix value
+                            smt_constraint = f'(assert(and (>= feature_{feature_idx} 0) (<= feature_{feature_idx} 0)))'
+                            smt_constraints.append(smt_constraint)
+                        else: # change value
+                            if feature_lower_bound > x_train[feature_idx] - delta_lower_bound:
+                                lower = feature_lower_bound
+                            else:
+                                lower = x_train[feature_idx] - delta_lower_bound
 
-                        smt_constraint = f'(assert(and (>= feature_{feature_idx} {lower}) (<= feature_{feature_idx} {upper})))'
-                        smt_constraints.append(smt_constraint)
+                            # get upper
+                            if feature_upper_bound > x_train[feature_idx] + delta_upper_bound:
+                                upper = x_train[feature_idx] + delta_upper_bound
+                            else:
+                                upper = feature_upper_bound
+
+                            smt_constraint = f'(assert(and (>= feature_{feature_idx} {lower}) (<= feature_{feature_idx} {upper})))'
+                            smt_constraints.append(smt_constraint)
+                else:
+                    # IF we do not care about the importance of pixels
+                    for feature_idx in range(n_features):
+                        if fix_all_zero_pixel and x_train[feature_idx] == 0:
+                            smt_constraint = f'(assert(and (>= feature_{feature_idx} 0) (<= feature_{feature_idx} 0)))'
+                            smt_constraints.append(smt_constraint)
+                        else:
+                            if feature_lower_bound > x_train[feature_idx] - delta_lower_bound:
+                                lower = feature_lower_bound
+                            else:
+                                lower = x_train[feature_idx] - delta_lower_bound
+
+                            # get upper
+                            if feature_upper_bound > x_train[feature_idx] + delta_upper_bound:
+                                upper = x_train[feature_idx] + delta_upper_bound
+                            else:
+                                upper = feature_upper_bound
+
+                            smt_constraint = f'(assert(and (>= feature_{feature_idx} {lower}) (<= feature_{feature_idx} {upper})))'
+                            smt_constraints.append(smt_constraint)
             else:
                 logger.debug(f'The size of sample does not match!')
         else:
@@ -422,7 +461,9 @@ def create_constraints_file(model_object, seed_index, thread_config):
     delta_upper_bound = get_config(["constraint_config", "delta_upper_bound"])
     feature_lower_bound = get_config(["constraint_config", "feature_lower_bound"])
     feature_upper_bound = get_config(["constraint_config", "feature_upper_bound"])
-    smt_input_constraints_modification = create_feature_constraints_from_an_observation(model_object, x_train,
+    smt_input_constraints_modification = create_feature_constraints_from_an_observation(model_object,
+                                                                                        x_train,
+                                                                                        y_train,
                                                                                         delta_lower_bound,
                                                                                         delta_upper_bound,
                                                                                         feature_lower_bound,
@@ -826,46 +867,6 @@ def create_summary(directory: str, model_object, all_seeds):
                            delta_first_prod_vs_fourth_prob[i]])
 
     return summary_path
-
-
-def initialize_dnn_model(name_model):
-    global NORMALIZATION_FACTOR
-    # custom code
-    name_model = get_config(attributes=["dataset"], recursive=True)
-    print(f'Model {name_model}')
-    model_object = None
-
-    if name_model == "mnist_ann_keras":
-        NORMALIZATION_FACTOR = mnist_dataset.NORMALIZATION_FACTOR
-        model_object = MNIST_ANN_KERAS()
-
-    elif name_model == "mnist_simard":
-        model_object = MNIST_SIMARD()
-        NORMALIZATION_FACTOR = mnist_dataset.NORMALIZATION_FACTOR
-
-    elif name_model == "mnist_simple":
-        model_object = MNIST_SIMPLE()
-        NORMALIZATION_FACTOR = mnist_dataset.NORMALIZATION_FACTOR
-
-    elif name_model == "mnist_deepcheck":
-        model_object = MNIST_DEEPCHECK()
-        NORMALIZATION_FACTOR = mnist_dataset.NORMALIZATION_FACTOR
-
-    if model_object is None:
-        return
-
-    model_object.set_num_classes(get_config([name_model, "num_classes"]))
-    model_object.read_data(trainset_path=get_config([name_model, "train_set"]),
-                           testset_path=get_config([name_model, "test_set"]))
-    model_object.load_model(weight_path=get_config([name_model, "weight"]),
-                            structure_path=get_config([name_model, "structure"]),
-                            trainset_path=get_config([name_model, "train_set"]))
-    model_object.set_name_dataset(name_model)
-    model_object.set_image_shape((28, 28))
-    model_object.set_selected_seed_index_file_path(get_config(["files", "selected_seed_index_file_path"]))
-    if not os.path.exists(get_config(["output_folder"])):
-        os.makedirs(get_config(["output_folder"]))
-    return model_object
 
 
 def compute_prob(model_object):
