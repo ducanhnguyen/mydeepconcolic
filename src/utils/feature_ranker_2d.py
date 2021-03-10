@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
-from src.deepconcolic import initialize_dnn_model
+from src.model_loader import initialize_dnn_model
 
 global logger
 logger = logging.getLogger()

@@ -4,7 +4,7 @@ import platform
 
 def get_config(attributes, recursive=True):
     if platform.system() == 'Darwin':  # macosx
-        config_path = './config_osx.json'
+        config_path = '/Users/ducanhnguyen/Documents/mydeepconcolic/src/config_osx.json'
     elif platform.system() == 'Linux':  # hpc
         config_path = './config_hpc.json'
     else:
