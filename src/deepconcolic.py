@@ -30,6 +30,8 @@ logger = logging.getLogger()
 
 global graph
 
+global NORMALIZATION_FACTOR
+
 
 def create_constraint_between_layers(model_object):
     assert (isinstance(model_object, abstract_dataset))
@@ -61,7 +63,7 @@ def create_constraint_between_layers(model_object):
                     previous_var = f'feature_{feature_idx}'
                     weight = kernel[feature_idx][current_pos]
 
-                    weight = weight / 255  # rather than normalizing feature input
+                    weight = weight / NORMALIZATION_FACTOR  # rather than normalizing feature input
                     if feature_idx == 0:
                         smt_constraint = f'(* {previous_var} {weight:.25f}) '
                     else:
@@ -278,21 +280,20 @@ def create_feature_constraints_from_an_observation(model_object,
             smt_constraints.append('; Feature bound constraints')
 
             n_features = input_shape[1]
-            x_train = np.round(x_train.reshape(-1) * 255).astype(int)  # for MNIST, round to integer range
+            x_train = np.round(x_train.reshape(-1) * NORMALIZATION_FACTOR).astype(
+                int)  # for MNIST, round to integer range
             if n_features == x_train.shape[0]:
                 for feature_idx in range(n_features):
                     if x_train[feature_idx] == 0:
                         smt_constraint = f'(assert(and (>= feature_{feature_idx} 0) (<= feature_{feature_idx} 0)))'
                         smt_constraints.append(smt_constraint)
                     else:
-                        lower = 0
                         if feature_lower_bound > x_train[feature_idx] - delta_lower_bound:
                             lower = feature_lower_bound
                         else:
                             lower = x_train[feature_idx] - delta_lower_bound
 
                         # get upper
-                        upper = 0
                         if feature_upper_bound > x_train[feature_idx] + delta_upper_bound:
                             upper = x_train[feature_idx] + delta_upper_bound
                         else:
@@ -507,7 +508,7 @@ def image_generation(seeds, thread_config, model_object):
             # call SMT-Solver
             logger.debug(f'{thread_config.thread_name}: call SMT-Solver to solve the constraints')
             command = f"{thread_config.z3_path} -smt2 {thread_config.constraints_file} > {thread_config.z3_solution_file}"
-            logger.debug(f'\t{thread_config.thread_name}: command = {command}')
+            # logger.debug(f'\t{thread_config.thread_name}: command = {command}')
             os.system(command)
 
             # parse solver solution
@@ -516,7 +517,7 @@ def image_generation(seeds, thread_config, model_object):
             tmp2 = thread_config.z3_normalized_output_file
             command = get_config(["z3", "z3_solution_parser_command"]) + f' {tmp1} ' + f'{tmp2}'
 
-            logger.debug(f'{thread_config.thread_name}: \t{command}')
+            # logger.debug(f'{thread_config.thread_name}: \t{command}')
             os.system(command)
 
             # comparison
@@ -740,8 +741,8 @@ def create_summary(directory: str, model_object, all_seeds):
         else:
             # the adv must be valid and the seed must be predicted correctly
             pred_label = np.argmax(predicted_prob)
-            adv = adv_dict[seed_index]  # [0..255]
-            adv_pred = model_object.get_model().predict((adv / 255).reshape(-1, 784))[0]
+            adv = adv_dict[seed_index]  # for MNIST: [0..255]
+            adv_pred = model_object.get_model().predict((adv / NORMALIZATION_FACTOR).reshape(-1, 784))[0]
             adv_label = np.argmax(adv_pred)
             if pred_label == adv_label or pred_label != y_true[seed_index]:  # just confirm
                 print(f"PROBLEM with seed {seed_index}!")
@@ -767,16 +768,16 @@ def create_summary(directory: str, model_object, all_seeds):
             # compute distance of adv and its ori
             ori = X_train[seed_index]  # [0..1]
 
-            l0 = compute_l0((ori * 255).astype(int), adv)
+            l0 = compute_l0((ori * NORMALIZATION_FACTOR).astype(int), adv)
             l0_arr.append(l0)
 
-            l2 = compute_l2(ori, adv / 255)
+            l2 = compute_l2(ori, adv / NORMALIZATION_FACTOR)
             l2_arr.append(l2)
 
-            linf = compute_linf(ori, adv / 255)
+            linf = compute_linf(ori, adv / NORMALIZATION_FACTOR)
             linf_arr.append(linf)
 
-            minimum_change = compute_minimum_change(ori, adv / 255)
+            minimum_change = compute_minimum_change(ori, adv / NORMALIZATION_FACTOR)
             minimum_change_arr.append(minimum_change)
 
             # position of adv in the probability of original prediction
@@ -802,7 +803,7 @@ def create_summary(directory: str, model_object, all_seeds):
                 f'origin \nindex = {seed_index},\nlabel {pred_label}, acc = {predicted_prob[pred_label]}')
             plt.imshow(ori, cmap="gray")
 
-            adv = (adv / 255).reshape(28, 28)
+            adv = (adv / NORMALIZATION_FACTOR).reshape(28, 28)
             fig2 = fig.add_subplot(nrow, ncol, 2)
             fig2.title.set_text(
                 f'adv\nlabel {adv_label}, acc = {adv_pred[adv_label]}\n l0 = {l0}, l2 = ~{np.round(l2, 2)}')
@@ -827,19 +828,29 @@ def create_summary(directory: str, model_object, all_seeds):
     return summary_path
 
 
-def initialize_dnn_model():
+def initialize_dnn_model(name_model):
+    global NORMALIZATION_FACTOR
     # custom code
     name_model = get_config(attributes=["dataset"], recursive=True)
     print(f'Model {name_model}')
     model_object = None
+
     if name_model == "mnist_ann_keras":
+        NORMALIZATION_FACTOR = mnist_dataset.NORMALIZATION_FACTOR
         model_object = MNIST_ANN_KERAS()
+
     elif name_model == "mnist_simard":
         model_object = MNIST_SIMARD()
+        NORMALIZATION_FACTOR = mnist_dataset.NORMALIZATION_FACTOR
+
     elif name_model == "mnist_simple":
         model_object = MNIST_SIMPLE()
+        NORMALIZATION_FACTOR = mnist_dataset.NORMALIZATION_FACTOR
+
     elif name_model == "mnist_deepcheck":
         model_object = MNIST_DEEPCHECK()
+        NORMALIZATION_FACTOR = mnist_dataset.NORMALIZATION_FACTOR
+
     if model_object is None:
         return
 
@@ -882,7 +893,7 @@ if __name__ == '__main__':
     logging.root.setLevel(logging.DEBUG)
 
     model_object = initialize_dnn_model()
-    # generate_samples(model_object)
+    generate_samples(model_object)
 
     start_seed = int(get_config([model_object.get_name_dataset(), "start_seed"]))
     end_seed = int(get_config([model_object.get_name_dataset(), "end_seed"]))

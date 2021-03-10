@@ -1,9 +1,15 @@
-from tensorflow import keras
-import tensorflow as tf
-import numpy as np
-import matplotlib.pyplot as plt
 import enum
+import logging
 
+import matplotlib.pyplot as plt
+import numpy as np
+import tensorflow as tf
+from tensorflow import keras
+
+from src.deepconcolic import initialize_dnn_model
+
+global logger
+logger = logging.getLogger()
 from src.utils.mylogger import MyLogger
 
 logger = MyLogger.getLog()
@@ -166,3 +172,21 @@ class feature_ranker:
         plt.imshow(input_image, cmap='gray')
         plt.title("Most important features are highlighted")
         plt.show()
+
+
+if __name__ == '__main__':
+    logging.basicConfig()
+    logging.root.setLevel(logging.DEBUG)
+
+    model_object = initialize_dnn_model()
+
+    input_image = model_object.get_Xtrain()[0].reshape(28, 28, 1)
+    n_rows = 28
+    n_cols = 28
+    n_channels = 1
+    n_important_features = 10
+    algorithm = RANKING_ALGORITHM.COI
+    gradient_label = 1
+    classifier = model_object.get_model()
+    feature_ranker.find_important_features_of_a_sample(
+        input_image, n_rows, n_cols, n_channels, n_important_features, algorithm, gradient_label, classifier)
