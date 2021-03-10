@@ -88,10 +88,12 @@
     "feature_upper_bound": 255,
     "feature_input_type": "int",
     "delta_prefix_name": "delta",
-    "output_layer_type_constraint": "upper_bound"
+    "output_layer_type_constraint": "upper_bound",
+    "fix_zero_pixel": "yes",
+    "fix_important_pixel": 10
   },
-  "n_threads": 1,
+  "n_threads": 4,
   "output_folder": "{base_path}/result/{dataset}",
-  "dataset": "mnist_ann_keras",
+  "dataset": "mnist_simple",
   "base_path": "/home/anhnd/mydeepconcolic"
 }

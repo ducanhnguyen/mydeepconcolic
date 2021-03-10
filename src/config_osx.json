@@ -45,14 +45,14 @@
     "end_seed": 60000,
     "link": "https://www.cs.toronto.edu/~kriz/cifar.html"
   },
-  "fashion_mnist": {
+  "fashion_mnist_john": {
     "structure": "{base_path}/src/saved_models/fashion_mnist_ann_keras.json",
     "weight": "{base_path}/src/saved_models/fashion_mnist_ann_keras.h5",
     "train_set": "{base_path}/dataset/fashion_mnist/train.csv",
     "test_set": "{base_path}/dataset/fashion_mnist/test.csv",
     "num_classes": 10,
     "start_seed": 0,
-    "end_seed": 60000
+    "end_seed": 10000
   },
   "shvn": {
     "structure": "{base_path}/src/saved_models/shvn_ann_keras.json",
@@ -88,10 +88,12 @@
     "feature_upper_bound": 255,
     "feature_input_type": "int",
     "delta_prefix_name": "delta",
-    "output_layer_type_constraint": "upper_bound"
+    "output_layer_type_constraint": "upper_bound",
+    "fix_zero_pixel": "yes",
+    "fix_important_pixel": 0
   },
-  "n_threads": 1,
+  "n_threads": 4,
   "output_folder": "{base_path}/result/{dataset}",
-  "dataset": "mnist_simard",
+  "dataset": "mnist_simple",
   "base_path": "/Users/ducanhnguyen/Documents/mydeepconcolic"
 }
