@@ -1,19 +1,33 @@
-import pandas as pd
 from keras.layers import Dense, Activation
 from keras.models import Sequential
 
 from src.mnist_dataset import mnist_dataset
 
 '''
-Overall training score: 0.0032980279065668583
-Accuracy on train set: 0.9990333318710327
-Overall test score: 0.28833839297294617
-Accuracy on test set: 0.9664999842643738
+Model mnist_ann_keras:
+    Overall training score: 0.0032980279065668583
+    Accuracy on train set: 0.9990333318710327
+    Overall test score: 0.28833839297294617
+    Accuracy on test set: 0.9664999842643738
+Model mnist_ann_keras_10k_first_samples_v2:
+    Overall training score: 0.003136696992442012
+    Accuracy on train set: 0.9990333318710327
+    Overall test score: 0.3277113735675812
+    Accuracy on test set: 0.9635000228881836
+
+Model mnist_ann_keras_10k_first_samples_v3:
+    Overall training score: 0.004398046527057886
+    Accuracy on train set: 0.9984833598136902
+    Overall test score: 0.3382343649864197
+    Accuracy on test set: 0.9635999798774719
+
 '''
-class MNIST(mnist_dataset):
+
+
+class MNIST_ANN_KERAS(mnist_dataset):
 
     def __init__(self):
-        super(MNIST, self).__init__()
+        super(MNIST_ANN_KERAS, self).__init__()
 
     def create_model(self, input_shape):
         model = Sequential()
@@ -33,7 +47,7 @@ class MNIST(mnist_dataset):
 
 if __name__ == '__main__':
     # train model
-    mnist = MNIST()
+    mnist = MNIST_ANN_KERAS()
     mnist.set_num_classes(10)
 
     mnist.train_model(train=True,

@@ -2,13 +2,8 @@ from keras.layers import Dense, Activation
 from keras.models import Sequential
 
 from src.mnist_dataset import mnist_dataset
-from src.saved_models.mnist_ann_keras import MNIST
 
 '''
-Overall training score: 0.003136696992442012
-Accuracy on train set: 0.9990333318710327
-Overall test score: 0.3277113735675812
-Accuracy on test set: 0.9635000228881836
 '''
 class MNIST_SIMARD(mnist_dataset):
 
@@ -39,7 +34,7 @@ class MNIST_SIMARD(mnist_dataset):
 
 if __name__ == '__main__':
     # train model
-    mnist = MNIST()
+    mnist = MNIST_SIMARD()
     mnist.set_num_classes(10)
 
     mnist.train_model(train=True,

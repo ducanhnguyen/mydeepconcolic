@@ -833,7 +833,7 @@ def initialize_dnn_model():
     print(f'Model {name_model}')
     model_object = None
     if name_model == "mnist_ann_keras":
-        model_object = MNIST()
+        model_object = MNIST_ANN_KERAS()
     elif name_model == "mnist_simard":
         model_object = MNIST_SIMARD()
     elif name_model == "mnist_simple":
