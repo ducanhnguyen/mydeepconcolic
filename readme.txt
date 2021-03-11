@@ -6,7 +6,7 @@ ssh -p 22033 anhnd@uet-hpc.remote.hpc.farm
 scp -P 22033 -r /Users/ducanhnguyen/Documents/mydeepconcolic/src anhnd@uet-hpc.remote.hpc.farm:/home/anhnd/mydeepconcolic
 
 or download:
-scp -P 22033 -r anhnd@uet-hpc.remote.hpc.farm:/home/anhnd/mydeepconcolic/result/mnist_simard /Users/ducanhnguyen/Documents/mydeepconcolic/result/
+scp -P 22033 -r anhnd@uet-hpc.remote.hpc.farm:/home/anhnd/mydeepconcolic/result/mnist_deepcheck /Users/ducanhnguyen/Documents/mydeepconcolic/result/
 
 2. Set up python path
 export PYTHONPATH=/home/anhnd/mydeepconcolic/:/home/anhnd/mydeepconcolic/src:/home/anhnd/mydeepconcolic/src/example:/home/anhnd/mydeepconcolic/src/utils:/home/anhnd/mydeepconcolic/saved_models:$PYTHONPATH
