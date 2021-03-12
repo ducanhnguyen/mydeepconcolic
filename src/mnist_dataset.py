@@ -6,6 +6,9 @@ from src.abstract_dataset import abstract_dataset
 class mnist_dataset(abstract_dataset):
     NORMALIZATION_FACTOR = 255
 
+    def __init__(self):
+        super(mnist_dataset, self).__init__()
+
     def read_data(self, trainset_path, testset_path):
         X = pd.read_csv(trainset_path).to_numpy()
 
