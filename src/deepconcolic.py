@@ -841,7 +841,7 @@ def create_summary(directory: str, model_object, all_seeds):
             ori = ori.reshape(28, 28)
             fig1 = fig.add_subplot(nrow, ncol, 1)
             fig1.title.set_text(
-                f'origin \nindex = {seed_index},\nlabel {pred_label}, acc = {predicted_prob[pred_label]}')
+                f'origin \nindex = {seed_index},\nlabel {pred_label}, acc = {Y_pred[seed_index][pred_label]}')
             plt.imshow(ori, cmap="gray")
 
             adv = (adv / NORMALIZATION_FACTOR).reshape(28, 28)
