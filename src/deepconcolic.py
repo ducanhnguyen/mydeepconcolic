@@ -11,6 +11,7 @@ import tensorflow as tf
 from keras.models import Model
 
 from src.abstract_dataset import abstract_dataset
+from src.close_to_edge_detection import close_to_edge
 from src.config_parser import *
 from src.log_analyzer import is_int
 from src.model_loader import initialize_dnn_model
@@ -310,6 +311,21 @@ def create_feature_constraints_from_an_observation(model_object,
                 smt_constraint = create_bound(x_train[feature_idx], delta_lower_bound, delta_upper_bound,
                                               feature_lower_bound, feature_upper_bound, feature_idx)
                 smt_constraints.append(smt_constraint)
+
+    elif strategy == 'change_close_to_edge':
+        x_28_28 = x_train.reshape(28, 28)
+        for feature_idx in range(n_features):
+            row_idx = int(np.floor(feature_idx / 28))
+            col_idx = feature_idx - row_idx * 28
+            if close_to_edge(row_idx, col_idx, x_28_28): # changed features
+                smt_constraint = create_bound(x_train[feature_idx], delta_lower_bound,
+                                              delta_upper_bound,
+                                              feature_lower_bound, feature_upper_bound, feature_idx)
+                smt_constraints.append(smt_constraint)
+            else:  # fixed features
+                smt_constraint = create_equal(f'feature_{feature_idx}', x_train[feature_idx])
+                smt_constraints.append(smt_constraint)
+
 
     elif strategy == 'change_edge':
         x_28_28 = x_train.reshape(28, 28)

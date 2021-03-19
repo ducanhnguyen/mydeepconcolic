@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     base_path = "/Users/ducanhnguyen/Documents/mydeepconcolic/result/mnist_ann_keras_1_pixel_attack/"
 
-    x_28_28 = model_object.get_Xtrain()[1].reshape(28, 28)  # 0..1
+    x_28_28 = model_object.get_Xtrain()[30].reshape(28, 28)  # 0..1
     x_clone = x_28_28.copy()
     max = np.max(x_28_28)
     for row_idx in range(28):

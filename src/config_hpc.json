@@ -88,12 +88,17 @@
     "feature_upper_bound": 255,
     "feature_input_type": "int",
     "delta_prefix_name": "delta",
-    "output_layer_type_constraint": "upper_bound",
-    "fix_zero_pixel": "yes",
-    "fix_important_pixel": 10
+    "output_layer_type_constraint": "true_index_smaller_than_second_index",
+    "strategy": "change_close_to_edge",
+    "supported_strategies": [
+      "change_nonzero_pixels",
+      "change_edge",
+      "change_close_to_edge",
+      "change_5_most_important_pixels"
+    ]
   },
   "n_threads": 4,
   "output_folder": "{base_path}/result/{dataset}",
-  "dataset": "mnist_simple",
+  "dataset": "mnist_deepcheck",
   "base_path": "/home/anhnd/mydeepconcolic"
 }
