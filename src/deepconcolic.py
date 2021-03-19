@@ -12,7 +12,9 @@ from keras.models import Model
 
 from src.abstract_dataset import abstract_dataset
 from src.config_parser import *
+from src.log_analyzer import is_int
 from src.model_loader import initialize_dnn_model
+from src.edge_detection import is_edge
 from src.test_summarizer import *
 from src.utils import keras_activation, keras_layer, keras_model
 from src.utils.feature_ranker1d import feature_ranker1d
@@ -262,6 +264,22 @@ def create_variable_declarations(model_object, type_feature=get_config(["constra
     return constraints
 
 
+def create_bound(feature_value, delta_lower_bound, delta_upper_bound, feature_lower_bound, feature_upper_bound,
+                 feature_idx):
+    tmp = feature_value - delta_lower_bound
+    lower = feature_lower_bound if feature_lower_bound > tmp else tmp
+
+    tmp = feature_value + delta_upper_bound
+    upper = tmp if feature_upper_bound > tmp else feature_upper_bound
+
+    smt_constraint = f'(assert(and (>= feature_{feature_idx} {lower}) (<= feature_{feature_idx} {upper})))'
+    return smt_constraint
+
+
+def create_equal(var, value):
+    return f'(assert(and (>= {var} {value}) (<= {var} {value})))'
+
+
 def create_feature_constraints_from_an_observation(model_object,
                                                    x_train,
                                                    y_train,
@@ -269,87 +287,73 @@ def create_feature_constraints_from_an_observation(model_object,
                                                    delta_upper_bound: int,
                                                    feature_lower_bound: int,
                                                    feature_upper_bound: int,
-                                                   n_importances = get_config(
-                                                       ['constraint_config', 'fix_important_pixel']),
-                                                   fix_all_zero_pixel = get_config(
-                                                       ['constraint_config', 'fix_zero_pixel']) == "yes"):
+                                                   strategy=get_config(
+                                                       ['constraint_config', 'strategy'])):
     assert (isinstance(model_object, abstract_dataset))
-
-    important_features = []
-    if n_importances > 0:
-        important_features = feature_ranker1d.find_important_features_of_a_sample(
-            input_image=x_train,
-            n_important_features=n_importances,
-            algorithm=RANKING_ALGORITHM.COI,
-            gradient_label=y_train,
-            classifier=model_object.get_model())
 
     smt_constraints = []
     model = model_object.get_model()
-    if keras_model.is_ANN(model):
+    input_shape = model.input_shape  # (None, n_features)
+    smt_constraints.append('; Feature bound constraints')
 
-        if isinstance(model, keras.engine.sequential.Sequential):
-            input_shape = model.input_shape  # (None, n_features)
-            smt_constraints.append('; Feature bound constraints')
+    n_features = input_shape[1]
+    x_train = np.round(x_train.reshape(-1) * NORMALIZATION_FACTOR).astype(
+        int)  # for MNIST, round to integer range
 
-            n_features = input_shape[1]
-            x_train = np.round(x_train.reshape(-1) * NORMALIZATION_FACTOR).astype(
-                int)  # for MNIST, round to integer range
-            if n_features == x_train.shape[0]:
+    if strategy == 'change_nonzero_pixels':
+        for feature_idx in range(n_features):
+            if x_train[feature_idx] == 0:  # fix value
+                smt_constraint = create_equal(f'feature_{feature_idx}', 0)
+                smt_constraints.append(smt_constraint)
 
-                # IF we only change important pixels
-                if len(important_features) > 0:
-                    for feature_idx in range(n_features):
-                        if feature_idx not in important_features: # fix value
-                            smt_constraint = f'(assert(and (>= feature_{feature_idx} {x_train[feature_idx]}) (<= feature_{feature_idx} {x_train[feature_idx]})))'
-                            smt_constraints.append(smt_constraint)
-                        elif fix_all_zero_pixel and x_train[feature_idx] == 0: # fix value
-                            smt_constraint = f'(assert(and (>= feature_{feature_idx} 0) (<= feature_{feature_idx} 0)))'
-                            smt_constraints.append(smt_constraint)
-                        else: # change value
-                            if feature_lower_bound > x_train[feature_idx] - delta_lower_bound:
-                                lower = feature_lower_bound
-                            else:
-                                lower = x_train[feature_idx] - delta_lower_bound
+            else:  # change value
+                smt_constraint = create_bound(x_train[feature_idx], delta_lower_bound, delta_upper_bound,
+                                              feature_lower_bound, feature_upper_bound, feature_idx)
+                smt_constraints.append(smt_constraint)
 
-                            # get upper
-                            if feature_upper_bound > x_train[feature_idx] + delta_upper_bound:
-                                upper = x_train[feature_idx] + delta_upper_bound
-                            else:
-                                upper = feature_upper_bound
+    elif strategy == 'change_edge':
+        x_28_28 = x_train.reshape(28, 28)
+        for feature_idx in range(n_features):
+            row_idx = int(np.floor(feature_idx / 28))
+            col_idx = feature_idx - row_idx * 28
+            if is_edge(row_idx, col_idx, x_28_28): # changed features
+                smt_constraint = create_bound(x_train[feature_idx], delta_lower_bound,
+                                              delta_upper_bound,
+                                              feature_lower_bound, feature_upper_bound, feature_idx)
+                smt_constraints.append(smt_constraint)
+            else:  # fixed features
+                smt_constraint = create_equal(f'feature_{feature_idx}', x_train[feature_idx])
+                smt_constraints.append(smt_constraint)
 
-                            smt_constraint = f'(assert(and (>= feature_{feature_idx} {lower}) (<= feature_{feature_idx} {upper})))'
-                            smt_constraints.append(smt_constraint)
-                else:
-                    # IF we do not care about the importance of pixels
-                    for feature_idx in range(n_features):
-                        if fix_all_zero_pixel and x_train[feature_idx] == 0:
-                            smt_constraint = f'(assert(and (>= feature_{feature_idx} 0) (<= feature_{feature_idx} 0)))'
-                            smt_constraints.append(smt_constraint)
-                        else:
-                            if feature_lower_bound > x_train[feature_idx] - delta_lower_bound:
-                                lower = feature_lower_bound
-                            else:
-                                lower = x_train[feature_idx] - delta_lower_bound
+    elif strategy.index('_most_important_pixels') > 0:
+        n_importances = strategy.replace('_most_important_pixels', '').replace('change_', '')
+        if is_int(n_importances):
+            n_importances = int(n_importances)
 
-                            # get upper
-                            if feature_upper_bound > x_train[feature_idx] + delta_upper_bound:
-                                upper = x_train[feature_idx] + delta_upper_bound
-                            else:
-                                upper = feature_upper_bound
+            if n_importances > 0:
+                important_features = feature_ranker1d.find_important_features_of_a_sample(
+                    input_image=x_train,
+                    n_important_features=n_importances,
+                    algorithm=RANKING_ALGORITHM.COI,
+                    gradient_label=y_train,
+                    classifier=model_object.get_model())
 
-                            smt_constraint = f'(assert(and (>= feature_{feature_idx} {lower}) (<= feature_{feature_idx} {upper})))'
-                            smt_constraints.append(smt_constraint)
-            else:
-                logger.debug(f'The size of sample does not match!')
-        else:
-            logger.debug(f'The input model must be sequential')
+                for feature_idx in range(n_features):
+                    if feature_idx not in important_features:  # fix value
+                        smt_constraint = create_equal(f'feature_{feature_idx}', x_train[feature_idx])
+                        smt_constraints.append(smt_constraint)
+                    else:  # change value
+                        smt_constraint = create_bound(x_train[feature_idx], delta_lower_bound,
+                                                      delta_upper_bound,
+                                                      feature_lower_bound, feature_upper_bound, feature_idx)
+                        smt_constraints.append(smt_constraint)
 
-    elif keras_model.is_CNN(model):
-        logger.debug(f'Model is not CNN. Does not support!')
 
-    else:
-        logger.debug(f'Unable to detect the type of neural network')
+    elif strategy == 'default':
+        for feature_idx in range(n_features):
+            smt_constraint = create_bound(x_train[feature_idx], delta_lower_bound, delta_upper_bound,
+                                          feature_lower_bound, feature_upper_bound, feature_idx)
+            smt_constraints.append(smt_constraint)
 
     return smt_constraints
 
