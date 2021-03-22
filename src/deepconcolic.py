@@ -13,9 +13,9 @@ from keras.models import Model
 from src.abstract_dataset import abstract_dataset
 from src.close_to_edge_detection import close_to_edge
 from src.config_parser import *
+from src.edge_detection import is_edge
 from src.log_analyzer import is_int
 from src.model_loader import initialize_dnn_model
-from src.edge_detection import is_edge
 from src.test_summarizer import *
 from src.utils import keras_activation, keras_layer, keras_model
 from src.utils.feature_ranker1d import feature_ranker1d
@@ -730,13 +730,6 @@ def priority_seeds(seeds, model_object, threshold=9999):
 
 
 def create_summary(directory: str, model_object, all_seeds):
-    def is_int(s: str):
-        try:
-            int(s)
-            return True
-        except ValueError:
-            return False
-
     # get path of all adv files
     adv_arr_path = []
     for filename in os.listdir(directory):
@@ -777,9 +770,16 @@ def create_summary(directory: str, model_object, all_seeds):
     pred_label_arr = []
     adv_label_arr = []
     position_adv_arr = []
-    delta_first_prod_vs_second_prob = []
-    delta_first_prod_vs_third_prob = []
-    delta_first_prod_vs_fourth_prob = []
+
+    first_largest_prob = []
+    second_largest_prob = []
+    third_largest_prob = []
+    fourth_largest_prob = []
+    fifth_largest_prob = []
+    last_largest_prob = []
+    # delta_first_prod_vs_second_prob = []
+    # delta_first_prod_vs_third_prob = []
+    # delta_first_prod_vs_fourth_prob = []
 
     for seed_index in all_seeds:
         print(seed_index)
@@ -796,9 +796,16 @@ def create_summary(directory: str, model_object, all_seeds):
             pred_label_arr.append(None)
 
             true_pred_sorted = sorted(predicted_prob, reverse=True)
-            delta_first_prod_vs_second_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[1]))
-            delta_first_prod_vs_third_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[2]))
-            delta_first_prod_vs_fourth_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[3]))
+            first_largest_prob.append(true_pred_sorted[0] )
+            second_largest_prob.append(true_pred_sorted[1] )
+            third_largest_prob.append(true_pred_sorted[2])
+            fourth_largest_prob.append(true_pred_sorted[3])
+            fifth_largest_prob.append(true_pred_sorted[4])
+            last_largest_prob.append(true_pred_sorted[-1])
+
+            # delta_first_prod_vs_second_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[1]))
+            # delta_first_prod_vs_third_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[2]))
+            # delta_first_prod_vs_fourth_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[3]))
         else:
             # the adv must be valid and the seed must be predicted correctly
             pred_label = np.argmax(predicted_prob)
@@ -817,9 +824,15 @@ def create_summary(directory: str, model_object, all_seeds):
                 pred_label_arr.append(None)
 
                 true_pred_sorted = sorted(predicted_prob, reverse=True)
-                delta_first_prod_vs_second_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[1]))
-                delta_first_prod_vs_third_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[2]))
-                delta_first_prod_vs_fourth_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[3]))
+                first_largest_prob.append(true_pred_sorted[0] )
+                second_largest_prob.append(true_pred_sorted[1] )
+                third_largest_prob.append(true_pred_sorted[2])
+                fourth_largest_prob.append(true_pred_sorted[3])
+                fifth_largest_prob.append(true_pred_sorted[4])
+                last_largest_prob.append(true_pred_sorted[-1])
+                # delta_first_prod_vs_second_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[1]))
+                # delta_first_prod_vs_third_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[2]))
+                # delta_first_prod_vs_fourth_prob.append(np.abs(true_pred_sorted[0] - true_pred_sorted[3]))
 
                 continue
 
@@ -850,9 +863,17 @@ def create_summary(directory: str, model_object, all_seeds):
                     position_adv = j + 1  # start from 1
                     break
             position_adv_arr.append(position_adv)
-            delta_first_prod_vs_second_prob.append(true_pred_sorted[0] - true_pred_sorted[1])
-            delta_first_prod_vs_third_prob.append(true_pred_sorted[0] - true_pred_sorted[2])
-            delta_first_prod_vs_fourth_prob.append(true_pred_sorted[0] - true_pred_sorted[3])
+
+            first_largest_prob.append(true_pred_sorted[0] )
+            second_largest_prob.append(true_pred_sorted[1] )
+            third_largest_prob.append(true_pred_sorted[2])
+            fourth_largest_prob.append(true_pred_sorted[3])
+            fifth_largest_prob.append(true_pred_sorted[4])
+            last_largest_prob.append(true_pred_sorted[-1])
+
+            # delta_first_prod_vs_second_prob.append(true_pred_sorted[0] - true_pred_sorted[1])
+            # delta_first_prod_vs_third_prob.append(true_pred_sorted[0] - true_pred_sorted[2])
+            # delta_first_prod_vs_fourth_prob.append(true_pred_sorted[0] - true_pred_sorted[3])
 
             # export image comparison
             fig = plt.figure()
@@ -877,15 +898,22 @@ def create_summary(directory: str, model_object, all_seeds):
     summary_path = directory + '/summary.csv'
     with open(summary_path, mode='w') as f:
         seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        # seed.writerow(['seed', 'l0', 'l2', 'l_inf', 'minimum_change', 'true_label', 'adv_label',
+        #                'position_adv_label_in_original_pred', 'delta_first_prod_vs_second_prob',
+        #                'delta_first_prod_vs_third_prob', 'delta_first_prod_vs_fourth_prob'])
+        # for i in range(len(seed_arr)):
+        #     seed.writerow([seed_arr[i], l0_arr[i], l2_arr[i], linf_arr[i], minimum_change_arr[i], pred_label_arr[i],
+        #                    adv_label_arr[i], position_adv_arr[i], delta_first_prod_vs_second_prob[i],
+        #                    delta_first_prod_vs_third_prob[i],
+        #                    delta_first_prod_vs_fourth_prob[i]])
         seed.writerow(['seed', 'l0', 'l2', 'l_inf', 'minimum_change', 'true_label', 'adv_label',
-                       'position_adv_label_in_original_pred', 'delta_first_prod_vs_second_prob',
-                       'delta_first_prod_vs_third_prob', 'delta_first_prod_vs_fourth_prob'])
+                       'position_adv_label_in_original_pred', 'first_largest',
+                       'second_largest', 'third_largest', 'fourth_largest', 'fifth_largest', 'last_largest'])
         for i in range(len(seed_arr)):
             seed.writerow([seed_arr[i], l0_arr[i], l2_arr[i], linf_arr[i], minimum_change_arr[i], pred_label_arr[i],
-                           adv_label_arr[i], position_adv_arr[i], delta_first_prod_vs_second_prob[i],
-                           delta_first_prod_vs_third_prob[i],
-                           delta_first_prod_vs_fourth_prob[i]])
-
+                           adv_label_arr[i], position_adv_arr[i], first_largest_prob[i],
+                           second_largest_prob[i], third_largest_prob[i], fourth_largest_prob[i],fifth_largest_prob[i],
+                           last_largest_prob[i]])
     return summary_path
 
 
