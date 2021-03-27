@@ -569,7 +569,7 @@ def image_generation(seeds, thread_config, model_object):
             # call SMT-Solver
             logger.debug(f'{thread_config.thread_name}: call SMT-Solver to solve the constraints')
             command = f"{thread_config.z3_path} -smt2 {thread_config.constraints_file} > {thread_config.z3_solution_file}"
-            # logger.debug(f'\t{thread_config.thread_name}: command = {command}')
+            logger.debug(f'\t{thread_config.thread_name}: command = {command}')
             os.system(command)
 
             # parse solver solution
@@ -582,7 +582,11 @@ def image_generation(seeds, thread_config, model_object):
             os.system(command)
 
             # comparison
-            candidate_adv = analyze_smt_output(solution_path=thread_config.z3_normalized_output_file)
+            try:
+                candidate_adv = analyze_smt_output(solution_path=thread_config.z3_normalized_output_file)
+            except:
+                candidate_adv = None
+
             if candidate_adv is not None:
                 # export candidate adv to file
                 candidate_adv_csv_path = f'../result/{thread_config.dataset}/{seed_index}.csv'

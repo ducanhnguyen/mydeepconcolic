@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 def is_edge(row_idx, col_idx, x_28_28):
     if x_28_28[row_idx, col_idx] == 0:
         return False
-    elif row_idx == 0 or col_idx == 0 or col_idx == 28 or row_idx == 28:
+    elif row_idx == 0 or col_idx == 0 or col_idx == 27 or row_idx == 27:
         return True
     elif x_28_28[row_idx - 1, col_idx] > 0 \
             and x_28_28[row_idx + 1, col_idx] > 0 \
@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     base_path = "/Users/ducanhnguyen/Documents/mydeepconcolic/result/mnist_ann_keras_1_pixel_attack/"
 
-    x_28_28 = model_object.get_Xtrain()[30].reshape(28, 28)  # 0..1
+    x_28_28 = model_object.get_Xtrain()[7387].reshape(28, 28)  # 0..1
     x_clone = x_28_28.copy()
     max = np.max(x_28_28)
     for row_idx in range(28):

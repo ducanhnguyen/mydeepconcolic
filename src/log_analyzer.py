@@ -54,7 +54,7 @@ def analyze_by_threshold(path):
     num_adv_arr = []
     total_samples = []
 
-    threshold_arr = np.arange(0, 100, 1)
+    threshold_arr = np.arange(0, 100, 0.1)
     for threshold in threshold_arr:
         num_adv = 0
         n_sample = 0
@@ -63,8 +63,7 @@ def analyze_by_threshold(path):
             # score = 1 * np.abs(row[IDX_first_largest_prob] - row[IDX_second_largest_prob]) + \
             #         1* np.abs(row[IDX_second_largest_prob] - row[IDX_third_largest_prob]) + \
             #         1 * np.abs(row[IDX_third_largest_prob] - row[IDX_third_largest_prob])
-            score = 0.7 * np.abs(row[IDX_first_largest_prob] - row[IDX_second_largest_prob]) + 0.3 * np.abs(
-                row[IDX_first_largest_prob] - row[IDX_second_largest_prob])
+            score = np.abs(row[IDX_first_largest_prob] - row[IDX_second_largest_prob])
             if score <= threshold:
                 if row[IDX_adv_label] is not None:
                     num_adv += 1
@@ -76,7 +75,7 @@ def analyze_by_threshold(path):
             break
 
     num_adv_arr = np.asarray(num_adv_arr)
-    # num_adv_arr = np.round(num_adv_arr / num_adv_arr[len(num_adv_arr) - 1] * 100, 1)
+    num_adv_arr = np.round(num_adv_arr / num_adv_arr[len(num_adv_arr) - 1] * 100, 1)
 
     total_samples = np.asarray(total_samples)
     total_samples = np.round(total_samples / total_samples[len(total_samples) - 1] * 100, 1)
@@ -104,7 +103,7 @@ def analyze_randomly(path):
         total_samples.append(n_sample)
 
     num_adv_arr = np.asarray(num_adv_arr)
-    # num_adv_arr = np.round(num_adv_arr / num_adv_arr[len(num_adv_arr) - 1] * 100, 1)
+    num_adv_arr = np.round(num_adv_arr / num_adv_arr[len(num_adv_arr) - 1] * 100, 1)
 
     total_samples = np.asarray(total_samples)
     total_samples = np.round(total_samples / total_samples[len(total_samples) - 1] * 100, 1)
@@ -329,8 +328,8 @@ def plot_1_pixel_attack():
 
 
 if __name__ == '__main__':
-    plot_n_pixel_attack_randomly_vs_directly()
-    # num_adv_arr, total_samples, threshold_arr = get_analysis(
-    #     '/Users/ducanhnguyen/Documents/mydeepconcolic/result/mnist_simard_10k_first_samples/summary.csv')
-    # for u, v in zip(num_adv_arr, total_samples):
-    #     print(f'%adv = {u}, %total = {v}')
+    # plot_n_pixel_attack_randomly_vs_directly()
+    num_adv_arr, total_samples, threshold_arr = analyze_by_threshold(
+        '/Users/ducanhnguyen/Documents/mydeepconcolic/result/changeOnEdge_delta100_upperBound/result/mnist_deepcheck/summary.csv')
+    for u, v in zip(num_adv_arr, total_samples):
+        print(f'%adv = {u}, %total = {v}')
