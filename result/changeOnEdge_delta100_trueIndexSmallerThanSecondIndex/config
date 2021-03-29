@@ -1,0 +1,16 @@
+"constraint_config": {
+    "delta_lower_bound": 100,
+    "delta_upper_bound": 100,
+    "feature_lower_bound": 0,
+    "feature_upper_bound": 255,
+    "feature_input_type": "int",
+    "delta_prefix_name": "delta",
+    "output_layer_type_constraint": "true_index_smaller_than_second_index",
+    "strategy": "change_edge",
+    "supported_strategies": [
+      "change_nonzero_pixels",
+      "change_edge",
+      "change_close_to_edge",
+      "change_5_most_important_pixels"
+    ]
+  },
