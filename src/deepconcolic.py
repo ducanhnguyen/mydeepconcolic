@@ -282,7 +282,7 @@ def create_equal(var, value):
 
 
 def create_feature_constraints_from_an_observation(model_object,
-                                                   x_train,
+                                                   x_train_shape784_bound1,
                                                    y_train,
                                                    delta_lower_bound: int,
                                                    delta_upper_bound: int,
@@ -298,47 +298,47 @@ def create_feature_constraints_from_an_observation(model_object,
     smt_constraints.append('; Feature bound constraints')
 
     n_features = input_shape[1]
-    x_train = np.round(x_train.reshape(-1) * NORMALIZATION_FACTOR).astype(
+    x_train_shape784_bound255 = np.round(x_train_shape784_bound1.reshape(-1) * NORMALIZATION_FACTOR).astype(
         int)  # for MNIST, round to integer range
 
     if strategy == 'change_nonzero_pixels':
         for feature_idx in range(n_features):
-            if x_train[feature_idx] == 0:  # fix value
+            if x_train_shape784_bound255[feature_idx] == 0:  # fix value
                 smt_constraint = create_equal(f'feature_{feature_idx}', 0)
                 smt_constraints.append(smt_constraint)
 
             else:  # change value
-                smt_constraint = create_bound(x_train[feature_idx], delta_lower_bound, delta_upper_bound,
+                smt_constraint = create_bound(x_train_shape784_bound255[feature_idx], delta_lower_bound, delta_upper_bound,
                                               feature_lower_bound, feature_upper_bound, feature_idx)
                 smt_constraints.append(smt_constraint)
 
     elif strategy == 'change_close_to_edge':
-        x_28_28 = x_train.reshape(28, 28)
+        x_28_28_bound255 = x_train_shape784_bound255.reshape(28, 28)
         for feature_idx in range(n_features):
             row_idx = int(np.floor(feature_idx / 28))
             col_idx = feature_idx - row_idx * 28
-            if close_to_edge(row_idx, col_idx, x_28_28): # changed features
-                smt_constraint = create_bound(x_train[feature_idx], delta_lower_bound,
+            if close_to_edge(row_idx, col_idx, x_28_28_bound255): # changed features
+                smt_constraint = create_bound(x_train_shape784_bound255[feature_idx], delta_lower_bound,
                                               delta_upper_bound,
                                               feature_lower_bound, feature_upper_bound, feature_idx)
                 smt_constraints.append(smt_constraint)
             else:  # fixed features
-                smt_constraint = create_equal(f'feature_{feature_idx}', x_train[feature_idx])
+                smt_constraint = create_equal(f'feature_{feature_idx}', x_train_shape784_bound255[feature_idx])
                 smt_constraints.append(smt_constraint)
 
 
     elif strategy == 'change_edge':
-        x_28_28 = x_train.reshape(28, 28)
+        x_28_28_bound255 = x_train_shape784_bound255.reshape(28, 28)
         for feature_idx in range(n_features):
             row_idx = int(np.floor(feature_idx / 28))
             col_idx = feature_idx - row_idx * 28
-            if is_edge(row_idx, col_idx, x_28_28): # changed features
-                smt_constraint = create_bound(x_train[feature_idx], delta_lower_bound,
+            if is_edge(row_idx, col_idx, x_28_28_bound255): # changed features
+                smt_constraint = create_bound(x_train_shape784_bound255[feature_idx], delta_lower_bound,
                                               delta_upper_bound,
                                               feature_lower_bound, feature_upper_bound, feature_idx)
                 smt_constraints.append(smt_constraint)
             else:  # fixed features
-                smt_constraint = create_equal(f'feature_{feature_idx}', x_train[feature_idx])
+                smt_constraint = create_equal(f'feature_{feature_idx}', x_train_shape784_bound255[feature_idx])
                 smt_constraints.append(smt_constraint)
 
     elif strategy.index('_most_important_pixels') > 0:
@@ -348,7 +348,7 @@ def create_feature_constraints_from_an_observation(model_object,
 
             if n_importances > 0:
                 important_features = feature_ranker1d.find_important_features_of_a_sample(
-                    input_image=x_train,
+                    input_image=x_train_shape784_bound1.reshape(-1, 784),
                     n_important_features=n_importances,
                     algorithm=RANKING_ALGORITHM.COI,
                     gradient_label=y_train,
@@ -356,10 +356,10 @@ def create_feature_constraints_from_an_observation(model_object,
 
                 for feature_idx in range(n_features):
                     if feature_idx not in important_features:  # fix value
-                        smt_constraint = create_equal(f'feature_{feature_idx}', x_train[feature_idx])
+                        smt_constraint = create_equal(f'feature_{feature_idx}', x_train_shape784_bound255[feature_idx])
                         smt_constraints.append(smt_constraint)
                     else:  # change value
-                        smt_constraint = create_bound(x_train[feature_idx], delta_lower_bound,
+                        smt_constraint = create_bound(x_train_shape784_bound255[feature_idx], delta_lower_bound,
                                                       delta_upper_bound,
                                                       feature_lower_bound, feature_upper_bound, feature_idx)
                         smt_constraints.append(smt_constraint)
@@ -367,7 +367,7 @@ def create_feature_constraints_from_an_observation(model_object,
 
     elif strategy == 'default':
         for feature_idx in range(n_features):
-            smt_constraint = create_bound(x_train[feature_idx], delta_lower_bound, delta_upper_bound,
+            smt_constraint = create_bound(x_train_shape784_bound255[feature_idx], delta_lower_bound, delta_upper_bound,
                                           feature_lower_bound, feature_upper_bound, feature_idx)
             smt_constraints.append(smt_constraint)
 

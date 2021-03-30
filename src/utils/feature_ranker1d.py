@@ -23,8 +23,7 @@ class feature_ranker1d:
     @staticmethod
     def compute_gradient_wrt_features(input: tf.Tensor,
                                       target_neuron: int,
-                                      classifier: tf.keras.Sequential,
-                                      n_pixels: int):
+                                      classifier: tf.keras.Sequential):
         """Compute gradient wrt features.
         Args:
             input: a tensor
@@ -63,8 +62,7 @@ class feature_ranker1d:
         gradient = feature_ranker1d.compute_gradient_wrt_features(
             input=tf.convert_to_tensor(input_image),
             target_neuron=gradient_label,
-            classifier=classifier,
-            n_pixels=n_pixels)
+            classifier=classifier)
 
         # find the position of the highest value in the gradient
         index_arr = np.arange(0, n_pixels)  # 1-D array
