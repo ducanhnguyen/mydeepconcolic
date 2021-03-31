@@ -1,0 +1,3573 @@
+sat
+(
+  (define-fun feature_41 () Int
+    0)
+  (define-fun feature_422 () Int
+    0)
+  (define-fun feature_273 () Int
+    0)
+  (define-fun feature_79 () Int
+    0)
+  (define-fun feature_245 () Int
+    0)
+  (define-fun feature_541 () Int
+    186)
+  (define-fun feature_752 () Int
+    0)
+  (define-fun feature_265 () Int
+    11)
+  (define-fun feature_348 () Int
+    254)
+  (define-fun feature_600 () Int
+    191)
+  (define-fun feature_481 () Int
+    0)
+  (define-fun feature_68 () Int
+    0)
+  (define-fun feature_179 () Int
+    0)
+  (define-fun feature_535 () Int
+    0)
+  (define-fun feature_167 () Int
+    0)
+  (define-fun feature_250 () Int
+    0)
+  (define-fun feature_688 () Int
+    0)
+  (define-fun feature_193 () Int
+    0)
+  (define-fun feature_491 () Int
+    32)
+  (define-fun feature_771 () Int
+    0)
+  (define-fun feature_29 () Int
+    0)
+  (define-fun feature_347 () Int
+    171)
+  (define-fun feature_205 () Int
+    0)
+  (define-fun feature_192 () Int
+    0)
+  (define-fun feature_209 () Int
+    0)
+  (define-fun feature_538 () Int
+    0)
+  (define-fun feature_204 () Int
+    0)
+  (define-fun feature_700 () Int
+    0)
+  (define-fun feature_210 () Int
+    0)
+  (define-fun feature_596 () Int
+    94)
+  (define-fun feature_463 () Int
+    156)
+  (define-fun feature_65 () Int
+    0)
+  (define-fun feature_124 () Int
+    0)
+  (define-fun feature_680 () Int
+    0)
+  (define-fun feature_562 () Int
+    0)
+  (define-fun feature_685 () Int
+    0)
+  (define-fun feature_501 () Int
+    0)
+  (define-fun feature_559 () Int
+    0)
+  (define-fun feature_385 () Int
+    0)
+  (define-fun feature_85 () Int
+    0)
+  (define-fun feature_507 () Int
+    0)
+  (define-fun feature_109 () Int
+    0)
+  (define-fun feature_351 () Int
+    0)
+  (define-fun feature_382 () Int
+    253)
+  (define-fun feature_595 () Int
+    0)
+  (define-fun feature_177 () Int
+    0)
+  (define-fun feature_297 () Int
+    0)
+  (define-fun feature_389 () Int
+    0)
+  (define-fun feature_626 () Int
+    0)
+  (define-fun feature_756 () Int
+    0)
+  (define-fun feature_476 () Int
+    0)
+  (define-fun feature_701 () Int
+    0)
+  (define-fun feature_203 () Int
+    0)
+  (define-fun feature_149 () Int
+    0)
+  (define-fun feature_211 () Int
+    11)
+  (define-fun feature_527 () Int
+    0)
+  (define-fun feature_296 () Int
+    114)
+  (define-fun feature_379 () Int
+    32)
+  (define-fun feature_526 () Int
+    0)
+  (define-fun feature_93 () Int
+    0)
+  (define-fun feature_350 () Int
+    139)
+  (define-fun feature_337 () Int
+    0)
+  (define-fun feature_637 () Int
+    0)
+  (define-fun feature_174 () Int
+    0)
+  (define-fun feature_349 () Int
+    255)
+  (define-fun feature_745 () Int
+    0)
+  (define-fun feature_220 () Int
+    0)
+  (define-fun feature_621 () Int
+    0)
+  (define-fun feature_88 () Int
+    0)
+  (define-fun feature_446 () Int
+    0)
+  (define-fun feature_417 () Int
+    0)
+  (define-fun feature_126 () Int
+    0)
+  (define-fun feature_172 () Int
+    0)
+  (define-fun feature_219 () Int
+    0)
+  (define-fun feature_518 () Int
+    109)
+  (define-fun feature_329 () Int
+    0)
+  (define-fun feature_613 () Int
+    0)
+  (define-fun feature_539 () Int
+    139)
+  (define-fun feature_594 () Int
+    0)
+  (define-fun feature_367 () Int
+    0)
+  (define-fun feature_7 () Int
+    0)
+  (define-fun feature_395 () Int
+    0)
+  (define-fun feature_423 () Int
+    0)
+  (define-fun feature_13 () Int
+    0)
+  (define-fun feature_747 () Int
+    0)
+  (define-fun feature_271 () Int
+    0)
+  (define-fun feature_201 () Int
+    0)
+  (define-fun feature_62 () Int
+    0)
+  (define-fun feature_61 () Int
+    0)
+  (define-fun feature_184 () Int
+    21)
+  (define-fun feature_433 () Int
+    110)
+  (define-fun feature_419 () Int
+    0)
+  (define-fun feature_484 () Int
+    238)
+  (define-fun feature_616 () Int
+    0)
+  (define-fun feature_437 () Int
+    52)
+  (define-fun feature_0 () Int
+    0)
+  (define-fun feature_715 () Int
+    0)
+  (define-fun feature_519 () Int
+    213)
+  (define-fun feature_86 () Int
+    0)
+  (define-fun feature_683 () Int
+    0)
+  (define-fun feature_777 () Int
+    0)
+  (define-fun feature_782 () Int
+    0)
+  (define-fun feature_339 () Int
+    0)
+  (define-fun feature_755 () Int
+    0)
+  (define-fun feature_66 () Int
+    0)
+  (define-fun feature_116 () Int
+    0)
+  (define-fun feature_34 () Int
+    0)
+  (define-fun feature_473 () Int
+    0)
+  (define-fun feature_324 () Int
+    0)
+  (define-fun feature_574 () Int
+    202)
+  (define-fun feature_19 () Int
+    0)
+  (define-fun feature_306 () Int
+    0)
+  (define-fun feature_163 () Int
+    0)
+  (define-fun feature_592 () Int
+    0)
+  (define-fun feature_322 () Int
+    253)
+  (define-fun feature_553 () Int
+    0)
+  (define-fun feature_612 () Int
+    0)
+  (define-fun feature_435 () Int
+    254)
+  (define-fun feature_96 () Int
+    0)
+  (define-fun feature_270 () Int
+    5)
+  (define-fun feature_299 () Int
+    0)
+  (define-fun feature_757 () Int
+    0)
+  (define-fun feature_697 () Int
+    0)
+  (define-fun feature_440 () Int
+    67)
+  (define-fun feature_572 () Int
+    254)
+  (define-fun feature_37 () Int
+    0)
+  (define-fun feature_243 () Int
+    0)
+  (define-fun feature_605 () Int
+    0)
+  (define-fun feature_479 () Int
+    0)
+  (define-fun feature_186 () Int
+    253)
+  (define-fun feature_449 () Int
+    0)
+  (define-fun feature_489 () Int
+    243)
+  (define-fun feature_242 () Int
+    99)
+  (define-fun feature_623 () Int
+    0)
+  (define-fun feature_506 () Int
+    0)
+  (define-fun feature_679 () Int
+    0)
+  (define-fun feature_686 () Int
+    0)
+  (define-fun feature_475 () Int
+    0)
+  (define-fun feature_95 () Int
+    0)
+  (define-fun feature_168 () Int
+    0)
+  (define-fun feature_98 () Int
+    0)
+  (define-fun feature_169 () Int
+    0)
+  (define-fun feature_334 () Int
+    0)
+  (define-fun feature_253 () Int
+    0)
+  (define-fun feature_514 () Int
+    21)
+  (define-fun feature_59 () Int
+    0)
+  (define-fun feature_726 () Int
+    0)
+  (define-fun feature_447 () Int
+    0)
+  (define-fun feature_714 () Int
+    0)
+  (define-fun feature_464 () Int
+    11)
+  (define-fun feature_763 () Int
+    0)
+  (define-fun feature_232 () Int
+    0)
+  (define-fun feature_638 () Int
+    0)
+  (define-fun feature_132 () Int
+    254)
+  (define-fun feature_45 () Int
+    0)
+  (define-fun feature_138 () Int
+    0)
+  (define-fun feature_256 () Int
+    0)
+  (define-fun feature_500 () Int
+    0)
+  (define-fun feature_327 () Int
+    0)
+  (define-fun feature_712 () Int
+    0)
+  (define-fun feature_323 () Int
+    134)
+  (define-fun feature_438 () Int
+    197)
+  (define-fun feature_509 () Int
+    0)
+  (define-fun feature_108 () Int
+    0)
+  (define-fun feature_176 () Int
+    0)
+  (define-fun feature_492 () Int
+    155)
+  (define-fun feature_376 () Int
+    253)
+  (define-fun feature_575 () Int
+    135)
+  (define-fun feature_582 () Int
+    0)
+  (define-fun feature_237 () Int
+    0)
+  (define-fun feature_434 () Int
+    243)
+  (define-fun feature_548 () Int
+    211)
+  (define-fun feature_287 () Int
+    0)
+  (define-fun feature_412 () Int
+    150)
+  (define-fun feature_5 () Int
+    0)
+  (define-fun feature_534 () Int
+    0)
+  (define-fun feature_31 () Int
+    0)
+  (define-fun feature_84 () Int
+    0)
+  (define-fun feature_494 () Int
+    232)
+  (define-fun feature_360 () Int
+    0)
+  (define-fun feature_740 () Int
+    0)
+  (define-fun feature_224 () Int
+    0)
+  (define-fun feature_213 () Int
+    254)
+  (define-fun feature_239 () Int
+    213)
+  (define-fun feature_485 () Int
+    253)
+  (define-fun feature_743 () Int
+    0)
+  (define-fun feature_662 () Int
+    0)
+  (define-fun feature_4 () Int
+    0)
+  (define-fun feature_158 () Int
+    217)
+  (define-fun feature_554 () Int
+    0)
+  (define-fun feature_671 () Int
+    0)
+  (define-fun feature_477 () Int
+    0)
+  (define-fun feature_206 () Int
+    0)
+  (define-fun feature_585 () Int
+    0)
+  (define-fun feature_607 () Int
+    0)
+  (define-fun feature_166 () Int
+    0)
+  (define-fun feature_309 () Int
+    0)
+  (define-fun feature_400 () Int
+    0)
+  (define-fun feature_713 () Int
+    0)
+  (define-fun feature_308 () Int
+    0)
+  (define-fun feature_304 () Int
+    0)
+  (define-fun feature_432 () Int
+    16)
+  (define-fun feature_272 () Int
+    0)
+  (define-fun feature_661 () Int
+    0)
+  (define-fun feature_99 () Int
+    0)
+  (define-fun feature_73 () Int
+    0)
+  (define-fun feature_392 () Int
+    0)
+  (define-fun feature_353 () Int
+    37)
+  (define-fun feature_208 () Int
+    0)
+  (define-fun feature_258 () Int
+    0)
+  (define-fun feature_706 () Int
+    0)
+  (define-fun feature_749 () Int
+    0)
+  (define-fun feature_38 () Int
+    0)
+  (define-fun feature_703 () Int
+    0)
+  (define-fun feature_490 () Int
+    98)
+  (define-fun feature_668 () Int
+    0)
+  (define-fun feature_720 () Int
+    0)
+  (define-fun feature_375 () Int
+    254)
+  (define-fun feature_26 () Int
+    0)
+  (define-fun feature_264 () Int
+    0)
+  (define-fun feature_421 () Int
+    0)
+  (define-fun feature_663 () Int
+    0)
+  (define-fun feature_583 () Int
+    0)
+  (define-fun feature_576 () Int
+    11)
+  (define-fun feature_652 () Int
+    0)
+  (define-fun feature_363 () Int
+    0)
+  (define-fun feature_69 () Int
+    0)
+  (define-fun feature_83 () Int
+    0)
+  (define-fun feature_187 () Int
+    228)
+  (define-fun feature_312 () Int
+    0)
+  (define-fun feature_498 () Int
+    0)
+  (define-fun feature_277 () Int
+    0)
+  (define-fun feature_469 () Int
+    0)
+  (define-fun feature_55 () Int
+    0)
+  (define-fun feature_159 () Int
+    254)
+  (define-fun feature_653 () Int
+    0)
+  (define-fun feature_589 () Int
+    0)
+  (define-fun feature_161 () Int
+    21)
+  (define-fun feature_371 () Int
+    0)
+  (define-fun feature_486 () Int
+    98)
+  (define-fun feature_666 () Int
+    0)
+  (define-fun feature_759 () Int
+    0)
+  (define-fun feature_418 () Int
+    0)
+  (define-fun feature_552 () Int
+    0)
+  (define-fun feature_770 () Int
+    0)
+  (define-fun feature_214 () Int
+    253)
+  (define-fun feature_226 () Int
+    0)
+  (define-fun feature_315 () Int
+    0)
+  (define-fun feature_436 () Int
+    191)
+  (define-fun feature_525 () Int
+    0)
+  (define-fun feature_699 () Int
+    0)
+  (define-fun feature_725 () Int
+    0)
+  (define-fun feature_624 () Int
+    0)
+  (define-fun feature_731 () Int
+    0)
+  (define-fun feature_547 () Int
+    254)
+  (define-fun feature_659 () Int
+    0)
+  (define-fun feature_120 () Int
+    0)
+  (define-fun feature_511 () Int
+    79)
+  (define-fun feature_235 () Int
+    0)
+  (define-fun feature_689 () Int
+    0)
+  (define-fun feature_391 () Int
+    0)
+  (define-fun feature_338 () Int
+    0)
+  (define-fun feature_175 () Int
+    0)
+  (define-fun feature_780 () Int
+    0)
+  (define-fun feature_81 () Int
+    0)
+  (define-fun feature_702 () Int
+    0)
+  (define-fun feature_153 () Int
+    0)
+  (define-fun feature_91 () Int
+    0)
+  (define-fun feature_549 () Int
+    63)
+  (define-fun feature_646 () Int
+    0)
+  (define-fun feature_502 () Int
+    0)
+  (define-fun feature_263 () Int
+    0)
+  (define-fun feature_36 () Int
+    0)
+  (define-fun feature_76 () Int
+    161)
+  (define-fun feature_215 () Int
+    63)
+  (define-fun feature_445 () Int
+    0)
+  (define-fun feature_130 () Int
+    63)
+  (define-fun feature_515 () Int
+    192)
+  (define-fun feature_300 () Int
+    0)
+  (define-fun feature_310 () Int
+    0)
+  (define-fun feature_399 () Int
+    0)
+  (define-fun feature_182 () Int
+    0)
+  (define-fun feature_734 () Int
+    0)
+  (define-fun feature_44 () Int
+    0)
+  (define-fun feature_200 () Int
+    0)
+  (define-fun feature_748 () Int
+    0)
+  (define-fun feature_234 () Int
+    0)
+  (define-fun feature_345 () Int
+    0)
+  (define-fun feature_361 () Int
+    0)
+  (define-fun feature_135 () Int
+    0)
+  (define-fun feature_729 () Int
+    0)
+  (define-fun feature_278 () Int
+    0)
+  (define-fun feature_672 () Int
+    0)
+  (define-fun feature_269 () Int
+    99)
+  (define-fun feature_560 () Int
+    0)
+  (define-fun feature_431 () Int
+    191)
+  (define-fun feature_240 () Int
+    254)
+  (define-fun feature_54 () Int
+    0)
+  (define-fun feature_160 () Int
+    211)
+  (define-fun feature_523 () Int
+    0)
+  (define-fun feature_372 () Int
+    0)
+  (define-fun feature_292 () Int
+    11)
+  (define-fun feature_711 () Int
+    0)
+  (define-fun feature_107 () Int
+    0)
+  (define-fun feature_136 () Int
+    0)
+  (define-fun feature_673 () Int
+    0)
+  (define-fun feature_30 () Int
+    0)
+  (define-fun feature_586 () Int
+    0)
+  (define-fun feature_772 () Int
+    0)
+  (define-fun feature_556 () Int
+    0)
+  (define-fun feature_681 () Int
+    0)
+  (define-fun feature_241 () Int
+    255)
+  (define-fun feature_233 () Int
+    0)
+  (define-fun feature_739 () Int
+    0)
+  (define-fun feature_283 () Int
+    0)
+  (define-fun feature_6 () Int
+    0)
+  (define-fun feature_468 () Int
+    11)
+  (define-fun feature_198 () Int
+    0)
+  (define-fun feature_189 () Int
+    0)
+  (define-fun feature_58 () Int
+    0)
+  (define-fun feature_710 () Int
+    0)
+  (define-fun feature_537 () Int
+    0)
+  (define-fun feature_606 () Int
+    0)
+  (define-fun feature_439 () Int
+    254)
+  (define-fun feature_458 () Int
+    223)
+  (define-fun feature_557 () Int
+    0)
+  (define-fun feature_677 () Int
+    0)
+  (define-fun feature_74 () Int
+    0)
+  (define-fun feature_104 () Int
+    253)
+  (define-fun feature_32 () Int
+    0)
+  (define-fun feature_781 () Int
+    0)
+  (define-fun feature_261 () Int
+    0)
+  (define-fun feature_266 () Int
+    155)
+  (define-fun feature_170 () Int
+    0)
+  (define-fun feature_373 () Int
+    0)
+  (define-fun feature_356 () Int
+    6)
+  (define-fun feature_513 () Int
+    228)
+  (define-fun feature_766 () Int
+    0)
+  (define-fun feature_11 () Int
+    0)
+  (define-fun feature_293 () Int
+    120)
+  (define-fun feature_610 () Int
+    0)
+  (define-fun feature_728 () Int
+    0)
+  (define-fun feature_162 () Int
+    0)
+  (define-fun feature_544 () Int
+    0)
+  (define-fun feature_325 () Int
+    0)
+  (define-fun feature_474 () Int
+    0)
+  (define-fun feature_3 () Int
+    0)
+  (define-fun feature_156 () Int
+    0)
+  (define-fun feature_571 () Int
+    255)
+  (define-fun feature_457 () Int
+    254)
+  (define-fun feature_682 () Int
+    0)
+  (define-fun feature_181 () Int
+    0)
+  (define-fun feature_413 () Int
+    0)
+  (define-fun feature_448 () Int
+    0)
+  (define-fun feature_455 () Int
+    0)
+  (define-fun feature_228 () Int
+    0)
+  (define-fun feature_390 () Int
+    0)
+  (define-fun feature_629 () Int
+    0)
+  (define-fun feature_386 () Int
+    0)
+  (define-fun feature_401 () Int
+    68)
+  (define-fun feature_223 () Int
+    0)
+  (define-fun feature_313 () Int
+    0)
+  (define-fun feature_573 () Int
+    255)
+  (define-fun feature_758 () Int
+    0)
+  (define-fun feature_377 () Int
+    119)
+  (define-fun feature_657 () Int
+    0)
+  (define-fun feature_590 () Int
+    0)
+  (define-fun feature_103 () Int
+    120)
+  (define-fun feature_17 () Int
+    0)
+  (define-fun feature_148 () Int
+    0)
+  (define-fun feature_302 () Int
+    0)
+  (define-fun feature_364 () Int
+    0)
+  (define-fun feature_102 () Int
+    0)
+  (define-fun feature_746 () Int
+    0)
+  (define-fun feature_127 () Int
+    0)
+  (define-fun feature_57 () Int
+    0)
+  (define-fun feature_387 () Int
+    0)
+  (define-fun feature_642 () Int
+    0)
+  (define-fun feature_118 () Int
+    0)
+  (define-fun feature_533 () Int
+    0)
+  (define-fun feature_362 () Int
+    0)
+  (define-fun feature_632 () Int
+    0)
+  (define-fun feature_696 () Int
+    0)
+  (define-fun feature_565 () Int
+    0)
+  (define-fun feature_540 () Int
+    253)
+  (define-fun feature_628 () Int
+    0)
+  (define-fun feature_80 () Int
+    0)
+  (define-fun feature_738 () Int
+    0)
+  (define-fun feature_147 () Int
+    0)
+  (define-fun feature_643 () Int
+    0)
+  (define-fun feature_404 () Int
+    139)
+  (define-fun feature_140 () Int
+    0)
+  (define-fun feature_420 () Int
+    0)
+  (define-fun feature_222 () Int
+    0)
+  (define-fun feature_311 () Int
+    0)
+  (define-fun feature_284 () Int
+    0)
+  (define-fun feature_2 () Int
+    0)
+  (define-fun feature_584 () Int
+    0)
+  (define-fun feature_465 () Int
+    171)
+  (define-fun feature_280 () Int
+    0)
+  (define-fun feature_331 () Int
+    0)
+  (define-fun feature_318 () Int
+    0)
+  (define-fun feature_60 () Int
+    0)
+  (define-fun feature_727 () Int
+    0)
+  (define-fun feature_737 () Int
+    0)
+  (define-fun feature_320 () Int
+    155)
+  (define-fun feature_649 () Int
+    0)
+  (define-fun feature_499 () Int
+    0)
+  (define-fun feature_354 () Int
+    109)
+  (define-fun feature_24 () Int
+    0)
+  (define-fun feature_555 () Int
+    0)
+  (define-fun feature_442 () Int
+    0)
+  (define-fun feature_53 () Int
+    0)
+  (define-fun feature_608 () Int
+    0)
+  (define-fun feature_426 () Int
+    0)
+  (define-fun feature_131 () Int
+    255)
+  (define-fun feature_316 () Int
+    0)
+  (define-fun feature_754 () Int
+    0)
+  (define-fun feature_704 () Int
+    0)
+  (define-fun feature_450 () Int
+    0)
+  (define-fun feature_690 () Int
+    0)
+  (define-fun feature_115 () Int
+    0)
+  (define-fun feature_75 () Int
+    6)
+  (define-fun feature_128 () Int
+    0)
+  (define-fun feature_178 () Int
+    0)
+  (define-fun feature_775 () Int
+    0)
+  (define-fun feature_441 () Int
+    0)
+  (define-fun feature_1 () Int
+    0)
+  (define-fun feature_340 () Int
+    0)
+  (define-fun feature_753 () Int
+    0)
+  (define-fun feature_343 () Int
+    0)
+  (define-fun feature_691 () Int
+    0)
+  (define-fun feature_52 () Int
+    0)
+  (define-fun feature_669 () Int
+    0)
+  (define-fun feature_171 () Int
+    0)
+  (define-fun feature_151 () Int
+    0)
+  (define-fun feature_718 () Int
+    0)
+  (define-fun feature_288 () Int
+    0)
+  (define-fun feature_123 () Int
+    0)
+  (define-fun feature_326 () Int
+    0)
+  (define-fun feature_51 () Int
+    0)
+  (define-fun feature_430 () Int
+    253)
+  (define-fun feature_56 () Int
+    0)
+  (define-fun feature_566 () Int
+    0)
+  (define-fun feature_564 () Int
+    0)
+  (define-fun feature_698 () Int
+    0)
+  (define-fun feature_393 () Int
+    0)
+  (define-fun feature_654 () Int
+    0)
+  (define-fun feature_357 () Int
+    0)
+  (define-fun feature_276 () Int
+    0)
+  (define-fun feature_773 () Int
+    0)
+  (define-fun feature_114 () Int
+    0)
+  (define-fun feature_133 () Int
+    187)
+  (define-fun feature_368 () Int
+    0)
+  (define-fun feature_319 () Int
+    0)
+  (define-fun feature_516 () Int
+    254)
+  (define-fun feature_598 () Int
+    253)
+  (define-fun feature_154 () Int
+    0)
+  (define-fun feature_381 () Int
+    244)
+  (define-fun feature_72 () Int
+    0)
+  (define-fun feature_394 () Int
+    0)
+  (define-fun feature_730 () Int
+    0)
+  (define-fun feature_301 () Int
+    0)
+  (define-fun feature_639 () Int
+    0)
+  (define-fun feature_252 () Int
+    0)
+  (define-fun feature_611 () Int
+    0)
+  (define-fun feature_365 () Int
+    0)
+  (define-fun feature_141 () Int
+    0)
+  (define-fun feature_664 () Int
+    0)
+  (define-fun feature_121 () Int
+    0)
+  (define-fun feature_694 () Int
+    0)
+  (define-fun feature_105 () Int
+    254)
+  (define-fun feature_635 () Int
+    0)
+  (define-fun feature_64 () Int
+    0)
+  (define-fun feature_551 () Int
+    0)
+  (define-fun feature_251 () Int
+    0)
+  (define-fun feature_49 () Int
+    0)
+  (define-fun feature_303 () Int
+    0)
+  (define-fun feature_255 () Int
+    0)
+  (define-fun feature_101 () Int
+    0)
+  (define-fun feature_708 () Int
+    0)
+  (define-fun feature_660 () Int
+    0)
+  (define-fun feature_246 () Int
+    0)
+  (define-fun feature_190 () Int
+    0)
+  (define-fun feature_655 () Int
+    0)
+  (define-fun feature_764 () Int
+    0)
+  (define-fun feature_355 () Int
+    37)
+  (define-fun feature_28 () Int
+    0)
+  (define-fun feature_467 () Int
+    228)
+  (define-fun feature_717 () Int
+    0)
+  (define-fun feature_144 () Int
+    0)
+  (define-fun feature_403 () Int
+    255)
+  (define-fun feature_466 () Int
+    254)
+  (define-fun feature_196 () Int
+    0)
+  (define-fun feature_286 () Int
+    0)
+  (define-fun feature_227 () Int
+    0)
+  (define-fun feature_641 () Int
+    0)
+  (define-fun feature_406 () Int
+    78)
+  (define-fun feature_321 () Int
+    254)
+  (define-fun feature_733 () Int
+    0)
+  (define-fun feature_374 () Int
+    105)
+  (define-fun feature_47 () Int
+    0)
+  (define-fun feature_238 () Int
+    21)
+  (define-fun feature_542 () Int
+    42)
+  (define-fun feature_459 () Int
+    42)
+  (define-fun feature_636 () Int
+    0)
+  (define-fun feature_561 () Int
+    0)
+  (define-fun feature_332 () Int
+    0)
+  (define-fun feature_452 () Int
+    0)
+  (define-fun feature_336 () Int
+    0)
+  (define-fun feature_744 () Int
+    0)
+  (define-fun feature_591 () Int
+    0)
+  (define-fun feature_497 () Int
+    0)
+  (define-fun feature_732 () Int
+    0)
+  (define-fun feature_212 () Int
+    176)
+  (define-fun feature_768 () Int
+    0)
+  (define-fun feature_100 () Int
+    0)
+  (define-fun feature_90 () Int
+    0)
+  (define-fun feature_125 () Int
+    0)
+  (define-fun feature_658 () Int
+    0)
+  (define-fun feature_97 () Int
+    0)
+  (define-fun feature_460 () Int
+    135)
+  (define-fun feature_593 () Int
+    0)
+  (define-fun feature_578 () Int
+    0)
+  (define-fun feature_23 () Int
+    0)
+  (define-fun feature_21 () Int
+    0)
+  (define-fun feature_112 () Int
+    0)
+  (define-fun feature_87 () Int
+    0)
+  (define-fun feature_503 () Int
+    0)
+  (define-fun feature_257 () Int
+    0)
+  (define-fun feature_580 () Int
+    0)
+  (define-fun feature_604 () Int
+    0)
+  (define-fun feature_335 () Int
+    0)
+  (define-fun feature_495 () Int
+    73)
+  (define-fun feature_305 () Int
+    0)
+  (define-fun feature_260 () Int
+    0)
+  (define-fun feature_451 () Int
+    0)
+  (define-fun feature_164 () Int
+    0)
+  (define-fun feature_599 () Int
+    254)
+  (define-fun feature_622 () Int
+    0)
+  (define-fun feature_656 () Int
+    0)
+  (define-fun feature_665 () Int
+    0)
+  (define-fun feature_366 () Int
+    0)
+  (define-fun feature_402 () Int
+    244)
+  (define-fun feature_693 () Int
+    0)
+  (define-fun feature_631 () Int
+    0)
+  (define-fun feature_328 () Int
+    0)
+  (define-fun feature_388 () Int
+    0)
+  (define-fun feature_778 () Int
+    0)
+  (define-fun feature_512 () Int
+    254)
+  (define-fun feature_529 () Int
+    0)
+  (define-fun feature_425 () Int
+    0)
+  (define-fun feature_558 () Int
+    0)
+  (define-fun feature_751 () Int
+    0)
+  (define-fun feature_150 () Int
+    0)
+  (define-fun feature_358 () Int
+    0)
+  (define-fun feature_482 () Int
+    0)
+  (define-fun feature_722 () Int
+    0)
+  (define-fun feature_705 () Int
+    0)
+  (define-fun feature_33 () Int
+    0)
+  (define-fun feature_341 () Int
+    0)
+  (define-fun feature_129 () Int
+    0)
+  (define-fun feature_521 () Int
+    239)
+  (define-fun feature_145 () Int
+    0)
+  (define-fun feature_155 () Int
+    0)
+  (define-fun feature_741 () Int
+    0)
+  (define-fun feature_202 () Int
+    0)
+  (define-fun feature_157 () Int
+    32)
+  (define-fun feature_317 () Int
+    0)
+  (define-fun feature_165 () Int
+    0)
+  (define-fun feature_15 () Int
+    0)
+  (define-fun feature_530 () Int
+    0)
+  (define-fun feature_545 () Int
+    233)
+  (define-fun feature_122 () Int
+    0)
+  (define-fun feature_185 () Int
+    192)
+  (define-fun feature_709 () Int
+    0)
+  (define-fun feature_453 () Int
+    0)
+  (define-fun feature_618 () Int
+    0)
+  (define-fun feature_229 () Int
+    0)
+  (define-fun feature_249 () Int
+    0)
+  (define-fun feature_524 () Int
+    0)
+  (define-fun feature_470 () Int
+    0)
+  (define-fun feature_405 () Int
+    27)
+  (define-fun feature_695 () Int
+    0)
+  (define-fun feature_587 () Int
+    0)
+  (define-fun feature_291 () Int
+    0)
+  (define-fun feature_106 () Int
+    78)
+  (define-fun feature_761 () Int
+    0)
+  (define-fun feature_719 () Int
+    0)
+  (define-fun feature_279 () Int
+    0)
+  (define-fun feature_42 () Int
+    0)
+  (define-fun feature_750 () Int
+    0)
+  (define-fun feature_603 () Int
+    0)
+  (define-fun feature_267 () Int
+    254)
+  (define-fun feature_333 () Int
+    0)
+  (define-fun feature_645 () Int
+    0)
+  (define-fun feature_139 () Int
+    0)
+  (define-fun feature_648 () Int
+    0)
+  (define-fun feature_687 () Int
+    0)
+  (define-fun feature_483 () Int
+    42)
+  (define-fun feature_615 () Int
+    0)
+  (define-fun feature_274 () Int
+    0)
+  (define-fun feature_407 () Int
+    213)
+  (define-fun feature_14 () Int
+    0)
+  (define-fun feature_254 () Int
+    0)
+  (define-fun feature_180 () Int
+    0)
+  (define-fun feature_268 () Int
+    253)
+  (define-fun feature_634 () Int
+    0)
+  (define-fun feature_110 () Int
+    0)
+  (define-fun feature_384 () Int
+    88)
+  (define-fun feature_567 () Int
+    42)
+  (define-fun feature_478 () Int
+    0)
+  (define-fun feature_416 () Int
+    0)
+  (define-fun feature_40 () Int
+    0)
+  (define-fun feature_111 () Int
+    0)
+  (define-fun feature_188 () Int
+    62)
+  (define-fun feature_546 () Int
+    253)
+  (define-fun feature_670 () Int
+    0)
+  (define-fun feature_398 () Int
+    0)
+  (define-fun feature_508 () Int
+    0)
+  (define-fun feature_307 () Int
+    0)
+  (define-fun feature_707 () Int
+    0)
+  (define-fun feature_207 () Int
+    0)
+  (define-fun feature_247 () Int
+    0)
+  (define-fun feature_281 () Int
+    0)
+  (define-fun feature_724 () Int
+    0)
+  (define-fun feature_225 () Int
+    0)
+  (define-fun feature_16 () Int
+    0)
+  (define-fun feature_262 () Int
+    0)
+  (define-fun feature_370 () Int
+    0)
+  (define-fun feature_443 () Int
+    0)
+  (define-fun feature_505 () Int
+    0)
+  (define-fun feature_510 () Int
+    0)
+  (define-fun feature_344 () Int
+    0)
+  (define-fun feature_633 () Int
+    0)
+  (define-fun feature_183 () Int
+    0)
+  (define-fun feature_462 () Int
+    254)
+  (define-fun feature_39 () Int
+    0)
+  (define-fun feature_528 () Int
+    0)
+  (define-fun feature_8 () Int
+    0)
+  (define-fun feature_630 () Int
+    0)
+  (define-fun feature_692 () Int
+    0)
+  (define-fun feature_742 () Int
+    0)
+  (define-fun feature_282 () Int
+    0)
+  (define-fun feature_620 () Int
+    0)
+  (define-fun feature_480 () Int
+    0)
+  (define-fun feature_414 () Int
+    0)
+  (define-fun feature_191 () Int
+    0)
+  (define-fun feature_195 () Int
+    0)
+  (define-fun feature_504 () Int
+    0)
+  (define-fun feature_735 () Int
+    0)
+  (define-fun feature_429 () Int
+    222)
+  (define-fun feature_244 () Int
+    0)
+  (define-fun feature_143 () Int
+    0)
+  (define-fun feature_767 () Int
+    0)
+  (define-fun feature_614 () Int
+    0)
+  (define-fun feature_415 () Int
+    0)
+  (define-fun feature_43 () Int
+    0)
+  (define-fun feature_152 () Int
+    0)
+  (define-fun feature_173 () Int
+    0)
+  (define-fun feature_218 () Int
+    0)
+  (define-fun feature_290 () Int
+    0)
+  (define-fun feature_89 () Int
+    0)
+  (define-fun feature_581 () Int
+    0)
+  (define-fun feature_723 () Int
+    0)
+  (define-fun feature_550 () Int
+    0)
+  (define-fun feature_765 () Int
+    0)
+  (define-fun feature_397 () Int
+    0)
+  (define-fun feature_454 () Int
+    0)
+  (define-fun feature_216 () Int
+    0)
+  (define-fun feature_640 () Int
+    0)
+  (define-fun feature_217 () Int
+    0)
+  (define-fun feature_221 () Int
+    0)
+  (define-fun feature_137 () Int
+    0)
+  (define-fun feature_409 () Int
+    228)
+  (define-fun feature_78 () Int
+    16)
+  (define-fun feature_536 () Int
+    0)
+  (define-fun feature_471 () Int
+    0)
+  (define-fun feature_619 () Int
+    0)
+  (define-fun feature_197 () Int
+    0)
+  (define-fun feature_410 () Int
+    228)
+  (define-fun feature_493 () Int
+    254)
+  (define-fun feature_70 () Int
+    0)
+  (define-fun feature_67 () Int
+    0)
+  (define-fun feature_676 () Int
+    0)
+  (define-fun feature_10 () Int
+    0)
+  (define-fun feature_25 () Int
+    0)
+  (define-fun feature_92 () Int
+    0)
+  (define-fun feature_563 () Int
+    0)
+  (define-fun feature_342 () Int
+    0)
+  (define-fun feature_568 () Int
+    238)
+  (define-fun feature_667 () Int
+    0)
+  (define-fun feature_134 () Int
+    0)
+  (define-fun feature_346 () Int
+    0)
+  (define-fun feature_684 () Int
+    0)
+  (define-fun feature_609 () Int
+    0)
+  (define-fun feature_396 () Int
+    0)
+  (define-fun feature_461 () Int
+    255)
+  (define-fun feature_520 () Int
+    254)
+  (define-fun feature_588 () Int
+    0)
+  (define-fun feature_82 () Int
+    0)
+  (define-fun feature_35 () Int
+    0)
+  (define-fun feature_295 () Int
+    249)
+  (define-fun feature_146 () Int
+    0)
+  (define-fun feature_71 () Int
+    0)
+  (define-fun feature_762 () Int
+    0)
+  (define-fun feature_579 () Int
+    0)
+  (define-fun feature_625 () Int
+    0)
+  (define-fun feature_488 () Int
+    248)
+  (define-fun feature_117 () Int
+    0)
+  (define-fun feature_46 () Int
+    0)
+  (define-fun feature_487 () Int
+    73)
+  (define-fun feature_285 () Int
+    0)
+  (define-fun feature_617 () Int
+    0)
+  (define-fun feature_678 () Int
+    0)
+  (define-fun feature_27 () Int
+    0)
+  (define-fun feature_577 () Int
+    0)
+  (define-fun feature_142 () Int
+    0)
+  (define-fun feature_378 () Int
+    5)
+  (define-fun feature_716 () Int
+    0)
+  (define-fun feature_570 () Int
+    254)
+  (define-fun feature_352 () Int
+    0)
+  (define-fun feature_736 () Int
+    0)
+  (define-fun feature_199 () Int
+    0)
+  (define-fun feature_298 () Int
+    0)
+  (define-fun feature_94 () Int
+    0)
+  (define-fun feature_275 () Int
+    0)
+  (define-fun feature_48 () Int
+    0)
+  (define-fun feature_601 () Int
+    78)
+  (define-fun feature_63 () Int
+    0)
+  (define-fun feature_236 () Int
+    0)
+  (define-fun feature_330 () Int
+    0)
+  (define-fun feature_408 () Int
+    254)
+  (define-fun feature_427 () Int
+    0)
+  (define-fun feature_314 () Int
+    0)
+  (define-fun feature_674 () Int
+    0)
+  (define-fun feature_517 () Int
+    171)
+  (define-fun feature_77 () Int
+    213)
+  (define-fun feature_456 () Int
+    156)
+  (define-fun feature_650 () Int
+    0)
+  (define-fun feature_194 () Int
+    0)
+  (define-fun feature_531 () Int
+    0)
+  (define-fun feature_496 () Int
+    0)
+  (define-fun feature_50 () Int
+    0)
+  (define-fun feature_230 () Int
+    0)
+  (define-fun feature_380 () Int
+    176)
+  (define-fun feature_424 () Int
+    0)
+  (define-fun feature_721 () Int
+    0)
+  (define-fun feature_769 () Int
+    0)
+  (define-fun feature_428 () Int
+    21)
+  (define-fun feature_774 () Int
+    0)
+  (define-fun feature_18 () Int
+    0)
+  (define-fun feature_651 () Int
+    0)
+  (define-fun feature_259 () Int
+    0)
+  (define-fun feature_119 () Int
+    0)
+  (define-fun feature_289 () Int
+    0)
+  (define-fun feature_113 () Int
+    0)
+  (define-fun feature_532 () Int
+    0)
+  (define-fun feature_776 () Int
+    0)
+  (define-fun feature_248 () Int
+    0)
+  (define-fun feature_294 () Int
+    244)
+  (define-fun feature_522 () Int
+    73)
+  (define-fun feature_472 () Int
+    0)
+  (define-fun feature_779 () Int
+    0)
+  (define-fun feature_383 () Int
+    243)
+  (define-fun feature_9 () Int
+    0)
+  (define-fun feature_20 () Int
+    0)
+  (define-fun feature_627 () Int
+    0)
+  (define-fun feature_597 () Int
+    170)
+  (define-fun feature_760 () Int
+    0)
+  (define-fun feature_411 () Int
+    254)
+  (define-fun feature_569 () Int
+    254)
+  (define-fun feature_647 () Int
+    0)
+  (define-fun feature_12 () Int
+    0)
+  (define-fun feature_602 () Int
+    5)
+  (define-fun feature_783 () Int
+    0)
+  (define-fun feature_359 () Int
+    0)
+  (define-fun feature_444 () Int
+    0)
+  (define-fun feature_675 () Int
+    0)
+  (define-fun feature_231 () Int
+    0)
+  (define-fun feature_369 () Int
+    0)
+  (define-fun feature_22 () Int
+    0)
+  (define-fun feature_644 () Int
+    0)
+  (define-fun feature_543 () Int
+    254)
+  (define-fun u_9_9 () Real
+    0.0)
+  (define-fun u_9_8 () Real
+    0.0)
+  (define-fun u_9_7 () Real
+    0.0)
+  (define-fun u_9_6 () Real
+    0.0)
+  (define-fun u_9_5 () Real
+    0.0)
+  (define-fun u_9_4 () Real
+    0.0)
+  (define-fun u_9_3 () Real
+    0.0)
+  (define-fun u_9_2 () Real
+    (/ 325897070421728411586799.0 5000000000000000000000000.0))
+  (define-fun u_9_1 () Real
+    0.0)
+  (define-fun u_9_0 () Real
+    0.0)
+  (define-fun u_7_15 () Real
+    (/ 256907590530603316413353.0 78125000000000000000000.0))
+  (define-fun u_7_14 () Real
+    0.0)
+  (define-fun u_7_13 () Real
+    0.0)
+  (define-fun u_7_12 () Real
+    0.0)
+  (define-fun u_7_11 () Real
+    0.0)
+  (define-fun u_7_10 () Real
+    0.0)
+  (define-fun u_7_9 () Real
+    0.0)
+  (define-fun u_7_8 () Real
+    0.0)
+  (define-fun u_7_7 () Real
+    0.0)
+  (define-fun u_7_6 () Real
+    0.0)
+  (define-fun u_7_5 () Real
+    0.0)
+  (define-fun u_7_4 () Real
+    0.0)
+  (define-fun u_7_3 () Real
+    0.0)
+  (define-fun u_7_2 () Real
+    (/ 325897070421728411586799.0 5000000000000000000000000.0))
+  (define-fun u_7_1 () Real
+    0.0)
+  (define-fun u_7_0 () Real
+    0.0)
+  (define-fun u_5_31 () Real
+    0.0)
+  (define-fun u_5_30 () Real
+    0.0)
+  (define-fun u_5_29 () Real
+    0.0)
+  (define-fun u_5_28 () Real
+    0.0)
+  (define-fun u_5_27 () Real
+    0.0)
+  (define-fun u_5_26 () Real
+    0.0)
+  (define-fun u_5_25 () Real
+    (/ 41292634061263983268247.0 1000000000000000000000000.0))
+  (define-fun u_5_24 () Real
+    (/ 7599778353693145289260519.0 10000000000000000000000000.0))
+  (define-fun u_5_23 () Real
+    (/ 19980538104021666175663567.0 10000000000000000000000000.0))
+  (define-fun u_5_22 () Real
+    0.0)
+  (define-fun u_5_21 () Real
+    0.0)
+  (define-fun u_5_20 () Real
+    (/ 16841610930184377066030339.0 10000000000000000000000000.0))
+  (define-fun u_5_19 () Real
+    0.0)
+  (define-fun u_5_18 () Real
+    (/ 1064722603459057320544509.0 1000000000000000000000000.0))
+  (define-fun u_5_17 () Real
+    0.0)
+  (define-fun u_5_16 () Real
+    (/ 24399294535786955433069749.0 10000000000000000000000000.0))
+  (define-fun u_5_15 () Real
+    (/ 256907590530603316413353.0 78125000000000000000000.0))
+  (define-fun u_5_14 () Real
+    0.0)
+  (define-fun u_5_13 () Real
+    0.0)
+  (define-fun u_5_12 () Real
+    0.0)
+  (define-fun u_5_11 () Real
+    0.0)
+  (define-fun u_5_10 () Real
+    0.0)
+  (define-fun u_5_9 () Real
+    0.0)
+  (define-fun u_5_8 () Real
+    0.0)
+  (define-fun u_5_7 () Real
+    0.0)
+  (define-fun u_5_6 () Real
+    0.0)
+  (define-fun u_5_5 () Real
+    0.0)
+  (define-fun u_5_4 () Real
+    0.0)
+  (define-fun u_5_3 () Real
+    0.0)
+  (define-fun u_5_2 () Real
+    (/ 325897070421728411586799.0 5000000000000000000000000.0))
+  (define-fun u_5_1 () Real
+    0.0)
+  (define-fun u_5_0 () Real
+    0.0)
+  (define-fun u_3_63 () Real
+    0.0)
+  (define-fun u_3_62 () Real
+    0.0)
+  (define-fun u_3_61 () Real
+    0.0)
+  (define-fun u_3_60 () Real
+    0.0)
+  (define-fun u_3_59 () Real
+    0.0)
+  (define-fun u_3_58 () Real
+    0.0)
+  (define-fun u_3_57 () Real
+    0.0)
+  (define-fun u_3_56 () Real
+    (/ 60164482935203059112567321.0 10000000000000000000000000.0))
+  (define-fun u_3_55 () Real
+    0.0)
+  (define-fun u_3_54 () Real
+    0.0)
+  (define-fun u_3_53 () Real
+    0.0)
+  (define-fun u_3_52 () Real
+    (/ 5555542765513939054238719.0 1000000000000000000000000.0))
+  (define-fun u_3_51 () Real
+    0.0)
+  (define-fun u_3_50 () Real
+    (/ 4437671055496835262264103.0 5000000000000000000000000.0))
+  (define-fun u_3_49 () Real
+    (/ 75593400973607511774369251.0 10000000000000000000000000.0))
+  (define-fun u_3_48 () Real
+    0.0)
+  (define-fun u_3_47 () Real
+    0.0)
+  (define-fun u_3_46 () Real
+    0.0)
+  (define-fun u_3_45 () Real
+    0.0)
+  (define-fun u_3_44 () Real
+    0.0)
+  (define-fun u_3_43 () Real
+    0.0)
+  (define-fun u_3_42 () Real
+    0.0)
+  (define-fun u_3_41 () Real
+    0.0)
+  (define-fun u_3_40 () Real
+    0.0)
+  (define-fun u_3_39 () Real
+    0.0)
+  (define-fun u_3_38 () Real
+    (/ 2747274931291957655956807.0 5000000000000000000000000.0))
+  (define-fun u_3_37 () Real
+    (/ 20102932905086643793830311.0 5000000000000000000000000.0))
+  (define-fun u_3_36 () Real
+    0.0)
+  (define-fun u_3_35 () Real
+    0.0)
+  (define-fun u_3_34 () Real
+    0.0)
+  (define-fun u_3_33 () Real
+    (/ 8506251350976527283866287.0 10000000000000000000000000.0))
+  (define-fun u_3_32 () Real
+    0.0)
+  (define-fun u_3_31 () Real
+    0.0)
+  (define-fun u_3_30 () Real
+    0.0)
+  (define-fun u_3_29 () Real
+    0.0)
+  (define-fun u_3_28 () Real
+    0.0)
+  (define-fun u_3_27 () Real
+    0.0)
+  (define-fun u_3_26 () Real
+    0.0)
+  (define-fun u_3_25 () Real
+    (/ 41292634061263983268247.0 1000000000000000000000000.0))
+  (define-fun u_3_24 () Real
+    (/ 7599778353693145289260519.0 10000000000000000000000000.0))
+  (define-fun u_3_23 () Real
+    (/ 19980538104021666175663567.0 10000000000000000000000000.0))
+  (define-fun u_3_22 () Real
+    0.0)
+  (define-fun u_3_21 () Real
+    0.0)
+  (define-fun u_3_20 () Real
+    (/ 16841610930184377066030339.0 10000000000000000000000000.0))
+  (define-fun u_3_19 () Real
+    0.0)
+  (define-fun u_3_18 () Real
+    (/ 1064722603459057320544509.0 1000000000000000000000000.0))
+  (define-fun u_3_17 () Real
+    0.0)
+  (define-fun u_3_16 () Real
+    (/ 24399294535786955433069749.0 10000000000000000000000000.0))
+  (define-fun u_3_15 () Real
+    (/ 256907590530603316413353.0 78125000000000000000000.0))
+  (define-fun u_3_14 () Real
+    0.0)
+  (define-fun u_3_13 () Real
+    0.0)
+  (define-fun u_3_12 () Real
+    0.0)
+  (define-fun u_3_11 () Real
+    0.0)
+  (define-fun u_3_10 () Real
+    0.0)
+  (define-fun u_3_9 () Real
+    0.0)
+  (define-fun u_3_8 () Real
+    0.0)
+  (define-fun u_3_7 () Real
+    0.0)
+  (define-fun u_3_6 () Real
+    0.0)
+  (define-fun u_3_5 () Real
+    0.0)
+  (define-fun u_3_4 () Real
+    0.0)
+  (define-fun u_3_3 () Real
+    0.0)
+  (define-fun u_3_2 () Real
+    (/ 325897070421728411586799.0 5000000000000000000000000.0))
+  (define-fun u_3_1 () Real
+    0.0)
+  (define-fun u_3_0 () Real
+    0.0)
+  (define-fun u_1_127 () Real
+    (- (/ 12112087442502196746255941.0 2000000000000000000000000.0)))
+  (define-fun u_1_126 () Real
+    (- (/ 65255719145545370004671167.0 10000000000000000000000000.0)))
+  (define-fun u_1_125 () Real
+    (- (/ 61329301545588191657192993.0 10000000000000000000000000.0)))
+  (define-fun u_1_124 () Real
+    (- (/ 5877153759256152366936757.0 5000000000000000000000000.0)))
+  (define-fun u_1_123 () Real
+    (- (/ 30530289336427243579783783.0 10000000000000000000000000.0)))
+  (define-fun u_1_122 () Real
+    (/ 727106511507037188786497.0 1000000000000000000000000.0))
+  (define-fun u_1_121 () Real
+    (- (/ 6516333626021685466241273.0 5000000000000000000000000.0)))
+  (define-fun u_1_120 () Real
+    (- (/ 5359057664277725420383177.0 5000000000000000000000000.0)))
+  (define-fun u_1_119 () Real
+    (/ 599330712248789201770743.0 200000000000000000000000.0))
+  (define-fun u_1_118 () Real
+    (- (/ 6357083935646668450723581.0 5000000000000000000000000.0)))
+  (define-fun u_1_117 () Real
+    (- (/ 13877989998108972019481181.0 2500000000000000000000000.0)))
+  (define-fun u_1_116 () Real
+    (- (/ 9741064689317307613766341.0 2500000000000000000000000.0)))
+  (define-fun u_1_115 () Real
+    (- (/ 64934931110225474720708649.0 10000000000000000000000000.0)))
+  (define-fun u_1_114 () Real
+    (- (/ 3209765176000256384222491.0 2000000000000000000000000.0)))
+  (define-fun u_1_113 () Real
+    (- (/ 25946245117953009455115639.0 10000000000000000000000000.0)))
+  (define-fun u_1_112 () Real
+    (/ 16318345066719215537031573.0 10000000000000000000000000.0))
+  (define-fun u_1_111 () Real
+    (- (/ 1282171869653336353261749.0 625000000000000000000000.0)))
+  (define-fun u_1_110 () Real
+    (/ 3266410327610084494727027.0 1250000000000000000000000.0))
+  (define-fun u_1_109 () Real
+    (- (/ 2080928178768897207011281.0 125000000000000000000000.0)))
+  (define-fun u_1_108 () Real
+    (- (/ 1695100930254400310303227.0 312500000000000000000000.0)))
+  (define-fun u_1_107 () Real
+    (/ 6864375589071320986197097.0 1250000000000000000000000.0))
+  (define-fun u_1_106 () Real
+    (- (/ 1907995913256434558138763.0 400000000000000000000000.0)))
+  (define-fun u_1_105 () Real
+    (- (/ 23428900472399796818567921.0 10000000000000000000000000.0)))
+  (define-fun u_1_104 () Real
+    (- (/ 9483321151301531871575171.0 1250000000000000000000000.0)))
+  (define-fun u_1_103 () Real
+    (/ 38551648130480601575266501.0 10000000000000000000000000.0))
+  (define-fun u_1_102 () Real
+    (- (/ 11569667537614484018620781.0 1250000000000000000000000.0)))
+  (define-fun u_1_101 () Real
+    (- (/ 38888881489187112219567233.0 10000000000000000000000000.0)))
+  (define-fun u_1_100 () Real
+    (- (/ 22169794726776707519367089.0 5000000000000000000000000.0)))
+  (define-fun u_1_99 () Real
+    (- (/ 1511976231092988829645213.0 400000000000000000000000.0)))
+  (define-fun u_1_98 () Real
+    (/ 35231472274936452891087.0 2000000000000000000000000.0))
+  (define-fun u_1_97 () Real
+    (- (/ 4078281884958200628391343.0 2000000000000000000000000.0)))
+  (define-fun u_1_96 () Real
+    (- (/ 11287353742936186885277287.0 5000000000000000000000000.0)))
+  (define-fun u_1_95 () Real
+    (/ 70660697839766119149222579.0 10000000000000000000000000.0))
+  (define-fun u_1_94 () Real
+    (- (/ 4315039155472072264695573.0 625000000000000000000000.0)))
+  (define-fun u_1_93 () Real
+    (- (/ 55710904363076632808877213.0 10000000000000000000000000.0)))
+  (define-fun u_1_92 () Real
+    (- (/ 1810440260747347115121147.0 250000000000000000000000.0)))
+  (define-fun u_1_91 () Real
+    (- (/ 36848985909993359369189673.0 5000000000000000000000000.0)))
+  (define-fun u_1_90 () Real
+    (/ 2844255955725470118796303.0 2500000000000000000000000.0))
+  (define-fun u_1_89 () Real
+    (/ 29174281569832349063504769.0 10000000000000000000000000.0))
+  (define-fun u_1_88 () Real
+    (- (/ 3904544786591192817652127.0 2500000000000000000000000.0)))
+  (define-fun u_1_87 () Real
+    (/ 19528914252113468290531.0 62500000000000000000000.0))
+  (define-fun u_1_86 () Real
+    (- (/ 29217859141524040782112991.0 10000000000000000000000000.0)))
+  (define-fun u_1_85 () Real
+    (- (/ 7961383121682093732590361.0 500000000000000000000000.0)))
+  (define-fun u_1_84 () Real
+    (/ 5096300559279088999241873.0 2000000000000000000000000.0))
+  (define-fun u_1_83 () Real
+    (- (/ 57107602606344894302148723.0 5000000000000000000000000.0)))
+  (define-fun u_1_82 () Real
+    (/ 29324872065906176432563681.0 10000000000000000000000000.0))
+  (define-fun u_1_81 () Real
+    (- (/ 24300625106675880108302517.0 10000000000000000000000000.0)))
+  (define-fun u_1_80 () Real
+    (- (/ 23719545129732247015529317.0 2500000000000000000000000.0)))
+  (define-fun u_1_79 () Real
+    (- (/ 1210002798550560247357809.0 5000000000000000000000000.0)))
+  (define-fun u_1_78 () Real
+    (/ 1136517059914037292344209.0 200000000000000000000000.0))
+  (define-fun u_1_77 () Real
+    (/ 24684454967470966974287793.0 5000000000000000000000000.0))
+  (define-fun u_1_76 () Real
+    (- (/ 55587094196392331820306421.0 10000000000000000000000000.0)))
+  (define-fun u_1_75 () Real
+    (- (/ 7332432762340769759750427.0 10000000000000000000000000.0)))
+  (define-fun u_1_74 () Real
+    (- (/ 77805743376765510573597943.0 5000000000000000000000000.0)))
+  (define-fun u_1_73 () Real
+    (/ 12840879593902797904720953.0 10000000000000000000000000.0))
+  (define-fun u_1_72 () Real
+    (- (/ 15203315566357810161631647.0 5000000000000000000000000.0)))
+  (define-fun u_1_71 () Real
+    (- (/ 110652253829006689154653903.0 10000000000000000000000000.0)))
+  (define-fun u_1_70 () Real
+    (- (/ 1264932684278498045094759.0 5000000000000000000000000.0)))
+  (define-fun u_1_69 () Real
+    (- (/ 12501813248922938808871657.0 2500000000000000000000000.0)))
+  (define-fun u_1_68 () Real
+    (/ 33522724723201427742247667.0 10000000000000000000000000.0))
+  (define-fun u_1_67 () Real
+    (- (/ 1514683731020811698886789.0 500000000000000000000000.0)))
+  (define-fun u_1_66 () Real
+    (- (/ 31113524125815898470212787.0 10000000000000000000000000.0)))
+  (define-fun u_1_65 () Real
+    (- (/ 2432890587171891115354199.0 2000000000000000000000000.0)))
+  (define-fun u_1_64 () Real
+    (- (/ 20936241727411363816611397.0 10000000000000000000000000.0)))
+  (define-fun u_1_63 () Real
+    (- (/ 79223493968611401542807943.0 10000000000000000000000000.0)))
+  (define-fun u_1_62 () Real
+    (- (/ 89286477576375154645799171.0 10000000000000000000000000.0)))
+  (define-fun u_1_61 () Real
+    (- (/ 3649674377341608579304273.0 500000000000000000000000.0)))
+  (define-fun u_1_60 () Real
+    (- (/ 1506231590695496627889587.0 500000000000000000000000.0)))
+  (define-fun u_1_59 () Real
+    (- (/ 6741290380571987018029289.0 2000000000000000000000000.0)))
+  (define-fun u_1_58 () Real
+    (- (/ 1048239046831012651387101.0 80000000000000000000000.0)))
+  (define-fun u_1_57 () Real
+    (- (/ 66119956348149571823653833.0 10000000000000000000000000.0)))
+  (define-fun u_1_56 () Real
+    (/ 60164482935203059112567321.0 10000000000000000000000000.0))
+  (define-fun u_1_55 () Real
+    (- (/ 41038976041618369682715903.0 10000000000000000000000000.0)))
+  (define-fun u_1_54 () Real
+    (- (/ 35986719151082282797051213.0 10000000000000000000000000.0)))
+  (define-fun u_1_53 () Real
+    (- (/ 7462589519759457141631099.0 2000000000000000000000000.0)))
+  (define-fun u_1_52 () Real
+    (/ 5555542765513939054238719.0 1000000000000000000000000.0))
+  (define-fun u_1_51 () Real
+    (- (/ 54774488326458844337106277.0 10000000000000000000000000.0)))
+  (define-fun u_1_50 () Real
+    (/ 4437671055496835262264103.0 5000000000000000000000000.0))
+  (define-fun u_1_49 () Real
+    (/ 75593400973607511774369251.0 10000000000000000000000000.0))
+  (define-fun u_1_48 () Real
+    (- (/ 28117814065064942836260323.0 2000000000000000000000000.0)))
+  (define-fun u_1_47 () Real
+    (- (/ 15495180979581076580204351.0 10000000000000000000000000.0)))
+  (define-fun u_1_46 () Real
+    (- (/ 31594653111818593632268361.0 10000000000000000000000000.0)))
+  (define-fun u_1_45 () Real
+    (- (/ 5689433567590016264223549.0 2500000000000000000000000.0)))
+  (define-fun u_1_44 () Real
+    (- (/ 19435552283181061433299069.0 10000000000000000000000000.0)))
+  (define-fun u_1_43 () Real
+    (- (/ 3898290818119287365328731.0 2000000000000000000000000.0)))
+  (define-fun u_1_42 () Real
+    (- (/ 100448630021437635595688973.0 10000000000000000000000000.0)))
+  (define-fun u_1_41 () Real
+    (- (/ 29336825098567324361858729.0 10000000000000000000000000.0)))
+  (define-fun u_1_40 () Real
+    (- (/ 25774335498178569861048709.0 5000000000000000000000000.0)))
+  (define-fun u_1_39 () Real
+    (- (/ 69840926837486525029050273.0 10000000000000000000000000.0)))
+  (define-fun u_1_38 () Real
+    (/ 2747274931291957655956807.0 5000000000000000000000000.0))
+  (define-fun u_1_37 () Real
+    (/ 20102932905086643793830311.0 5000000000000000000000000.0))
+  (define-fun u_1_36 () Real
+    (- (/ 36422756553426676599171287.0 10000000000000000000000000.0)))
+  (define-fun u_1_35 () Real
+    (- (/ 193703733935413495652531.0 250000000000000000000000.0)))
+  (define-fun u_1_34 () Real
+    (- (/ 4760329698925203441215189.0 1250000000000000000000000.0)))
+  (define-fun u_1_33 () Real
+    (/ 8506251350976527283866287.0 10000000000000000000000000.0))
+  (define-fun u_1_32 () Real
+    (- (/ 15102861284223549594950939.0 5000000000000000000000000.0)))
+  (define-fun u_1_31 () Real
+    (- (/ 33111143908189502216970263.0 10000000000000000000000000.0)))
+  (define-fun u_1_30 () Real
+    (- (/ 20480977354381764553822381.0 10000000000000000000000000.0)))
+  (define-fun u_1_29 () Real
+    (- (/ 146176970157197070848135127.0 10000000000000000000000000.0)))
+  (define-fun u_1_28 () Real
+    (- (/ 4039468904735472463683947.0 625000000000000000000000.0)))
+  (define-fun u_1_27 () Real
+    (- (/ 37977313658103857653365513.0 10000000000000000000000000.0)))
+  (define-fun u_1_26 () Real
+    (- (/ 1880719096348712255274077.0 2000000000000000000000000.0)))
+  (define-fun u_1_25 () Real
+    (/ 41292634061263983268247.0 1000000000000000000000000.0))
+  (define-fun u_1_24 () Real
+    (/ 7599778353693145289260519.0 10000000000000000000000000.0))
+  (define-fun u_1_23 () Real
+    (/ 19980538104021666175663567.0 10000000000000000000000000.0))
+  (define-fun u_1_22 () Real
+    (- (/ 26057534355998916435410819.0 10000000000000000000000000.0)))
+  (define-fun u_1_21 () Real
+    (- (/ 15947340736375646208652193.0 10000000000000000000000000.0)))
+  (define-fun u_1_20 () Real
+    (/ 16841610930184377066030339.0 10000000000000000000000000.0))
+  (define-fun u_1_19 () Real
+    (- (/ 13682457771153399122780913.0 1250000000000000000000000.0)))
+  (define-fun u_1_18 () Real
+    (/ 1064722603459057320544509.0 1000000000000000000000000.0))
+  (define-fun u_1_17 () Real
+    (- (/ 562373675684006307345459.0 500000000000000000000000.0)))
+  (define-fun u_1_16 () Real
+    (/ 24399294535786955433069749.0 10000000000000000000000000.0))
+  (define-fun u_1_15 () Real
+    (/ 256907590530603316413353.0 78125000000000000000000.0))
+  (define-fun u_1_14 () Real
+    (- (/ 5234815438394434196748309.0 5000000000000000000000000.0)))
+  (define-fun u_1_13 () Real
+    (- (/ 50838405825179437418808509.0 10000000000000000000000000.0)))
+  (define-fun u_1_12 () Real
+    (- (/ 31936427234425481634932239.0 10000000000000000000000000.0)))
+  (define-fun u_1_11 () Real
+    (- (/ 6643649265970309662967817.0 2500000000000000000000000.0)))
+  (define-fun u_1_10 () Real
+    (- (/ 41216045584721380854052347.0 10000000000000000000000000.0)))
+  (define-fun u_1_9 () Real
+    (- (/ 1386052946031239679005219.0 200000000000000000000000.0)))
+  (define-fun u_1_8 () Real
+    (- (/ 126370788210875116889520121.0 10000000000000000000000000.0)))
+  (define-fun u_1_7 () Real
+    (- (/ 25660441474130777693194697.0 10000000000000000000000000.0)))
+  (define-fun u_1_6 () Real
+    (- (/ 18120800131524448239868699.0 5000000000000000000000000.0)))
+  (define-fun u_1_5 () Real
+    (- (/ 46301659399570497989796381.0 10000000000000000000000000.0)))
+  (define-fun u_1_4 () Real
+    (- (/ 7616192689402013878101247.0 10000000000000000000000000.0)))
+  (define-fun u_1_3 () Real
+    (- (/ 24655673794521420813435281.0 10000000000000000000000000.0)))
+  (define-fun u_1_2 () Real
+    (/ 325897070421728411586799.0 5000000000000000000000000.0))
+  (define-fun u_1_1 () Real
+    (- (/ 47969494367917707341071891.0 5000000000000000000000000.0)))
+  (define-fun u_1_0 () Real
+    (- (/ 1735929567869478546270871.0 2000000000000000000000000.0)))
+  (define-fun v_7_15 () Real
+    (/ 256907590530603316413353.0 78125000000000000000000.0))
+  (define-fun v_7_14 () Real
+    0.0)
+  (define-fun v_7_13 () Real
+    0.0)
+  (define-fun v_7_12 () Real
+    0.0)
+  (define-fun v_7_11 () Real
+    0.0)
+  (define-fun v_7_10 () Real
+    0.0)
+  (define-fun v_5_31 () Real
+    0.0)
+  (define-fun v_5_30 () Real
+    0.0)
+  (define-fun v_5_29 () Real
+    0.0)
+  (define-fun v_5_28 () Real
+    0.0)
+  (define-fun v_5_27 () Real
+    0.0)
+  (define-fun v_5_26 () Real
+    0.0)
+  (define-fun v_5_25 () Real
+    (/ 41292634061263983268247.0 1000000000000000000000000.0))
+  (define-fun v_5_24 () Real
+    (/ 7599778353693145289260519.0 10000000000000000000000000.0))
+  (define-fun v_5_23 () Real
+    (/ 19980538104021666175663567.0 10000000000000000000000000.0))
+  (define-fun v_5_22 () Real
+    0.0)
+  (define-fun v_5_21 () Real
+    0.0)
+  (define-fun v_5_20 () Real
+    (/ 16841610930184377066030339.0 10000000000000000000000000.0))
+  (define-fun v_5_19 () Real
+    0.0)
+  (define-fun v_5_18 () Real
+    (/ 1064722603459057320544509.0 1000000000000000000000000.0))
+  (define-fun v_5_17 () Real
+    0.0)
+  (define-fun v_5_16 () Real
+    (/ 24399294535786955433069749.0 10000000000000000000000000.0))
+  (define-fun v_3_63 () Real
+    0.0)
+  (define-fun v_3_62 () Real
+    0.0)
+  (define-fun v_3_61 () Real
+    0.0)
+  (define-fun v_3_60 () Real
+    0.0)
+  (define-fun v_3_59 () Real
+    0.0)
+  (define-fun v_3_58 () Real
+    0.0)
+  (define-fun v_3_57 () Real
+    0.0)
+  (define-fun v_3_56 () Real
+    (/ 60164482935203059112567321.0 10000000000000000000000000.0))
+  (define-fun v_3_55 () Real
+    0.0)
+  (define-fun v_3_54 () Real
+    0.0)
+  (define-fun v_3_53 () Real
+    0.0)
+  (define-fun v_3_52 () Real
+    (/ 5555542765513939054238719.0 1000000000000000000000000.0))
+  (define-fun v_3_51 () Real
+    0.0)
+  (define-fun v_3_50 () Real
+    (/ 4437671055496835262264103.0 5000000000000000000000000.0))
+  (define-fun v_3_49 () Real
+    (/ 75593400973607511774369251.0 10000000000000000000000000.0))
+  (define-fun v_3_48 () Real
+    0.0)
+  (define-fun v_3_47 () Real
+    0.0)
+  (define-fun v_3_46 () Real
+    0.0)
+  (define-fun v_3_45 () Real
+    0.0)
+  (define-fun v_3_44 () Real
+    0.0)
+  (define-fun v_3_43 () Real
+    0.0)
+  (define-fun v_3_42 () Real
+    0.0)
+  (define-fun v_3_41 () Real
+    0.0)
+  (define-fun v_3_40 () Real
+    0.0)
+  (define-fun v_3_39 () Real
+    0.0)
+  (define-fun v_3_38 () Real
+    (/ 2747274931291957655956807.0 5000000000000000000000000.0))
+  (define-fun v_3_37 () Real
+    (/ 20102932905086643793830311.0 5000000000000000000000000.0))
+  (define-fun v_3_36 () Real
+    0.0)
+  (define-fun v_3_35 () Real
+    0.0)
+  (define-fun v_3_34 () Real
+    0.0)
+  (define-fun v_3_33 () Real
+    (/ 8506251350976527283866287.0 10000000000000000000000000.0))
+  (define-fun v_3_32 () Real
+    0.0)
+  (define-fun v_1_127 () Real
+    0.0)
+  (define-fun v_1_126 () Real
+    0.0)
+  (define-fun v_1_125 () Real
+    0.0)
+  (define-fun v_1_124 () Real
+    0.0)
+  (define-fun v_1_123 () Real
+    0.0)
+  (define-fun v_1_122 () Real
+    (/ 727106511507037188786497.0 1000000000000000000000000.0))
+  (define-fun v_1_121 () Real
+    0.0)
+  (define-fun v_1_120 () Real
+    0.0)
+  (define-fun v_1_119 () Real
+    (/ 599330712248789201770743.0 200000000000000000000000.0))
+  (define-fun v_1_118 () Real
+    0.0)
+  (define-fun v_1_117 () Real
+    0.0)
+  (define-fun v_1_116 () Real
+    0.0)
+  (define-fun v_1_115 () Real
+    0.0)
+  (define-fun v_1_114 () Real
+    0.0)
+  (define-fun v_1_113 () Real
+    0.0)
+  (define-fun v_1_112 () Real
+    (/ 16318345066719215537031573.0 10000000000000000000000000.0))
+  (define-fun v_1_111 () Real
+    0.0)
+  (define-fun v_1_110 () Real
+    (/ 3266410327610084494727027.0 1250000000000000000000000.0))
+  (define-fun v_1_109 () Real
+    0.0)
+  (define-fun v_1_108 () Real
+    0.0)
+  (define-fun v_1_107 () Real
+    (/ 6864375589071320986197097.0 1250000000000000000000000.0))
+  (define-fun v_1_106 () Real
+    0.0)
+  (define-fun v_1_105 () Real
+    0.0)
+  (define-fun v_1_104 () Real
+    0.0)
+  (define-fun v_1_103 () Real
+    (/ 38551648130480601575266501.0 10000000000000000000000000.0))
+  (define-fun v_1_102 () Real
+    0.0)
+  (define-fun v_1_101 () Real
+    0.0)
+  (define-fun v_1_100 () Real
+    0.0)
+  (define-fun v_1_99 () Real
+    0.0)
+  (define-fun v_1_98 () Real
+    (/ 35231472274936452891087.0 2000000000000000000000000.0))
+  (define-fun v_1_97 () Real
+    0.0)
+  (define-fun v_1_96 () Real
+    0.0)
+  (define-fun v_1_95 () Real
+    (/ 70660697839766119149222579.0 10000000000000000000000000.0))
+  (define-fun v_1_94 () Real
+    0.0)
+  (define-fun v_1_93 () Real
+    0.0)
+  (define-fun v_1_92 () Real
+    0.0)
+  (define-fun v_1_91 () Real
+    0.0)
+  (define-fun v_1_90 () Real
+    (/ 2844255955725470118796303.0 2500000000000000000000000.0))
+  (define-fun v_1_89 () Real
+    (/ 29174281569832349063504769.0 10000000000000000000000000.0))
+  (define-fun v_1_88 () Real
+    0.0)
+  (define-fun v_1_87 () Real
+    (/ 19528914252113468290531.0 62500000000000000000000.0))
+  (define-fun v_1_86 () Real
+    0.0)
+  (define-fun v_1_85 () Real
+    0.0)
+  (define-fun v_1_84 () Real
+    (/ 5096300559279088999241873.0 2000000000000000000000000.0))
+  (define-fun v_1_83 () Real
+    0.0)
+  (define-fun v_1_82 () Real
+    (/ 29324872065906176432563681.0 10000000000000000000000000.0))
+  (define-fun v_1_81 () Real
+    0.0)
+  (define-fun v_1_80 () Real
+    0.0)
+  (define-fun v_1_79 () Real
+    0.0)
+  (define-fun v_1_78 () Real
+    (/ 1136517059914037292344209.0 200000000000000000000000.0))
+  (define-fun v_1_77 () Real
+    (/ 24684454967470966974287793.0 5000000000000000000000000.0))
+  (define-fun v_1_76 () Real
+    0.0)
+  (define-fun v_1_75 () Real
+    0.0)
+  (define-fun v_1_74 () Real
+    0.0)
+  (define-fun v_1_73 () Real
+    (/ 12840879593902797904720953.0 10000000000000000000000000.0))
+  (define-fun v_1_72 () Real
+    0.0)
+  (define-fun v_1_71 () Real
+    0.0)
+  (define-fun v_1_70 () Real
+    0.0)
+  (define-fun v_1_69 () Real
+    0.0)
+  (define-fun v_1_68 () Real
+    (/ 33522724723201427742247667.0 10000000000000000000000000.0))
+  (define-fun v_1_67 () Real
+    0.0)
+  (define-fun v_1_66 () Real
+    0.0)
+  (define-fun v_1_65 () Real
+    0.0)
+  (define-fun v_1_64 () Real
+    0.0)
+  (define-fun v_8_9 () Real
+    0.0)
+  (define-fun v_8_8 () Real
+    0.0)
+  (define-fun v_8_7 () Real
+    0.0)
+  (define-fun v_8_6 () Real
+    0.0)
+  (define-fun v_8_5 () Real
+    0.0)
+  (define-fun v_8_4 () Real
+    0.0)
+  (define-fun v_8_3 () Real
+    0.0)
+  (define-fun v_8_2 () Real
+    (/ 325897070421728411586799.0 5000000000000000000000000.0))
+  (define-fun v_8_1 () Real
+    0.0)
+  (define-fun v_8_0 () Real
+    0.0)
+  (define-fun u_8_9 () Real
+    0.0)
+  (define-fun v_7_9 () Real
+    0.0)
+  (define-fun u_8_8 () Real
+    0.0)
+  (define-fun v_7_8 () Real
+    0.0)
+  (define-fun u_8_7 () Real
+    0.0)
+  (define-fun v_7_7 () Real
+    0.0)
+  (define-fun u_8_6 () Real
+    0.0)
+  (define-fun v_7_6 () Real
+    0.0)
+  (define-fun u_8_5 () Real
+    0.0)
+  (define-fun v_7_5 () Real
+    0.0)
+  (define-fun u_8_4 () Real
+    0.0)
+  (define-fun v_7_4 () Real
+    0.0)
+  (define-fun u_8_3 () Real
+    0.0)
+  (define-fun v_7_3 () Real
+    0.0)
+  (define-fun u_8_2 () Real
+    (/ 325897070421728411586799.0 5000000000000000000000000.0))
+  (define-fun v_7_2 () Real
+    (/ 325897070421728411586799.0 5000000000000000000000000.0))
+  (define-fun u_8_1 () Real
+    0.0)
+  (define-fun v_7_1 () Real
+    0.0)
+  (define-fun u_8_0 () Real
+    0.0)
+  (define-fun v_7_0 () Real
+    0.0)
+  (define-fun v_6_15 () Real
+    (/ 256907590530603316413353.0 78125000000000000000000.0))
+  (define-fun v_6_14 () Real
+    0.0)
+  (define-fun v_6_13 () Real
+    0.0)
+  (define-fun v_6_12 () Real
+    0.0)
+  (define-fun v_6_11 () Real
+    0.0)
+  (define-fun v_6_10 () Real
+    0.0)
+  (define-fun v_6_9 () Real
+    0.0)
+  (define-fun v_6_8 () Real
+    0.0)
+  (define-fun v_6_7 () Real
+    0.0)
+  (define-fun v_6_6 () Real
+    0.0)
+  (define-fun v_6_5 () Real
+    0.0)
+  (define-fun v_6_4 () Real
+    0.0)
+  (define-fun v_6_3 () Real
+    0.0)
+  (define-fun v_6_2 () Real
+    (/ 325897070421728411586799.0 5000000000000000000000000.0))
+  (define-fun v_6_1 () Real
+    0.0)
+  (define-fun v_6_0 () Real
+    0.0)
+  (define-fun u_6_15 () Real
+    (/ 256907590530603316413353.0 78125000000000000000000.0))
+  (define-fun v_5_15 () Real
+    (/ 256907590530603316413353.0 78125000000000000000000.0))
+  (define-fun u_6_14 () Real
+    0.0)
+  (define-fun v_5_14 () Real
+    0.0)
+  (define-fun u_6_13 () Real
+    0.0)
+  (define-fun v_5_13 () Real
+    0.0)
+  (define-fun u_6_12 () Real
+    0.0)
+  (define-fun v_5_12 () Real
+    0.0)
+  (define-fun u_6_11 () Real
+    0.0)
+  (define-fun v_5_11 () Real
+    0.0)
+  (define-fun u_6_10 () Real
+    0.0)
+  (define-fun v_5_10 () Real
+    0.0)
+  (define-fun u_6_9 () Real
+    0.0)
+  (define-fun v_5_9 () Real
+    0.0)
+  (define-fun u_6_8 () Real
+    0.0)
+  (define-fun v_5_8 () Real
+    0.0)
+  (define-fun u_6_7 () Real
+    0.0)
+  (define-fun v_5_7 () Real
+    0.0)
+  (define-fun u_6_6 () Real
+    0.0)
+  (define-fun v_5_6 () Real
+    0.0)
+  (define-fun u_6_5 () Real
+    0.0)
+  (define-fun v_5_5 () Real
+    0.0)
+  (define-fun u_6_4 () Real
+    0.0)
+  (define-fun v_5_4 () Real
+    0.0)
+  (define-fun u_6_3 () Real
+    0.0)
+  (define-fun v_5_3 () Real
+    0.0)
+  (define-fun u_6_2 () Real
+    (/ 325897070421728411586799.0 5000000000000000000000000.0))
+  (define-fun v_5_2 () Real
+    (/ 325897070421728411586799.0 5000000000000000000000000.0))
+  (define-fun u_6_1 () Real
+    0.0)
+  (define-fun v_5_1 () Real
+    0.0)
+  (define-fun u_6_0 () Real
+    0.0)
+  (define-fun v_5_0 () Real
+    0.0)
+  (define-fun v_4_31 () Real
+    0.0)
+  (define-fun v_4_30 () Real
+    0.0)
+  (define-fun v_4_29 () Real
+    0.0)
+  (define-fun v_4_28 () Real
+    0.0)
+  (define-fun v_4_27 () Real
+    0.0)
+  (define-fun v_4_26 () Real
+    0.0)
+  (define-fun v_4_25 () Real
+    (/ 41292634061263983268247.0 1000000000000000000000000.0))
+  (define-fun v_4_24 () Real
+    (/ 7599778353693145289260519.0 10000000000000000000000000.0))
+  (define-fun v_4_23 () Real
+    (/ 19980538104021666175663567.0 10000000000000000000000000.0))
+  (define-fun v_4_22 () Real
+    0.0)
+  (define-fun v_4_21 () Real
+    0.0)
+  (define-fun v_4_20 () Real
+    (/ 16841610930184377066030339.0 10000000000000000000000000.0))
+  (define-fun v_4_19 () Real
+    0.0)
+  (define-fun v_4_18 () Real
+    (/ 1064722603459057320544509.0 1000000000000000000000000.0))
+  (define-fun v_4_17 () Real
+    0.0)
+  (define-fun v_4_16 () Real
+    (/ 24399294535786955433069749.0 10000000000000000000000000.0))
+  (define-fun v_4_15 () Real
+    (/ 256907590530603316413353.0 78125000000000000000000.0))
+  (define-fun v_4_14 () Real
+    0.0)
+  (define-fun v_4_13 () Real
+    0.0)
+  (define-fun v_4_12 () Real
+    0.0)
+  (define-fun v_4_11 () Real
+    0.0)
+  (define-fun v_4_10 () Real
+    0.0)
+  (define-fun v_4_9 () Real
+    0.0)
+  (define-fun v_4_8 () Real
+    0.0)
+  (define-fun v_4_7 () Real
+    0.0)
+  (define-fun v_4_6 () Real
+    0.0)
+  (define-fun v_4_5 () Real
+    0.0)
+  (define-fun v_4_4 () Real
+    0.0)
+  (define-fun v_4_3 () Real
+    0.0)
+  (define-fun v_4_2 () Real
+    (/ 325897070421728411586799.0 5000000000000000000000000.0))
+  (define-fun v_4_1 () Real
+    0.0)
+  (define-fun v_4_0 () Real
+    0.0)
+  (define-fun u_4_31 () Real
+    0.0)
+  (define-fun v_3_31 () Real
+    0.0)
+  (define-fun u_4_30 () Real
+    0.0)
+  (define-fun v_3_30 () Real
+    0.0)
+  (define-fun u_4_29 () Real
+    0.0)
+  (define-fun v_3_29 () Real
+    0.0)
+  (define-fun u_4_28 () Real
+    0.0)
+  (define-fun v_3_28 () Real
+    0.0)
+  (define-fun u_4_27 () Real
+    0.0)
+  (define-fun v_3_27 () Real
+    0.0)
+  (define-fun u_4_26 () Real
+    0.0)
+  (define-fun v_3_26 () Real
+    0.0)
+  (define-fun u_4_25 () Real
+    (/ 41292634061263983268247.0 1000000000000000000000000.0))
+  (define-fun v_3_25 () Real
+    (/ 41292634061263983268247.0 1000000000000000000000000.0))
+  (define-fun u_4_24 () Real
+    (/ 7599778353693145289260519.0 10000000000000000000000000.0))
+  (define-fun v_3_24 () Real
+    (/ 7599778353693145289260519.0 10000000000000000000000000.0))
+  (define-fun u_4_23 () Real
+    (/ 19980538104021666175663567.0 10000000000000000000000000.0))
+  (define-fun v_3_23 () Real
+    (/ 19980538104021666175663567.0 10000000000000000000000000.0))
+  (define-fun u_4_22 () Real
+    0.0)
+  (define-fun v_3_22 () Real
+    0.0)
+  (define-fun u_4_21 () Real
+    0.0)
+  (define-fun v_3_21 () Real
+    0.0)
+  (define-fun u_4_20 () Real
+    (/ 16841610930184377066030339.0 10000000000000000000000000.0))
+  (define-fun v_3_20 () Real
+    (/ 16841610930184377066030339.0 10000000000000000000000000.0))
+  (define-fun u_4_19 () Real
+    0.0)
+  (define-fun v_3_19 () Real
+    0.0)
+  (define-fun u_4_18 () Real
+    (/ 1064722603459057320544509.0 1000000000000000000000000.0))
+  (define-fun v_3_18 () Real
+    (/ 1064722603459057320544509.0 1000000000000000000000000.0))
+  (define-fun u_4_17 () Real
+    0.0)
+  (define-fun v_3_17 () Real
+    0.0)
+  (define-fun u_4_16 () Real
+    (/ 24399294535786955433069749.0 10000000000000000000000000.0))
+  (define-fun v_3_16 () Real
+    (/ 24399294535786955433069749.0 10000000000000000000000000.0))
+  (define-fun u_4_15 () Real
+    (/ 256907590530603316413353.0 78125000000000000000000.0))
+  (define-fun v_3_15 () Real
+    (/ 256907590530603316413353.0 78125000000000000000000.0))
+  (define-fun u_4_14 () Real
+    0.0)
+  (define-fun v_3_14 () Real
+    0.0)
+  (define-fun u_4_13 () Real
+    0.0)
+  (define-fun v_3_13 () Real
+    0.0)
+  (define-fun u_4_12 () Real
+    0.0)
+  (define-fun v_3_12 () Real
+    0.0)
+  (define-fun u_4_11 () Real
+    0.0)
+  (define-fun v_3_11 () Real
+    0.0)
+  (define-fun u_4_10 () Real
+    0.0)
+  (define-fun v_3_10 () Real
+    0.0)
+  (define-fun u_4_9 () Real
+    0.0)
+  (define-fun v_3_9 () Real
+    0.0)
+  (define-fun u_4_8 () Real
+    0.0)
+  (define-fun v_3_8 () Real
+    0.0)
+  (define-fun u_4_7 () Real
+    0.0)
+  (define-fun v_3_7 () Real
+    0.0)
+  (define-fun u_4_6 () Real
+    0.0)
+  (define-fun v_3_6 () Real
+    0.0)
+  (define-fun u_4_5 () Real
+    0.0)
+  (define-fun v_3_5 () Real
+    0.0)
+  (define-fun u_4_4 () Real
+    0.0)
+  (define-fun v_3_4 () Real
+    0.0)
+  (define-fun u_4_3 () Real
+    0.0)
+  (define-fun v_3_3 () Real
+    0.0)
+  (define-fun u_4_2 () Real
+    (/ 325897070421728411586799.0 5000000000000000000000000.0))
+  (define-fun v_3_2 () Real
+    (/ 325897070421728411586799.0 5000000000000000000000000.0))
+  (define-fun u_4_1 () Real
+    0.0)
+  (define-fun v_3_1 () Real
+    0.0)
+  (define-fun u_4_0 () Real
+    0.0)
+  (define-fun v_3_0 () Real
+    0.0)
+  (define-fun v_2_63 () Real
+    0.0)
+  (define-fun v_2_62 () Real
+    0.0)
+  (define-fun v_2_61 () Real
+    0.0)
+  (define-fun v_2_60 () Real
+    0.0)
+  (define-fun v_2_59 () Real
+    0.0)
+  (define-fun v_2_58 () Real
+    0.0)
+  (define-fun v_2_57 () Real
+    0.0)
+  (define-fun v_2_56 () Real
+    (/ 60164482935203059112567321.0 10000000000000000000000000.0))
+  (define-fun v_2_55 () Real
+    0.0)
+  (define-fun v_2_54 () Real
+    0.0)
+  (define-fun v_2_53 () Real
+    0.0)
+  (define-fun v_2_52 () Real
+    (/ 5555542765513939054238719.0 1000000000000000000000000.0))
+  (define-fun v_2_51 () Real
+    0.0)
+  (define-fun v_2_50 () Real
+    (/ 4437671055496835262264103.0 5000000000000000000000000.0))
+  (define-fun v_2_49 () Real
+    (/ 75593400973607511774369251.0 10000000000000000000000000.0))
+  (define-fun v_2_48 () Real
+    0.0)
+  (define-fun v_2_47 () Real
+    0.0)
+  (define-fun v_2_46 () Real
+    0.0)
+  (define-fun v_2_45 () Real
+    0.0)
+  (define-fun v_2_44 () Real
+    0.0)
+  (define-fun v_2_43 () Real
+    0.0)
+  (define-fun v_2_42 () Real
+    0.0)
+  (define-fun v_2_41 () Real
+    0.0)
+  (define-fun v_2_40 () Real
+    0.0)
+  (define-fun v_2_39 () Real
+    0.0)
+  (define-fun v_2_38 () Real
+    (/ 2747274931291957655956807.0 5000000000000000000000000.0))
+  (define-fun v_2_37 () Real
+    (/ 20102932905086643793830311.0 5000000000000000000000000.0))
+  (define-fun v_2_36 () Real
+    0.0)
+  (define-fun v_2_35 () Real
+    0.0)
+  (define-fun v_2_34 () Real
+    0.0)
+  (define-fun v_2_33 () Real
+    (/ 8506251350976527283866287.0 10000000000000000000000000.0))
+  (define-fun v_2_32 () Real
+    0.0)
+  (define-fun v_2_31 () Real
+    0.0)
+  (define-fun v_2_30 () Real
+    0.0)
+  (define-fun v_2_29 () Real
+    0.0)
+  (define-fun v_2_28 () Real
+    0.0)
+  (define-fun v_2_27 () Real
+    0.0)
+  (define-fun v_2_26 () Real
+    0.0)
+  (define-fun v_2_25 () Real
+    (/ 41292634061263983268247.0 1000000000000000000000000.0))
+  (define-fun v_2_24 () Real
+    (/ 7599778353693145289260519.0 10000000000000000000000000.0))
+  (define-fun v_2_23 () Real
+    (/ 19980538104021666175663567.0 10000000000000000000000000.0))
+  (define-fun v_2_22 () Real
+    0.0)
+  (define-fun v_2_21 () Real
+    0.0)
+  (define-fun v_2_20 () Real
+    (/ 16841610930184377066030339.0 10000000000000000000000000.0))
+  (define-fun v_2_19 () Real
+    0.0)
+  (define-fun v_2_18 () Real
+    (/ 1064722603459057320544509.0 1000000000000000000000000.0))
+  (define-fun v_2_17 () Real
+    0.0)
+  (define-fun v_2_16 () Real
+    (/ 24399294535786955433069749.0 10000000000000000000000000.0))
+  (define-fun v_2_15 () Real
+    (/ 256907590530603316413353.0 78125000000000000000000.0))
+  (define-fun v_2_14 () Real
+    0.0)
+  (define-fun v_2_13 () Real
+    0.0)
+  (define-fun v_2_12 () Real
+    0.0)
+  (define-fun v_2_11 () Real
+    0.0)
+  (define-fun v_2_10 () Real
+    0.0)
+  (define-fun v_2_9 () Real
+    0.0)
+  (define-fun v_2_8 () Real
+    0.0)
+  (define-fun v_2_7 () Real
+    0.0)
+  (define-fun v_2_6 () Real
+    0.0)
+  (define-fun v_2_5 () Real
+    0.0)
+  (define-fun v_2_4 () Real
+    0.0)
+  (define-fun v_2_3 () Real
+    0.0)
+  (define-fun v_2_2 () Real
+    (/ 325897070421728411586799.0 5000000000000000000000000.0))
+  (define-fun v_2_1 () Real
+    0.0)
+  (define-fun v_2_0 () Real
+    0.0)
+  (define-fun u_2_63 () Real
+    0.0)
+  (define-fun v_1_63 () Real
+    0.0)
+  (define-fun u_2_62 () Real
+    0.0)
+  (define-fun v_1_62 () Real
+    0.0)
+  (define-fun u_2_61 () Real
+    0.0)
+  (define-fun v_1_61 () Real
+    0.0)
+  (define-fun u_2_60 () Real
+    0.0)
+  (define-fun v_1_60 () Real
+    0.0)
+  (define-fun u_2_59 () Real
+    0.0)
+  (define-fun v_1_59 () Real
+    0.0)
+  (define-fun u_2_58 () Real
+    0.0)
+  (define-fun v_1_58 () Real
+    0.0)
+  (define-fun u_2_57 () Real
+    0.0)
+  (define-fun v_1_57 () Real
+    0.0)
+  (define-fun u_2_56 () Real
+    (/ 60164482935203059112567321.0 10000000000000000000000000.0))
+  (define-fun v_1_56 () Real
+    (/ 60164482935203059112567321.0 10000000000000000000000000.0))
+  (define-fun u_2_55 () Real
+    0.0)
+  (define-fun v_1_55 () Real
+    0.0)
+  (define-fun u_2_54 () Real
+    0.0)
+  (define-fun v_1_54 () Real
+    0.0)
+  (define-fun u_2_53 () Real
+    0.0)
+  (define-fun v_1_53 () Real
+    0.0)
+  (define-fun u_2_52 () Real
+    (/ 5555542765513939054238719.0 1000000000000000000000000.0))
+  (define-fun v_1_52 () Real
+    (/ 5555542765513939054238719.0 1000000000000000000000000.0))
+  (define-fun u_2_51 () Real
+    0.0)
+  (define-fun v_1_51 () Real
+    0.0)
+  (define-fun u_2_50 () Real
+    (/ 4437671055496835262264103.0 5000000000000000000000000.0))
+  (define-fun v_1_50 () Real
+    (/ 4437671055496835262264103.0 5000000000000000000000000.0))
+  (define-fun u_2_49 () Real
+    (/ 75593400973607511774369251.0 10000000000000000000000000.0))
+  (define-fun v_1_49 () Real
+    (/ 75593400973607511774369251.0 10000000000000000000000000.0))
+  (define-fun u_2_48 () Real
+    0.0)
+  (define-fun v_1_48 () Real
+    0.0)
+  (define-fun u_2_47 () Real
+    0.0)
+  (define-fun v_1_47 () Real
+    0.0)
+  (define-fun u_2_46 () Real
+    0.0)
+  (define-fun v_1_46 () Real
+    0.0)
+  (define-fun u_2_45 () Real
+    0.0)
+  (define-fun v_1_45 () Real
+    0.0)
+  (define-fun u_2_44 () Real
+    0.0)
+  (define-fun v_1_44 () Real
+    0.0)
+  (define-fun u_2_43 () Real
+    0.0)
+  (define-fun v_1_43 () Real
+    0.0)
+  (define-fun u_2_42 () Real
+    0.0)
+  (define-fun v_1_42 () Real
+    0.0)
+  (define-fun u_2_41 () Real
+    0.0)
+  (define-fun v_1_41 () Real
+    0.0)
+  (define-fun u_2_40 () Real
+    0.0)
+  (define-fun v_1_40 () Real
+    0.0)
+  (define-fun u_2_39 () Real
+    0.0)
+  (define-fun v_1_39 () Real
+    0.0)
+  (define-fun u_2_38 () Real
+    (/ 2747274931291957655956807.0 5000000000000000000000000.0))
+  (define-fun v_1_38 () Real
+    (/ 2747274931291957655956807.0 5000000000000000000000000.0))
+  (define-fun u_2_37 () Real
+    (/ 20102932905086643793830311.0 5000000000000000000000000.0))
+  (define-fun v_1_37 () Real
+    (/ 20102932905086643793830311.0 5000000000000000000000000.0))
+  (define-fun u_2_36 () Real
+    0.0)
+  (define-fun v_1_36 () Real
+    0.0)
+  (define-fun u_2_35 () Real
+    0.0)
+  (define-fun v_1_35 () Real
+    0.0)
+  (define-fun u_2_34 () Real
+    0.0)
+  (define-fun v_1_34 () Real
+    0.0)
+  (define-fun u_2_33 () Real
+    (/ 8506251350976527283866287.0 10000000000000000000000000.0))
+  (define-fun v_1_33 () Real
+    (/ 8506251350976527283866287.0 10000000000000000000000000.0))
+  (define-fun u_2_32 () Real
+    0.0)
+  (define-fun v_1_32 () Real
+    0.0)
+  (define-fun u_2_31 () Real
+    0.0)
+  (define-fun v_1_31 () Real
+    0.0)
+  (define-fun u_2_30 () Real
+    0.0)
+  (define-fun v_1_30 () Real
+    0.0)
+  (define-fun u_2_29 () Real
+    0.0)
+  (define-fun v_1_29 () Real
+    0.0)
+  (define-fun u_2_28 () Real
+    0.0)
+  (define-fun v_1_28 () Real
+    0.0)
+  (define-fun u_2_27 () Real
+    0.0)
+  (define-fun v_1_27 () Real
+    0.0)
+  (define-fun u_2_26 () Real
+    0.0)
+  (define-fun v_1_26 () Real
+    0.0)
+  (define-fun u_2_25 () Real
+    (/ 41292634061263983268247.0 1000000000000000000000000.0))
+  (define-fun v_1_25 () Real
+    (/ 41292634061263983268247.0 1000000000000000000000000.0))
+  (define-fun u_2_24 () Real
+    (/ 7599778353693145289260519.0 10000000000000000000000000.0))
+  (define-fun v_1_24 () Real
+    (/ 7599778353693145289260519.0 10000000000000000000000000.0))
+  (define-fun u_2_23 () Real
+    (/ 19980538104021666175663567.0 10000000000000000000000000.0))
+  (define-fun v_1_23 () Real
+    (/ 19980538104021666175663567.0 10000000000000000000000000.0))
+  (define-fun u_2_22 () Real
+    0.0)
+  (define-fun v_1_22 () Real
+    0.0)
+  (define-fun u_2_21 () Real
+    0.0)
+  (define-fun v_1_21 () Real
+    0.0)
+  (define-fun u_2_20 () Real
+    (/ 16841610930184377066030339.0 10000000000000000000000000.0))
+  (define-fun v_1_20 () Real
+    (/ 16841610930184377066030339.0 10000000000000000000000000.0))
+  (define-fun u_2_19 () Real
+    0.0)
+  (define-fun v_1_19 () Real
+    0.0)
+  (define-fun u_2_18 () Real
+    (/ 1064722603459057320544509.0 1000000000000000000000000.0))
+  (define-fun v_1_18 () Real
+    (/ 1064722603459057320544509.0 1000000000000000000000000.0))
+  (define-fun u_2_17 () Real
+    0.0)
+  (define-fun v_1_17 () Real
+    0.0)
+  (define-fun u_2_16 () Real
+    (/ 24399294535786955433069749.0 10000000000000000000000000.0))
+  (define-fun v_1_16 () Real
+    (/ 24399294535786955433069749.0 10000000000000000000000000.0))
+  (define-fun u_2_15 () Real
+    (/ 256907590530603316413353.0 78125000000000000000000.0))
+  (define-fun v_1_15 () Real
+    (/ 256907590530603316413353.0 78125000000000000000000.0))
+  (define-fun u_2_14 () Real
+    0.0)
+  (define-fun v_1_14 () Real
+    0.0)
+  (define-fun u_2_13 () Real
+    0.0)
+  (define-fun v_1_13 () Real
+    0.0)
+  (define-fun u_2_12 () Real
+    0.0)
+  (define-fun v_1_12 () Real
+    0.0)
+  (define-fun u_2_11 () Real
+    0.0)
+  (define-fun v_1_11 () Real
+    0.0)
+  (define-fun u_2_10 () Real
+    0.0)
+  (define-fun v_1_10 () Real
+    0.0)
+  (define-fun u_2_9 () Real
+    0.0)
+  (define-fun v_1_9 () Real
+    0.0)
+  (define-fun u_2_8 () Real
+    0.0)
+  (define-fun v_1_8 () Real
+    0.0)
+  (define-fun u_2_7 () Real
+    0.0)
+  (define-fun v_1_7 () Real
+    0.0)
+  (define-fun u_2_6 () Real
+    0.0)
+  (define-fun v_1_6 () Real
+    0.0)
+  (define-fun u_2_5 () Real
+    0.0)
+  (define-fun v_1_5 () Real
+    0.0)
+  (define-fun u_2_4 () Real
+    0.0)
+  (define-fun v_1_4 () Real
+    0.0)
+  (define-fun u_2_3 () Real
+    0.0)
+  (define-fun v_1_3 () Real
+    0.0)
+  (define-fun u_2_2 () Real
+    (/ 325897070421728411586799.0 5000000000000000000000000.0))
+  (define-fun v_1_2 () Real
+    (/ 325897070421728411586799.0 5000000000000000000000000.0))
+  (define-fun u_2_1 () Real
+    0.0)
+  (define-fun v_1_1 () Real
+    0.0)
+  (define-fun u_2_0 () Real
+    0.0)
+  (define-fun v_1_0 () Real
+    0.0)
+  (define-fun v_0_127 () Real
+    (- (/ 12112087442502196746255941.0 2000000000000000000000000.0)))
+  (define-fun v_0_126 () Real
+    (- (/ 65255719145545370004671167.0 10000000000000000000000000.0)))
+  (define-fun v_0_125 () Real
+    (- (/ 61329301545588191657192993.0 10000000000000000000000000.0)))
+  (define-fun v_0_124 () Real
+    (- (/ 5877153759256152366936757.0 5000000000000000000000000.0)))
+  (define-fun v_0_123 () Real
+    (- (/ 30530289336427243579783783.0 10000000000000000000000000.0)))
+  (define-fun v_0_122 () Real
+    (/ 727106511507037188786497.0 1000000000000000000000000.0))
+  (define-fun v_0_121 () Real
+    (- (/ 6516333626021685466241273.0 5000000000000000000000000.0)))
+  (define-fun v_0_120 () Real
+    (- (/ 5359057664277725420383177.0 5000000000000000000000000.0)))
+  (define-fun v_0_119 () Real
+    (/ 599330712248789201770743.0 200000000000000000000000.0))
+  (define-fun v_0_118 () Real
+    (- (/ 6357083935646668450723581.0 5000000000000000000000000.0)))
+  (define-fun v_0_117 () Real
+    (- (/ 13877989998108972019481181.0 2500000000000000000000000.0)))
+  (define-fun v_0_116 () Real
+    (- (/ 9741064689317307613766341.0 2500000000000000000000000.0)))
+  (define-fun v_0_115 () Real
+    (- (/ 64934931110225474720708649.0 10000000000000000000000000.0)))
+  (define-fun v_0_114 () Real
+    (- (/ 3209765176000256384222491.0 2000000000000000000000000.0)))
+  (define-fun v_0_113 () Real
+    (- (/ 25946245117953009455115639.0 10000000000000000000000000.0)))
+  (define-fun v_0_112 () Real
+    (/ 16318345066719215537031573.0 10000000000000000000000000.0))
+  (define-fun v_0_111 () Real
+    (- (/ 1282171869653336353261749.0 625000000000000000000000.0)))
+  (define-fun v_0_110 () Real
+    (/ 3266410327610084494727027.0 1250000000000000000000000.0))
+  (define-fun v_0_109 () Real
+    (- (/ 2080928178768897207011281.0 125000000000000000000000.0)))
+  (define-fun v_0_108 () Real
+    (- (/ 1695100930254400310303227.0 312500000000000000000000.0)))
+  (define-fun v_0_107 () Real
+    (/ 6864375589071320986197097.0 1250000000000000000000000.0))
+  (define-fun v_0_106 () Real
+    (- (/ 1907995913256434558138763.0 400000000000000000000000.0)))
+  (define-fun v_0_105 () Real
+    (- (/ 23428900472399796818567921.0 10000000000000000000000000.0)))
+  (define-fun v_0_104 () Real
+    (- (/ 9483321151301531871575171.0 1250000000000000000000000.0)))
+  (define-fun v_0_103 () Real
+    (/ 38551648130480601575266501.0 10000000000000000000000000.0))
+  (define-fun v_0_102 () Real
+    (- (/ 11569667537614484018620781.0 1250000000000000000000000.0)))
+  (define-fun v_0_101 () Real
+    (- (/ 38888881489187112219567233.0 10000000000000000000000000.0)))
+  (define-fun v_0_100 () Real
+    (- (/ 22169794726776707519367089.0 5000000000000000000000000.0)))
+  (define-fun v_0_99 () Real
+    (- (/ 1511976231092988829645213.0 400000000000000000000000.0)))
+  (define-fun v_0_98 () Real
+    (/ 35231472274936452891087.0 2000000000000000000000000.0))
+  (define-fun v_0_97 () Real
+    (- (/ 4078281884958200628391343.0 2000000000000000000000000.0)))
+  (define-fun v_0_96 () Real
+    (- (/ 11287353742936186885277287.0 5000000000000000000000000.0)))
+  (define-fun v_0_95 () Real
+    (/ 70660697839766119149222579.0 10000000000000000000000000.0))
+  (define-fun v_0_94 () Real
+    (- (/ 4315039155472072264695573.0 625000000000000000000000.0)))
+  (define-fun v_0_93 () Real
+    (- (/ 55710904363076632808877213.0 10000000000000000000000000.0)))
+  (define-fun v_0_92 () Real
+    (- (/ 1810440260747347115121147.0 250000000000000000000000.0)))
+  (define-fun v_0_91 () Real
+    (- (/ 36848985909993359369189673.0 5000000000000000000000000.0)))
+  (define-fun v_0_90 () Real
+    (/ 2844255955725470118796303.0 2500000000000000000000000.0))
+  (define-fun v_0_89 () Real
+    (/ 29174281569832349063504769.0 10000000000000000000000000.0))
+  (define-fun v_0_88 () Real
+    (- (/ 3904544786591192817652127.0 2500000000000000000000000.0)))
+  (define-fun v_0_87 () Real
+    (/ 19528914252113468290531.0 62500000000000000000000.0))
+  (define-fun v_0_86 () Real
+    (- (/ 29217859141524040782112991.0 10000000000000000000000000.0)))
+  (define-fun v_0_85 () Real
+    (- (/ 7961383121682093732590361.0 500000000000000000000000.0)))
+  (define-fun v_0_84 () Real
+    (/ 5096300559279088999241873.0 2000000000000000000000000.0))
+  (define-fun v_0_83 () Real
+    (- (/ 57107602606344894302148723.0 5000000000000000000000000.0)))
+  (define-fun v_0_82 () Real
+    (/ 29324872065906176432563681.0 10000000000000000000000000.0))
+  (define-fun v_0_81 () Real
+    (- (/ 24300625106675880108302517.0 10000000000000000000000000.0)))
+  (define-fun v_0_80 () Real
+    (- (/ 23719545129732247015529317.0 2500000000000000000000000.0)))
+  (define-fun v_0_79 () Real
+    (- (/ 1210002798550560247357809.0 5000000000000000000000000.0)))
+  (define-fun v_0_78 () Real
+    (/ 1136517059914037292344209.0 200000000000000000000000.0))
+  (define-fun v_0_77 () Real
+    (/ 24684454967470966974287793.0 5000000000000000000000000.0))
+  (define-fun v_0_76 () Real
+    (- (/ 55587094196392331820306421.0 10000000000000000000000000.0)))
+  (define-fun v_0_75 () Real
+    (- (/ 7332432762340769759750427.0 10000000000000000000000000.0)))
+  (define-fun v_0_74 () Real
+    (- (/ 77805743376765510573597943.0 5000000000000000000000000.0)))
+  (define-fun v_0_73 () Real
+    (/ 12840879593902797904720953.0 10000000000000000000000000.0))
+  (define-fun v_0_72 () Real
+    (- (/ 15203315566357810161631647.0 5000000000000000000000000.0)))
+  (define-fun v_0_71 () Real
+    (- (/ 110652253829006689154653903.0 10000000000000000000000000.0)))
+  (define-fun v_0_70 () Real
+    (- (/ 1264932684278498045094759.0 5000000000000000000000000.0)))
+  (define-fun v_0_69 () Real
+    (- (/ 12501813248922938808871657.0 2500000000000000000000000.0)))
+  (define-fun v_0_68 () Real
+    (/ 33522724723201427742247667.0 10000000000000000000000000.0))
+  (define-fun v_0_67 () Real
+    (- (/ 1514683731020811698886789.0 500000000000000000000000.0)))
+  (define-fun v_0_66 () Real
+    (- (/ 31113524125815898470212787.0 10000000000000000000000000.0)))
+  (define-fun v_0_65 () Real
+    (- (/ 2432890587171891115354199.0 2000000000000000000000000.0)))
+  (define-fun v_0_64 () Real
+    (- (/ 20936241727411363816611397.0 10000000000000000000000000.0)))
+  (define-fun v_0_63 () Real
+    (- (/ 79223493968611401542807943.0 10000000000000000000000000.0)))
+  (define-fun v_0_62 () Real
+    (- (/ 89286477576375154645799171.0 10000000000000000000000000.0)))
+  (define-fun v_0_61 () Real
+    (- (/ 3649674377341608579304273.0 500000000000000000000000.0)))
+  (define-fun v_0_60 () Real
+    (- (/ 1506231590695496627889587.0 500000000000000000000000.0)))
+  (define-fun v_0_59 () Real
+    (- (/ 6741290380571987018029289.0 2000000000000000000000000.0)))
+  (define-fun v_0_58 () Real
+    (- (/ 1048239046831012651387101.0 80000000000000000000000.0)))
+  (define-fun v_0_57 () Real
+    (- (/ 66119956348149571823653833.0 10000000000000000000000000.0)))
+  (define-fun v_0_56 () Real
+    (/ 60164482935203059112567321.0 10000000000000000000000000.0))
+  (define-fun v_0_55 () Real
+    (- (/ 41038976041618369682715903.0 10000000000000000000000000.0)))
+  (define-fun v_0_54 () Real
+    (- (/ 35986719151082282797051213.0 10000000000000000000000000.0)))
+  (define-fun v_0_53 () Real
+    (- (/ 7462589519759457141631099.0 2000000000000000000000000.0)))
+  (define-fun v_0_52 () Real
+    (/ 5555542765513939054238719.0 1000000000000000000000000.0))
+  (define-fun v_0_51 () Real
+    (- (/ 54774488326458844337106277.0 10000000000000000000000000.0)))
+  (define-fun v_0_50 () Real
+    (/ 4437671055496835262264103.0 5000000000000000000000000.0))
+  (define-fun v_0_49 () Real
+    (/ 75593400973607511774369251.0 10000000000000000000000000.0))
+  (define-fun v_0_48 () Real
+    (- (/ 28117814065064942836260323.0 2000000000000000000000000.0)))
+  (define-fun v_0_47 () Real
+    (- (/ 15495180979581076580204351.0 10000000000000000000000000.0)))
+  (define-fun v_0_46 () Real
+    (- (/ 31594653111818593632268361.0 10000000000000000000000000.0)))
+  (define-fun v_0_45 () Real
+    (- (/ 5689433567590016264223549.0 2500000000000000000000000.0)))
+  (define-fun v_0_44 () Real
+    (- (/ 19435552283181061433299069.0 10000000000000000000000000.0)))
+  (define-fun v_0_43 () Real
+    (- (/ 3898290818119287365328731.0 2000000000000000000000000.0)))
+  (define-fun v_0_42 () Real
+    (- (/ 100448630021437635595688973.0 10000000000000000000000000.0)))
+  (define-fun v_0_41 () Real
+    (- (/ 29336825098567324361858729.0 10000000000000000000000000.0)))
+  (define-fun v_0_40 () Real
+    (- (/ 25774335498178569861048709.0 5000000000000000000000000.0)))
+  (define-fun v_0_39 () Real
+    (- (/ 69840926837486525029050273.0 10000000000000000000000000.0)))
+  (define-fun v_0_38 () Real
+    (/ 2747274931291957655956807.0 5000000000000000000000000.0))
+  (define-fun v_0_37 () Real
+    (/ 20102932905086643793830311.0 5000000000000000000000000.0))
+  (define-fun v_0_36 () Real
+    (- (/ 36422756553426676599171287.0 10000000000000000000000000.0)))
+  (define-fun v_0_35 () Real
+    (- (/ 193703733935413495652531.0 250000000000000000000000.0)))
+  (define-fun v_0_34 () Real
+    (- (/ 4760329698925203441215189.0 1250000000000000000000000.0)))
+  (define-fun v_0_33 () Real
+    (/ 8506251350976527283866287.0 10000000000000000000000000.0))
+  (define-fun v_0_32 () Real
+    (- (/ 15102861284223549594950939.0 5000000000000000000000000.0)))
+  (define-fun v_0_31 () Real
+    (- (/ 33111143908189502216970263.0 10000000000000000000000000.0)))
+  (define-fun v_0_30 () Real
+    (- (/ 20480977354381764553822381.0 10000000000000000000000000.0)))
+  (define-fun v_0_29 () Real
+    (- (/ 146176970157197070848135127.0 10000000000000000000000000.0)))
+  (define-fun v_0_28 () Real
+    (- (/ 4039468904735472463683947.0 625000000000000000000000.0)))
+  (define-fun v_0_27 () Real
+    (- (/ 37977313658103857653365513.0 10000000000000000000000000.0)))
+  (define-fun v_0_26 () Real
+    (- (/ 1880719096348712255274077.0 2000000000000000000000000.0)))
+  (define-fun v_0_25 () Real
+    (/ 41292634061263983268247.0 1000000000000000000000000.0))
+  (define-fun v_0_24 () Real
+    (/ 7599778353693145289260519.0 10000000000000000000000000.0))
+  (define-fun v_0_23 () Real
+    (/ 19980538104021666175663567.0 10000000000000000000000000.0))
+  (define-fun v_0_22 () Real
+    (- (/ 26057534355998916435410819.0 10000000000000000000000000.0)))
+  (define-fun v_0_21 () Real
+    (- (/ 15947340736375646208652193.0 10000000000000000000000000.0)))
+  (define-fun v_0_20 () Real
+    (/ 16841610930184377066030339.0 10000000000000000000000000.0))
+  (define-fun v_0_19 () Real
+    (- (/ 13682457771153399122780913.0 1250000000000000000000000.0)))
+  (define-fun v_0_18 () Real
+    (/ 1064722603459057320544509.0 1000000000000000000000000.0))
+  (define-fun v_0_17 () Real
+    (- (/ 562373675684006307345459.0 500000000000000000000000.0)))
+  (define-fun v_0_16 () Real
+    (/ 24399294535786955433069749.0 10000000000000000000000000.0))
+  (define-fun v_0_15 () Real
+    (/ 256907590530603316413353.0 78125000000000000000000.0))
+  (define-fun v_0_14 () Real
+    (- (/ 5234815438394434196748309.0 5000000000000000000000000.0)))
+  (define-fun v_0_13 () Real
+    (- (/ 50838405825179437418808509.0 10000000000000000000000000.0)))
+  (define-fun v_0_12 () Real
+    (- (/ 31936427234425481634932239.0 10000000000000000000000000.0)))
+  (define-fun v_0_11 () Real
+    (- (/ 6643649265970309662967817.0 2500000000000000000000000.0)))
+  (define-fun v_0_10 () Real
+    (- (/ 41216045584721380854052347.0 10000000000000000000000000.0)))
+  (define-fun v_0_9 () Real
+    (- (/ 1386052946031239679005219.0 200000000000000000000000.0)))
+  (define-fun v_0_8 () Real
+    (- (/ 126370788210875116889520121.0 10000000000000000000000000.0)))
+  (define-fun v_0_7 () Real
+    (- (/ 25660441474130777693194697.0 10000000000000000000000000.0)))
+  (define-fun v_0_6 () Real
+    (- (/ 18120800131524448239868699.0 5000000000000000000000000.0)))
+  (define-fun v_0_5 () Real
+    (- (/ 46301659399570497989796381.0 10000000000000000000000000.0)))
+  (define-fun v_0_4 () Real
+    (- (/ 7616192689402013878101247.0 10000000000000000000000000.0)))
+  (define-fun v_0_3 () Real
+    (- (/ 24655673794521420813435281.0 10000000000000000000000000.0)))
+  (define-fun v_0_2 () Real
+    (/ 325897070421728411586799.0 5000000000000000000000000.0))
+  (define-fun v_0_1 () Real
+    (- (/ 47969494367917707341071891.0 5000000000000000000000000.0)))
+  (define-fun v_0_0 () Real
+    (- (/ 1735929567869478546270871.0 2000000000000000000000000.0)))
+  (define-fun u_0_127 () Real
+    (- (/ 12112087442502196746255941.0 2000000000000000000000000.0)))
+  (define-fun u_0_126 () Real
+    (- (/ 65255719145545370004671167.0 10000000000000000000000000.0)))
+  (define-fun u_0_125 () Real
+    (- (/ 61329301545588191657192993.0 10000000000000000000000000.0)))
+  (define-fun u_0_124 () Real
+    (- (/ 5877153759256152366936757.0 5000000000000000000000000.0)))
+  (define-fun u_0_123 () Real
+    (- (/ 30530289336427243579783783.0 10000000000000000000000000.0)))
+  (define-fun u_0_122 () Real
+    (/ 727106511507037188786497.0 1000000000000000000000000.0))
+  (define-fun u_0_121 () Real
+    (- (/ 6516333626021685466241273.0 5000000000000000000000000.0)))
+  (define-fun u_0_120 () Real
+    (- (/ 5359057664277725420383177.0 5000000000000000000000000.0)))
+  (define-fun u_0_119 () Real
+    (/ 599330712248789201770743.0 200000000000000000000000.0))
+  (define-fun u_0_118 () Real
+    (- (/ 6357083935646668450723581.0 5000000000000000000000000.0)))
+  (define-fun u_0_117 () Real
+    (- (/ 13877989998108972019481181.0 2500000000000000000000000.0)))
+  (define-fun u_0_116 () Real
+    (- (/ 9741064689317307613766341.0 2500000000000000000000000.0)))
+  (define-fun u_0_115 () Real
+    (- (/ 64934931110225474720708649.0 10000000000000000000000000.0)))
+  (define-fun u_0_114 () Real
+    (- (/ 3209765176000256384222491.0 2000000000000000000000000.0)))
+  (define-fun u_0_113 () Real
+    (- (/ 25946245117953009455115639.0 10000000000000000000000000.0)))
+  (define-fun u_0_112 () Real
+    (/ 16318345066719215537031573.0 10000000000000000000000000.0))
+  (define-fun u_0_111 () Real
+    (- (/ 1282171869653336353261749.0 625000000000000000000000.0)))
+  (define-fun u_0_110 () Real
+    (/ 3266410327610084494727027.0 1250000000000000000000000.0))
+  (define-fun u_0_109 () Real
+    (- (/ 2080928178768897207011281.0 125000000000000000000000.0)))
+  (define-fun u_0_108 () Real
+    (- (/ 1695100930254400310303227.0 312500000000000000000000.0)))
+  (define-fun u_0_107 () Real
+    (/ 6864375589071320986197097.0 1250000000000000000000000.0))
+  (define-fun u_0_106 () Real
+    (- (/ 1907995913256434558138763.0 400000000000000000000000.0)))
+  (define-fun u_0_105 () Real
+    (- (/ 23428900472399796818567921.0 10000000000000000000000000.0)))
+  (define-fun u_0_104 () Real
+    (- (/ 9483321151301531871575171.0 1250000000000000000000000.0)))
+  (define-fun u_0_103 () Real
+    (/ 38551648130480601575266501.0 10000000000000000000000000.0))
+  (define-fun u_0_102 () Real
+    (- (/ 11569667537614484018620781.0 1250000000000000000000000.0)))
+  (define-fun u_0_101 () Real
+    (- (/ 38888881489187112219567233.0 10000000000000000000000000.0)))
+  (define-fun u_0_100 () Real
+    (- (/ 22169794726776707519367089.0 5000000000000000000000000.0)))
+  (define-fun u_0_99 () Real
+    (- (/ 1511976231092988829645213.0 400000000000000000000000.0)))
+  (define-fun u_0_98 () Real
+    (/ 35231472274936452891087.0 2000000000000000000000000.0))
+  (define-fun u_0_97 () Real
+    (- (/ 4078281884958200628391343.0 2000000000000000000000000.0)))
+  (define-fun u_0_96 () Real
+    (- (/ 11287353742936186885277287.0 5000000000000000000000000.0)))
+  (define-fun u_0_95 () Real
+    (/ 70660697839766119149222579.0 10000000000000000000000000.0))
+  (define-fun u_0_94 () Real
+    (- (/ 4315039155472072264695573.0 625000000000000000000000.0)))
+  (define-fun u_0_93 () Real
+    (- (/ 55710904363076632808877213.0 10000000000000000000000000.0)))
+  (define-fun u_0_92 () Real
+    (- (/ 1810440260747347115121147.0 250000000000000000000000.0)))
+  (define-fun u_0_91 () Real
+    (- (/ 36848985909993359369189673.0 5000000000000000000000000.0)))
+  (define-fun u_0_90 () Real
+    (/ 2844255955725470118796303.0 2500000000000000000000000.0))
+  (define-fun u_0_89 () Real
+    (/ 29174281569832349063504769.0 10000000000000000000000000.0))
+  (define-fun u_0_88 () Real
+    (- (/ 3904544786591192817652127.0 2500000000000000000000000.0)))
+  (define-fun u_0_87 () Real
+    (/ 19528914252113468290531.0 62500000000000000000000.0))
+  (define-fun u_0_86 () Real
+    (- (/ 29217859141524040782112991.0 10000000000000000000000000.0)))
+  (define-fun u_0_85 () Real
+    (- (/ 7961383121682093732590361.0 500000000000000000000000.0)))
+  (define-fun u_0_84 () Real
+    (/ 5096300559279088999241873.0 2000000000000000000000000.0))
+  (define-fun u_0_83 () Real
+    (- (/ 57107602606344894302148723.0 5000000000000000000000000.0)))
+  (define-fun u_0_82 () Real
+    (/ 29324872065906176432563681.0 10000000000000000000000000.0))
+  (define-fun u_0_81 () Real
+    (- (/ 24300625106675880108302517.0 10000000000000000000000000.0)))
+  (define-fun u_0_80 () Real
+    (- (/ 23719545129732247015529317.0 2500000000000000000000000.0)))
+  (define-fun u_0_79 () Real
+    (- (/ 1210002798550560247357809.0 5000000000000000000000000.0)))
+  (define-fun u_0_78 () Real
+    (/ 1136517059914037292344209.0 200000000000000000000000.0))
+  (define-fun u_0_77 () Real
+    (/ 24684454967470966974287793.0 5000000000000000000000000.0))
+  (define-fun u_0_76 () Real
+    (- (/ 55587094196392331820306421.0 10000000000000000000000000.0)))
+  (define-fun u_0_75 () Real
+    (- (/ 7332432762340769759750427.0 10000000000000000000000000.0)))
+  (define-fun u_0_74 () Real
+    (- (/ 77805743376765510573597943.0 5000000000000000000000000.0)))
+  (define-fun u_0_73 () Real
+    (/ 12840879593902797904720953.0 10000000000000000000000000.0))
+  (define-fun u_0_72 () Real
+    (- (/ 15203315566357810161631647.0 5000000000000000000000000.0)))
+  (define-fun u_0_71 () Real
+    (- (/ 110652253829006689154653903.0 10000000000000000000000000.0)))
+  (define-fun u_0_70 () Real
+    (- (/ 1264932684278498045094759.0 5000000000000000000000000.0)))
+  (define-fun u_0_69 () Real
+    (- (/ 12501813248922938808871657.0 2500000000000000000000000.0)))
+  (define-fun u_0_68 () Real
+    (/ 33522724723201427742247667.0 10000000000000000000000000.0))
+  (define-fun u_0_67 () Real
+    (- (/ 1514683731020811698886789.0 500000000000000000000000.0)))
+  (define-fun u_0_66 () Real
+    (- (/ 31113524125815898470212787.0 10000000000000000000000000.0)))
+  (define-fun u_0_65 () Real
+    (- (/ 2432890587171891115354199.0 2000000000000000000000000.0)))
+  (define-fun u_0_64 () Real
+    (- (/ 20936241727411363816611397.0 10000000000000000000000000.0)))
+  (define-fun u_0_63 () Real
+    (- (/ 79223493968611401542807943.0 10000000000000000000000000.0)))
+  (define-fun u_0_62 () Real
+    (- (/ 89286477576375154645799171.0 10000000000000000000000000.0)))
+  (define-fun u_0_61 () Real
+    (- (/ 3649674377341608579304273.0 500000000000000000000000.0)))
+  (define-fun u_0_60 () Real
+    (- (/ 1506231590695496627889587.0 500000000000000000000000.0)))
+  (define-fun u_0_59 () Real
+    (- (/ 6741290380571987018029289.0 2000000000000000000000000.0)))
+  (define-fun u_0_58 () Real
+    (- (/ 1048239046831012651387101.0 80000000000000000000000.0)))
+  (define-fun u_0_57 () Real
+    (- (/ 66119956348149571823653833.0 10000000000000000000000000.0)))
+  (define-fun u_0_56 () Real
+    (/ 60164482935203059112567321.0 10000000000000000000000000.0))
+  (define-fun u_0_55 () Real
+    (- (/ 41038976041618369682715903.0 10000000000000000000000000.0)))
+  (define-fun u_0_54 () Real
+    (- (/ 35986719151082282797051213.0 10000000000000000000000000.0)))
+  (define-fun u_0_53 () Real
+    (- (/ 7462589519759457141631099.0 2000000000000000000000000.0)))
+  (define-fun u_0_52 () Real
+    (/ 5555542765513939054238719.0 1000000000000000000000000.0))
+  (define-fun u_0_51 () Real
+    (- (/ 54774488326458844337106277.0 10000000000000000000000000.0)))
+  (define-fun u_0_50 () Real
+    (/ 4437671055496835262264103.0 5000000000000000000000000.0))
+  (define-fun u_0_49 () Real
+    (/ 75593400973607511774369251.0 10000000000000000000000000.0))
+  (define-fun u_0_48 () Real
+    (- (/ 28117814065064942836260323.0 2000000000000000000000000.0)))
+  (define-fun u_0_47 () Real
+    (- (/ 15495180979581076580204351.0 10000000000000000000000000.0)))
+  (define-fun u_0_46 () Real
+    (- (/ 31594653111818593632268361.0 10000000000000000000000000.0)))
+  (define-fun u_0_45 () Real
+    (- (/ 5689433567590016264223549.0 2500000000000000000000000.0)))
+  (define-fun u_0_44 () Real
+    (- (/ 19435552283181061433299069.0 10000000000000000000000000.0)))
+  (define-fun u_0_43 () Real
+    (- (/ 3898290818119287365328731.0 2000000000000000000000000.0)))
+  (define-fun u_0_42 () Real
+    (- (/ 100448630021437635595688973.0 10000000000000000000000000.0)))
+  (define-fun u_0_41 () Real
+    (- (/ 29336825098567324361858729.0 10000000000000000000000000.0)))
+  (define-fun u_0_40 () Real
+    (- (/ 25774335498178569861048709.0 5000000000000000000000000.0)))
+  (define-fun u_0_39 () Real
+    (- (/ 69840926837486525029050273.0 10000000000000000000000000.0)))
+  (define-fun u_0_38 () Real
+    (/ 2747274931291957655956807.0 5000000000000000000000000.0))
+  (define-fun u_0_37 () Real
+    (/ 20102932905086643793830311.0 5000000000000000000000000.0))
+  (define-fun u_0_36 () Real
+    (- (/ 36422756553426676599171287.0 10000000000000000000000000.0)))
+  (define-fun u_0_35 () Real
+    (- (/ 193703733935413495652531.0 250000000000000000000000.0)))
+  (define-fun u_0_34 () Real
+    (- (/ 4760329698925203441215189.0 1250000000000000000000000.0)))
+  (define-fun u_0_33 () Real
+    (/ 8506251350976527283866287.0 10000000000000000000000000.0))
+  (define-fun u_0_32 () Real
+    (- (/ 15102861284223549594950939.0 5000000000000000000000000.0)))
+  (define-fun u_0_31 () Real
+    (- (/ 33111143908189502216970263.0 10000000000000000000000000.0)))
+  (define-fun u_0_30 () Real
+    (- (/ 20480977354381764553822381.0 10000000000000000000000000.0)))
+  (define-fun u_0_29 () Real
+    (- (/ 146176970157197070848135127.0 10000000000000000000000000.0)))
+  (define-fun u_0_28 () Real
+    (- (/ 4039468904735472463683947.0 625000000000000000000000.0)))
+  (define-fun u_0_27 () Real
+    (- (/ 37977313658103857653365513.0 10000000000000000000000000.0)))
+  (define-fun u_0_26 () Real
+    (- (/ 1880719096348712255274077.0 2000000000000000000000000.0)))
+  (define-fun u_0_25 () Real
+    (/ 41292634061263983268247.0 1000000000000000000000000.0))
+  (define-fun u_0_24 () Real
+    (/ 7599778353693145289260519.0 10000000000000000000000000.0))
+  (define-fun u_0_23 () Real
+    (/ 19980538104021666175663567.0 10000000000000000000000000.0))
+  (define-fun u_0_22 () Real
+    (- (/ 26057534355998916435410819.0 10000000000000000000000000.0)))
+  (define-fun u_0_21 () Real
+    (- (/ 15947340736375646208652193.0 10000000000000000000000000.0)))
+  (define-fun u_0_20 () Real
+    (/ 16841610930184377066030339.0 10000000000000000000000000.0))
+  (define-fun u_0_19 () Real
+    (- (/ 13682457771153399122780913.0 1250000000000000000000000.0)))
+  (define-fun u_0_18 () Real
+    (/ 1064722603459057320544509.0 1000000000000000000000000.0))
+  (define-fun u_0_17 () Real
+    (- (/ 562373675684006307345459.0 500000000000000000000000.0)))
+  (define-fun u_0_16 () Real
+    (/ 24399294535786955433069749.0 10000000000000000000000000.0))
+  (define-fun u_0_15 () Real
+    (/ 256907590530603316413353.0 78125000000000000000000.0))
+  (define-fun u_0_14 () Real
+    (- (/ 5234815438394434196748309.0 5000000000000000000000000.0)))
+  (define-fun u_0_13 () Real
+    (- (/ 50838405825179437418808509.0 10000000000000000000000000.0)))
+  (define-fun u_0_12 () Real
+    (- (/ 31936427234425481634932239.0 10000000000000000000000000.0)))
+  (define-fun u_0_11 () Real
+    (- (/ 6643649265970309662967817.0 2500000000000000000000000.0)))
+  (define-fun u_0_10 () Real
+    (- (/ 41216045584721380854052347.0 10000000000000000000000000.0)))
+  (define-fun u_0_9 () Real
+    (- (/ 1386052946031239679005219.0 200000000000000000000000.0)))
+  (define-fun u_0_8 () Real
+    (- (/ 126370788210875116889520121.0 10000000000000000000000000.0)))
+  (define-fun u_0_7 () Real
+    (- (/ 25660441474130777693194697.0 10000000000000000000000000.0)))
+  (define-fun u_0_6 () Real
+    (- (/ 18120800131524448239868699.0 5000000000000000000000000.0)))
+  (define-fun u_0_5 () Real
+    (- (/ 46301659399570497989796381.0 10000000000000000000000000.0)))
+  (define-fun u_0_4 () Real
+    (- (/ 7616192689402013878101247.0 10000000000000000000000000.0)))
+  (define-fun u_0_3 () Real
+    (- (/ 24655673794521420813435281.0 10000000000000000000000000.0)))
+  (define-fun u_0_2 () Real
+    (/ 325897070421728411586799.0 5000000000000000000000000.0))
+  (define-fun u_0_1 () Real
+    (- (/ 47969494367917707341071891.0 5000000000000000000000000.0)))
+  (define-fun u_0_0 () Real
+    (- (/ 1735929567869478546270871.0 2000000000000000000000000.0)))
+  (define-fun v_9_6 () Real
+    0.0)
+  (define-fun v_9_7 () Real
+    0.0)
+  (define-fun v_9_2 () Real
+    0.0)
+  (define-fun v_9_4 () Real
+    0.0)
+  (define-fun v_9_5 () Real
+    0.0)
+  (define-fun v_9_3 () Real
+    0.0)
+  (define-fun v_9_1 () Real
+    0.0)
+  (define-fun v_9_8 () Real
+    0.0)
+  (define-fun v_9_0 () Real
+    0.0)
+  (define-fun v_9_9 () Real
+    0.0)
+  (define-fun exp ((x!0 Real)) Real
+    (^ (/ 543656365691809.0 200000000000000.0) x!0))
+)
