@@ -8,10 +8,10 @@ from src.saved_models.mnist_simard import MNIST_SIMARD
 from src.saved_models.mnist_simple import MNIST_SIMPLE
 
 
-def initialize_dnn_model():
+def initialize_dnn_model_from_name(name_model):
     global NORMALIZATION_FACTOR
     # custom code
-    name_model = get_config(attributes=["dataset"], recursive=True)
+
     print(f'Model {name_model}')
     model_object = None
 
@@ -46,3 +46,10 @@ def initialize_dnn_model():
     if not os.path.exists(get_config(["output_folder"])):
         os.makedirs(get_config(["output_folder"]))
     return model_object
+
+
+def initialize_dnn_model():
+    global NORMALIZATION_FACTOR
+    # custom code
+    name_model = get_config(attributes=["dataset"], recursive=True)
+    return initialize_dnn_model_from_name(name_model)
