@@ -71,17 +71,21 @@ if __name__ == '__main__':
                        'second_largest', 'third_largest', 'fourth_largest', 'fifth_largest',
                        'last_largest'])
 
-    for SEED_IDX in range(START_SEED, END_SEED):
-        if SEED_IDX in analyzed_seed_indexes:
-            logger.debug(f'Visited seed {SEED_IDX}. Ignore!')
+    for seed_idx in range(START_SEED, END_SEED):
+        if seed_idx in analyzed_seed_indexes:
+            logger.debug(f'Visited seed {seed_idx}. Ignore!')
             continue
 
-        logger.debug(f"Seed = {SEED_IDX}")
-        x_1D = model_object.get_Xtrain()[SEED_IDX]
-        true_label = model_object.get_ytrain()[SEED_IDX]
+        # save
+        with open(analyzed_seed_file, mode='a') as f:
+            f.write(str(seed_idx) + ',')
+
+        logger.debug(f"Seed = {seed_idx}")
+        x_1D = model_object.get_Xtrain()[seed_idx]
+        true_label = model_object.get_ytrain()[seed_idx]
         pred_label = np.argmax(model_object.get_model().predict(x_1D.reshape(-1, 784)))
         if pred_label != true_label:  # wrong predicted samples
-            logger.debug(f"Ignore seed {SEED_IDX}")
+            logger.debug(f"Ignore seed {seed_idx}")
             continue
 
         for epsilon in np.arange(start=0, stop=0.03, step=0.001):
@@ -104,18 +108,15 @@ if __name__ == '__main__':
 
                 utilities.show_two_images(x_1D.reshape(28, 28),
                                           adv_1D.reshape(28, 28),
-                                          left_title=f"idx = {SEED_IDX}: true label = {true_label}",
+                                          left_title=f"idx = {seed_idx}: true label = {true_label}",
                                           right_title=f"pred label = {adv_label}, epsilon = {epsilon},\nl0 = {l0}\nl2 = {l2}",
-                                          path=f"{output_folder}/{SEED_IDX}.png",
+                                          path=f"{output_folder}/{seed_idx}.png",
                                           display=False)
 
                 with open(summary, mode='a') as f:
                     seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                     seed.writerow(
-                        [SEED_IDX, l0, l2, linf, minimum_change, true_label, adv_label, epsilon, "", "", "", "", "", "",
+                        [seed_idx, l0, l2, linf, minimum_change, true_label, adv_label, epsilon, "", "", "", "", "", "",
                          ""])
                 break
 
-        # save
-        with open(analyzed_seed_file, mode='a') as f:
-            f.write(str(SEED_IDX) + ',')
