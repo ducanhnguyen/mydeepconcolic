@@ -3,7 +3,7 @@ import platform
 import tensorflow as tf
 import numpy as np
 import csv
-
+import pandas as pd
 from src.config_parser import get_config
 from src.model_loader import initialize_dnn_model_from_name, initialize_dnn_model
 from src.utils import utilities
@@ -34,29 +34,36 @@ class UNTARGETED_FGSM:
 
 
 if __name__ == '__main__':
-    # if platform.system() == 'Darwin':  # macosx
-    #     base = f"/Users/ducanhnguyen/Documents/mydeepconcolic/result/"
-    # elif platform.system() == 'Linux':  # hpc
-    #     base = f"/home/anhnd/mydeepconcolic/result/"
-    #
-    # summary = f"{base}/summary.csv"
-    # if os.path.exists(summary):
-    #     os.remove(summary)
-    #
-    # model_object = initialize_dnn_model_from_name("mnist_ann_keras")
-    # classifier = model_object.get_model()
+    # INITIALIZATION
+    START_SEED = 0 # modified
+    END_SEED = 10000 # modified
+    name_model = "mnist_ann_keras" # modified
 
-    logger.debug("initialize_dnn_model")
-    model_object = initialize_dnn_model()
-    classifier = model_object.get_model()
+    if platform.system() == 'Darwin':  # macosx
+        base = f"/Users/ducanhnguyen/Documents/mydeepconcolic/result"
+    elif platform.system() == 'Linux':  # hpc
+        base = f"/home/anhnd/mydeepconcolic/result"
+    output_folder = f"{base}/{name_model}"
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
 
-    out = get_config(["output_folder"])
-    if not os.path.exists(out):
-        os.makedirs(out)
-    summary = f"{out}/summary.csv"
+    summary = f"{output_folder}/summary.csv"
     logger.debug(f"summary = {summary}")
 
-    #########
+    analyzed_seed_file = f"{output_folder}/analyzed_seeds.csv"
+    logger.debug(f"summary = {analyzed_seed_file}")
+
+    analyzed_seed_indexes = []
+    if os.path.exists(analyzed_seed_file):
+        analyzed_seed_indexes = pd.read_csv(analyzed_seed_file, header=None)
+        analyzed_seed_indexes = analyzed_seed_indexes.to_numpy()
+
+    # MODEL
+    logger.debug("initialize_dnn_model")
+    model_object = initialize_dnn_model_from_name(name_model)
+    classifier = model_object.get_model()
+
+    # ATTACK
     with open(summary, mode='w') as f:
         seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         seed.writerow(['seed', 'l0', 'l2', 'l_inf', 'minimum_change', 'true_label', 'adv_label', 'epsilon',
@@ -64,7 +71,11 @@ if __name__ == '__main__':
                        'second_largest', 'third_largest', 'fourth_largest', 'fifth_largest',
                        'last_largest'])
 
-    for SEED_IDX in range(0, 10000):
+    for SEED_IDX in range(START_SEED, END_SEED):
+        if SEED_IDX in analyzed_seed_indexes:
+            logger.debug(f'Visited seed {SEED_IDX}. Ignore!')
+            continue
+
         logger.debug(f"Seed = {SEED_IDX}")
         x_1D = model_object.get_Xtrain()[SEED_IDX]
         true_label = model_object.get_ytrain()[SEED_IDX]
@@ -95,7 +106,7 @@ if __name__ == '__main__':
                                           adv_1D.reshape(28, 28),
                                           left_title=f"idx = {SEED_IDX}: true label = {true_label}",
                                           right_title=f"pred label = {adv_label}, epsilon = {epsilon},\nl0 = {l0}\nl2 = {l2}",
-                                          path=f"{out}/{SEED_IDX}.png",
+                                          path=f"{output_folder}/{SEED_IDX}.png",
                                           display=False)
 
                 with open(summary, mode='a') as f:
@@ -104,3 +115,7 @@ if __name__ == '__main__':
                         [SEED_IDX, l0, l2, linf, minimum_change, true_label, adv_label, epsilon, "", "", "", "", "", "",
                          ""])
                 break
+
+        # save
+        with open(analyzed_seed_file, mode='a') as f:
+            f.write(str(SEED_IDX) + ',')
