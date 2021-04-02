@@ -1,0 +1,3 @@
+seed,l0,l2,l_inf,minimum_change,true_label,adv_label,epsilon,position_adv_label_in_original_pred,first_largest,second_largest,third_largest,fourth_largest,fifth_largest,last_largest
+6418,343,0.3704051835490427,0.020000000000000018,0.01999999999999999,5,4,0.02,,,,,,,
+9370,466,0.5223298569208812,0.025000000000000022,0.0039215686274509665,4,6,0.025,,,,,,,
