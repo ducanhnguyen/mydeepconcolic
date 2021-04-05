@@ -4,12 +4,16 @@ ssh -p 22033 anhnd@uet-hpc.remote.hpc.farm
 
 1. upload src of project to hpc:
 scp -P 22033 -r /Users/ducanhnguyen/Documents/mydeepconcolic/src anhnd@uet-hpc.remote.hpc.farm:/home/anhnd/mydeepconcolic
+scp -P 22033 -r /Users/ducanhnguyen/Documents/mydeepconcolic/src/utils/feature_ranker1d.py anhnd@uet-hpc.remote.hpc.farm:/home/anhnd/mydeepconcolic/src/utils
+scp -P 22033 -r /Users/ducanhnguyen/Documents/mydeepconcolic/src/untargeted_fgsm.py anhnd@uet-hpc.remote.hpc.farm:/home/anhnd/mydeepconcolic/src
+scp -P 22033 -r /Users/ducanhnguyen/Documents/mydeepconcolic/src/utils anhnd@uet-hpc.remote.hpc.farm:/home/anhnd/mydeepconcolic/src
 
 or download:
-scp -P 22033 -r anhnd@uet-hpc.remote.hpc.farm:/home/anhnd/mydeepconcolic/result/mnist_simard /Users/ducanhnguyen/Documents/mydeepconcolic/result/
+scp -P 22033 -r anhnd@uet-hpc.remote.hpc.farm:/home/anhnd/mydeepconcolic/result /Users/ducanhnguyen/Documents/mydeepconcolic/result/fgsm
+
 
 2. Set up python path
-export PYTHONPATH=/home/anhnd/mydeepconcolic/:/home/anhnd/mydeepconcolic/src:/home/anhnd/mydeepconcolic/src/example:/home/anhnd/mydeepconcolic/src/utils:/home/anhnd/mydeepconcolic/saved_models:$PYTHONPATH
+export PYTHONPATH=/home/anhnd/mydeepconcolic/:/home/anhnd/mydeepconcolic/src:/home/anhnd/mydeepconcolic/src/example::/home/anhnd/mydeepconcolic/src/sota:/home/anhnd/mydeepconcolic/src/utils:/home/anhnd/mydeepconcolic/saved_models:$PYTHONPATH
 
 3. Run
 goto src
