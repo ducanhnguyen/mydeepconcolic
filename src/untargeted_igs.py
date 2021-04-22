@@ -30,7 +30,7 @@ class UNTARGETED_IGS:
         )
         sign_1D = np.sign(gradient_1D)
         adv_1D = x_1D.copy()
-        for iter in range(0, 20):
+        for iter in range(0, 10):
             adv_1D = np.clip(adv_1D + alpha * sign_1D, 0, 1)
             pred = model_object.get_model().predict(adv_1D.reshape(-1, 784))
             adv_label = np.argmax(pred)
@@ -43,83 +43,104 @@ if __name__ == '__main__':
     # INITIALIZATION
     START_SEED = 0  # modified
     END_SEED = 10000  # modified
-    name_model = "mnist_ann_keras"  # modified
+    models = ["mnist_ann_keras", "mnist_deepcheck", "mnist_simard", "mnist_simple"]
 
-    if platform.system() == 'Darwin':  # macosx
-        base = f"/Users/ducanhnguyen/Documents/mydeepconcolic/result"
-    elif platform.system() == 'Linux':  # hpc
-        base = f"/home/anhnd/mydeepconcolic/result"
-    output_folder = f"{base}/bis/{name_model}"
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
+    for name_model in models:
+        # name_model = "mnist_ann_keras"  # modified
 
-    summary = f"{output_folder}/summary.csv"
-    logger.debug(f"summary = {summary}")
+        if platform.system() == 'Darwin':  # macosx
+            base = f"/Users/ducanhnguyen/Documents/mydeepconcolic/result"
+        elif platform.system() == 'Linux':  # hpc
+            base = f"/home/anhnd/mydeepconcolic/result"
+        output_folder = f"{base}/bis/{name_model}"
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
 
-    analyzed_seed_file = f"{output_folder}/analyzed_seeds.csv"
-    logger.debug(f"summary = {analyzed_seed_file}")
+        summary = f"{output_folder}/summary.csv"
+        logger.debug(f"summary = {summary}")
 
-    analyzed_seed_indexes = []
-    if os.path.exists(analyzed_seed_file):
-        analyzed_seed_indexes = pd.read_csv(analyzed_seed_file, header=None)
-        analyzed_seed_indexes = analyzed_seed_indexes.to_numpy()
+        analyzed_seed_file = f"{output_folder}/analyzed_seeds.csv"
+        logger.debug(f"summary = {analyzed_seed_file}")
 
+        analyzed_seed_indexes = []
+        if os.path.exists(analyzed_seed_file):
+            analyzed_seed_indexes = pd.read_csv(analyzed_seed_file, header=None)
+            analyzed_seed_indexes = analyzed_seed_indexes.to_numpy()
 
-    # MODEL
-    logger.debug("initialize_dnn_model")
-    model_object = initialize_dnn_model_from_name(name_model)
-    classifier = model_object.get_model()
+        # MODEL
+        logger.debug("initialize_dnn_model")
+        model_object = initialize_dnn_model_from_name(name_model)
+        classifier = model_object.get_model()
 
-    # ATTACK
-    with open(summary, mode='w') as f:
-        writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(['seed', 'l0', 'l2', 'l_inf', 'minimum_change', 'true_label', 'adv_label', 'alpha',
-                       'iter'])
+        # ATTACK
+        with open(summary, mode='w') as f:
+            seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            seed.writerow(['seed', 'l0', 'l2', 'l_inf', 'minimum_change', 'true_label', 'adv_label',
+                           'position_adv_label_in_original_pred', 'first_largest',
+                           'second_largest', 'third_largest', 'fourth_largest', 'fifth_largest',
+                           'last_largest', 'alpha', 'iter'])
 
-    for seed_idx in range(START_SEED, END_SEED):
-        if seed_idx in analyzed_seed_indexes:
-            logger.debug(f'Visited seed {seed_idx}. Ignore!')
-            continue
+        seeds = np.arange(START_SEED, END_SEED)
+        for seed_idx in seeds:
+            if seed_idx in analyzed_seed_indexes:
+                logger.debug(f'Visited seed {seed_idx}. Ignore!')
+                continue
 
-        # save
-        with open(analyzed_seed_file, mode='a') as f:
-            f.write(str(seed_idx) + ',')
+            # save
+            with open(analyzed_seed_file, mode='a') as f:
+                f.write(str(seed_idx) + ',')
 
-        logger.debug(f"Seed = {seed_idx}")
-        x_1D = model_object.get_Xtrain()[seed_idx]
-        true_label = model_object.get_ytrain()[seed_idx]
-        pred_label = np.argmax(model_object.get_model().predict(x_1D.reshape(-1, 784)))
-        if pred_label != true_label:  # wrong predicted samples
-            logger.debug(f"Ignore seed {seed_idx}")
-            continue
+            logger.debug(f"Seed = {seed_idx}")
+            x_1D = model_object.get_Xtrain()[seed_idx]
+            true_label = model_object.get_ytrain()[seed_idx]
+            pred_x_1D = model_object.get_model().predict(x_1D.reshape(-1, 784))[0]
+            pred_label = np.argmax(pred_x_1D)
+            if pred_label != true_label:  # wrong predicted samples
+                logger.debug(f"Ignore seed {seed_idx}")
+                continue
 
-        adv_1D, iter = UNTARGETED_IGS.create_adversaries(x_1D=x_1D,
-                                                   classifier=classifier,
-                                                   alpha=1/255,
-                                                   true_label=true_label)
-        if adv_1D is None:
-            continue
-        adv_1D = np.clip(adv_1D, 0, 1)
-        pred = model_object.get_model().predict(adv_1D.reshape(-1, 784))
+            alpha = 1/255
+            # print(f'epsilon = {epsilon}')
+            adv_1D, iter = UNTARGETED_IGS.create_adversaries(x_1D=x_1D,
+                                                             classifier=classifier,
+                                                             alpha=alpha,
+                                                             true_label=true_label)
+            if adv_1D is None:
+                continue
+            adv_1D = np.clip(adv_1D, 0, 1)
+            pred_adv_1D = model_object.get_model().predict(adv_1D.reshape(-1, 784))[0]
+            # print(f'pred = {pred}')
 
-        adv_label = np.argmax(pred)
-        if true_label != adv_label:
-            logger.debug("Found")
-            l0 = utilities.compute_l0(x_1D, adv_1D)
-            l2 = utilities.compute_l2(x_1D, adv_1D)
-            linf = utilities.compute_linf(x_1D, adv_1D)
-            minimum_change = utilities.compute_minimum_change(x_1D, adv_1D)
+            adv_label = np.argmax(pred_adv_1D)
+            if true_label != adv_label:
+                logger.debug("Found")
+                l0 = utilities.compute_l0(np.round(255 * x_1D), np.round(255 * adv_1D))
+                l2 = utilities.compute_l2(x_1D, adv_1D)
+                linf = utilities.compute_linf(x_1D, adv_1D)
+                minimum_change = utilities.compute_minimum_change(x_1D, adv_1D)
 
-            utilities.show_two_images(x_1D.reshape(28, 28),
-                                      adv_1D.reshape(28, 28),
-                                      left_title=f"idx = {seed_idx}: true label = {true_label}",
-                                      right_title=f"pred label = {adv_label}, alpha = 1/255,\nl0 = {l0}\nl2 = {l2}",
-                                      path=f"{output_folder}/{seed_idx}.png",
-                                      display=False)
+                # export comparison
+                utilities.show_two_images(x_28_28_left=x_1D.reshape(28, 28),
+                                          x_28_28_right=adv_1D.reshape(28, 28),
+                                          left_title=f"idx = {seed_idx}: true label = {true_label}",
+                                          right_title=f"pred label = {adv_label}, alpha = {alpha},\nl0 = {l0}\nl2 = {l2}",
+                                          path=f"{output_folder}/{seed_idx}.png",
+                                          display=False)
 
-            with open(summary, mode='a') as f:
-                writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                writer.writerow(
-                    [seed_idx, l0, l2, linf, minimum_change, true_label, adv_label, 1 / 255, iter])
+                # update summary
+                position_adv = utilities.get_position(pred_adv_1D, pred_label, num_class=10)
+                true_pred_sorted = sorted(pred_x_1D, reverse=True)
+                with open(summary, mode='a') as f:
+                    seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                    seed.writerow(
+                        [seed_idx, l0, l2, linf, minimum_change, true_label, adv_label, position_adv,
+                         true_pred_sorted[0],
+                         true_pred_sorted[1], true_pred_sorted[2], true_pred_sorted[3], true_pred_sorted[4],
+                         true_pred_sorted[-1], alpha, iter])
+                # save adv
+                candidate_adv_csv_path = f"{output_folder}/{seed_idx}.csv"
+                with open(candidate_adv_csv_path, mode='w') as f:
+                    seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                    seed.writerow(np.round(255 * adv_1D))
 
 

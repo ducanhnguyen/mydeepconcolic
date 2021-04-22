@@ -12,7 +12,7 @@ def initialize_dnn_model_from_name(name_model):
     global NORMALIZATION_FACTOR
     # custom code
 
-    print(f'Model {name_model}')
+    print('Model ' + name_model)
     model_object = None
 
     if name_model == "mnist_ann_keras":
