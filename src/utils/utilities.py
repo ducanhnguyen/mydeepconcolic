@@ -1,12 +1,15 @@
+import logging
+
 import keras
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import pyplot
 from tensorflow.python.keras.models import model_from_json, Model
 
-from src.deepconcolic import logger
 from src.mnist_dataset import mnist_dataset
 
+global logger
+logger = logging.getLogger()
 
 def compute_l2(adv: np.ndarray,
                ori: np.ndarray):  # 1d array, value in range of [0 .. 1]

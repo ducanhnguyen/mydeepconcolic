@@ -1,28 +1,39 @@
 import csv as csv
 
+import keras
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.keras.models import Sequential, Model
+from tensorflow.python.keras.models import Sequential, Model, model_from_json
 
-from src.deepconcolic import logger
-from src.model_loader import initialize_dnn_model_from_name
+from src.mnist_dataset import mnist_dataset
 from src.utils import utilities
 
 # Configure
-ATTACKED_MODEL = "mnist_simard"
-N_FEATURES = 784
-OUT_FOLDER = '/Users/ducanhnguyen/Documents/mydeepconcolic/result/cw/mnist_simard/c=0.5, 500 iters, sdg'
 
-LOSS = "TRADITIONAL_LOSS" # "CW_LOSS"
-N_MAX_ITER = 500
+N_ATTACKING_SEED = 10000
 
-# FOR TRADITIONAL LOSS
-C = 10000
-SGD_LEARNING_RATE = 0.5
+# ATTACKED_MODEL_H5 = "/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/mnist_simard.h5"
+# ATTACKED_MODEL_JSON = "/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/mnist_simard.json"
+# shape = (1, 784)
+# OUT_FOLDER = '/Users/ducanhnguyen/Documents/mydeepconcolic/result/cw/mnist_simard/c=0.5, 500 iters, sdg'
 
-# FOR CW LOSS
-C = 0.5
-SGD_LEARNING_RATE = 0.25
+ATTACKED_MODEL_H5 = "/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/rivf/pretrained_mnist_cnn1.h5"
+ATTACKED_MODEL_JSON = None
+shape = (1, 28, 28, 1)
+OUT_FOLDER = '/Users/ducanhnguyen/Documents/mydeepconcolic/result/cw/rivf'
+
+LOSS = "CW_LOSS"  # "CW_LOSS", "TRADITIONAL_LOSS"
+
+# For SGD
+if LOSS == "TRADITIONAL_LOSS":
+    C = 10000
+    SGD_LEARNING_RATE = 0.5
+    N_MAX_ITER = 500
+elif LOSS == "CW_LOSS":
+    C = 0.5
+    SGD_LEARNING_RATE = 0.25
+    N_MAX_ITER = 500
+
 
 def get_presoftmax_classifier(classifier: Sequential):
     before_softmax = classifier.layers[-2]
@@ -58,6 +69,7 @@ def traditional_loss(aftersoftmax: Sequential, tf_x, tf_w, tf_y_true, c):
     tf_dist = tf.keras.losses.mean_squared_error(tf_adv, tf_x)
     return tf_dist - c * tf_prediction
 
+
 def attack(x_train_normalized, y_true, seed_idx, classifier, LOSS):
     w = tf.math.atanh(x_train_normalized * 2 - 1).numpy()  # apply `change of variable'
 
@@ -80,7 +92,7 @@ def attack(x_train_normalized, y_true, seed_idx, classifier, LOSS):
         w = w - grad.numpy() * SGD_LEARNING_RATE
         x_adv = (1 / 2 * (tf.math.tanh(w) + 1)).numpy()[0]
         # x_adv = np.round(x_adv * 255) / 255
-        pred = classifier(x_adv.reshape(1, N_FEATURES)).numpy()[0]
+        pred = classifier(x_adv.reshape(shape)).numpy()[0]
 
         if iter % 1 == 0:
             loss_value = loss.numpy()[0]
@@ -109,8 +121,8 @@ def attack(x_train_normalized, y_true, seed_idx, classifier, LOSS):
     if final_found_adv is not None:
         l2 = utilities.compute_l2(x_train, final_found_adv)
         l0 = utilities.compute_l0(x_train.reshape(-1), final_found_adv.reshape(-1), normalized=False)
-        linf = utilities.compute_linf(x_train.reshape(784), final_found_adv.reshape(784))
-        minimum_change = utilities.compute_minimum_change(x_train.reshape(784), final_found_adv.reshape(784))
+        linf = utilities.compute_linf(x_train.reshape(-1), final_found_adv.reshape(-1))
+        minimum_change = utilities.compute_minimum_change(x_train.reshape(-1), final_found_adv.reshape(-1))
 
         # export 1
         utilities.show_two_images(x_28_28_left=x_train.reshape(28, 28),
@@ -134,20 +146,39 @@ def attack(x_train_normalized, y_true, seed_idx, classifier, LOSS):
         with open(candidate_adv_csv_path, mode='w') as f:
             seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             # seed.writerow(np.round(final_found_adv*255).astype(dtype=int))
-            seed.writerow(final_found_adv*255)
+            seed.writerow(final_found_adv * 255)
+
+
+def load_model(ATTACKED_MODEL_JSON, ATTACKED_MODEL_H5):
+    if ATTACKED_MODEL_JSON is not None:
+        # Method 1
+        json_file = open(ATTACKED_MODEL_JSON, 'r')
+        loaded_model_json = json_file.read()
+        json_file.close()
+        model_object = model_from_json(loaded_model_json)
+        model_object.load_weights(ATTACKED_MODEL_H5)
+    else:
+        # Method 2
+        model_object = keras.models.load_model(filepath=ATTACKED_MODEL_H5)
+    return model_object
+
+
+def load_dataset():
+    trainX, trainy, _, _ = mnist_dataset().read_data(
+        trainset_path="/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/digit-recognizer/train.csv",
+        testset_path="/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/digit-recognizer/test.csv")
+    trainy = utilities.category2indicator(trainy)
+    return trainX, trainy
 
 
 if __name__ == '__main__':
-    # Attack
-    logger.debug("initialize_dnn_model")
-    model_object = initialize_dnn_model_from_name(ATTACKED_MODEL)
+    # Load model
+    classifier = load_model(ATTACKED_MODEL_JSON, ATTACKED_MODEL_H5)
+    classifier.summary()
+    trainX, trainy = load_dataset()
 
-    classifier = model_object.get_model()
     if LOSS == "CW_LOSS":
         classifier = get_presoftmax_classifier(classifier)
-
-    trainX = model_object.get_Xtrain()
-    trainy = utilities.category2indicator(model_object.get_ytrain())
 
     with open(OUT_FOLDER + '/summary.csv', mode='w') as f:
         seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -155,12 +186,12 @@ if __name__ == '__main__':
                        'position_adv_label_in_original_pred', 'first_largest',
                        'second_largest', 'third_largest', 'fourth_largest', 'fifth_largest', 'last_largest'])
 
-    for idx in range(0, 10000):
+    for idx in range(0, N_ATTACKING_SEED):
         print(f'Attacking seed {idx}')
-        x_train = trainX[idx].reshape(1, N_FEATURES)
+        x_train = trainX[idx].reshape(shape)
         y_true = trainy[idx]
 
-        pred = classifier(x_train.reshape(1, N_FEATURES))[0]
+        pred = classifier(x_train.reshape(shape))[0]
         if np.argmax(pred) == np.argmax(y_true):
             x_train_normalized = np.clip(x_train, 0.00001, 0.99999)  # we are unable to atanh(-1) and atanh(1)
             attack(x_train_normalized, y_true, idx, classifier, LOSS)
