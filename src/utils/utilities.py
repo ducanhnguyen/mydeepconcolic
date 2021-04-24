@@ -14,7 +14,12 @@ def compute_l2(adv: np.ndarray,
 
 
 def compute_l0(adv: np.ndarray,
-               ori: np.ndarray):  # 1d array, value in range of [0 .. 1]
+               ori: np.ndarray,
+               normalized = False):  # 1d array, value in range of [0 .. 1]
+    if not normalized:
+        adv = np.round(adv*255)
+        ori = np.round(ori*255)
+
     l0_dist = 0
     for idx in range(len(adv)):
         if adv[idx] != ori[idx]:
@@ -122,6 +127,14 @@ def visualize_cnn(x_image_4D: np.ndarray,
             if specified_layer is not None:
                 break
 
+
+def category2indicator(y, nclass = 10):
+    Y = np.zeros(shape=(y.shape[0], nclass))
+
+    for idx, item in enumerate(y):
+        Y[idx][item] = 1
+
+    return Y
 
 if __name__ == '__main__':
     logger.debug("initialize_dnn_model")

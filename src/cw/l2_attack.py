@@ -71,7 +71,7 @@ def attack(x_train_normalized, y_true, seed_idx, presoftmax_classifier):
         # update
         w = w - grad.numpy() * SGD_LEARNING_RATE
         x_adv = (1 / 2 * (tf.math.tanh(w) + 1)).numpy()[0]
-        x_adv = np.round(x_adv * 255) / 255
+        # x_adv = np.round(x_adv * 255) / 255
         pred = presoftmax_classifier(x_adv.reshape(1, N_FEATURES)).numpy()[0]
 
         if iter % 1 == 0:
@@ -125,7 +125,8 @@ def attack(x_train_normalized, y_true, seed_idx, presoftmax_classifier):
         candidate_adv_csv_path = OUT_FOLDER + f'/{seed_idx}.csv'
         with open(candidate_adv_csv_path, mode='w') as f:
             seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            seed.writerow(np.round(final_found_adv*255).astype(dtype=int))
+            # seed.writerow(np.round(final_found_adv*255).astype(dtype=int))
+            seed.writerow(final_found_adv*255)
 
 
 if __name__ == '__main__':
@@ -152,7 +153,7 @@ if __name__ == '__main__':
 
         pred = presoftmax_classifier(x_train.reshape(1, N_FEATURES))[0]
         if np.argmax(pred) == np.argmax(y_true):
-            x_train_normalized = np.clip(x_train, 0, 0.99999)  # we are unable to atanh(-1) and atanh(1)
+            x_train_normalized = np.clip(x_train, 0.00001, 0.99999)  # we are unable to atanh(-1) and atanh(1)
             attack(x_train_normalized, y_true, idx, presoftmax_classifier)
         else:
             print('Ignore')
