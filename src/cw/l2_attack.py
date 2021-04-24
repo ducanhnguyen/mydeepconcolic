@@ -13,10 +13,16 @@ ATTACKED_MODEL = "mnist_simard"
 N_FEATURES = 784
 OUT_FOLDER = '/Users/ducanhnguyen/Documents/mydeepconcolic/result/cw/mnist_simard/c=0.5, 500 iters, sdg'
 
+LOSS = "TRADITIONAL_LOSS" # "CW_LOSS"
 N_MAX_ITER = 500
-SGD_LEARNING_RATE = 0.25
-C = 0.5
 
+# FOR TRADITIONAL LOSS
+C = 10000
+SGD_LEARNING_RATE = 0.5
+
+# FOR CW LOSS
+C = 0.5
+SGD_LEARNING_RATE = 0.25
 
 def get_presoftmax_classifier(classifier: Sequential):
     before_softmax = classifier.layers[-2]
@@ -42,18 +48,17 @@ def cw_loss(presoftmax_classifier: Sequential, tf_x, tf_w, tf_y_true, c):
     tf_prediction = tf.cast(tf_prediction, dtype='float64')
     tf_dist = tf.keras.losses.mean_squared_error(tf_adv, tf_x)
     return tf_dist - c * tf_prediction
-    # return tf_dist - c * tf_prediction
 
 
-# def cw_loss(classifier: Sequential, tf_x, tf_w, tf_y_true, c):
-#     tf_adv = 1 / 2 * (tf.math.tanh(tf_w) + 1)
-#     tf_prediction = tf.keras.losses.categorical_crossentropy(
-#         classifier(tf_adv)[0],
-#         tf_y_true)
-#     tf_dist = tf.keras.losses.mean_squared_error(tf_adv, tf_x)
-#     return tf_dist - c * tf_prediction
+def traditional_loss(aftersoftmax: Sequential, tf_x, tf_w, tf_y_true, c):
+    tf_adv = 1 / 2 * (tf.math.tanh(tf_w) + 1)
+    tf_prediction = tf.keras.losses.categorical_crossentropy(
+        aftersoftmax(tf_adv)[0],
+        tf_y_true)
+    tf_dist = tf.keras.losses.mean_squared_error(tf_adv, tf_x)
+    return tf_dist - c * tf_prediction
 
-def attack(x_train_normalized, y_true, seed_idx, presoftmax_classifier):
+def attack(x_train_normalized, y_true, seed_idx, classifier, LOSS):
     w = tf.math.atanh(x_train_normalized * 2 - 1).numpy()  # apply `change of variable'
 
     losses = []
@@ -65,14 +70,17 @@ def attack(x_train_normalized, y_true, seed_idx, presoftmax_classifier):
         tf_w = tf.convert_to_tensor(w, dtype='float64')
         with tf.GradientTape() as tape:
             tape.watch(tf_w)
-            loss = cw_loss(presoftmax_classifier, x_train, tf_w, y_true, c=C)
+            if LOSS == "CW_LOSS":
+                loss = cw_loss(classifier, x_train, tf_w, y_true, c=C)
+            elif LOSS == "TRADITIONAL_LOSS":
+                loss = traditional_loss(classifier, x_train, tf_w, y_true, c=C)
             grad = tape.gradient(loss, tf_w)
 
         # update
         w = w - grad.numpy() * SGD_LEARNING_RATE
         x_adv = (1 / 2 * (tf.math.tanh(w) + 1)).numpy()[0]
         # x_adv = np.round(x_adv * 255) / 255
-        pred = presoftmax_classifier(x_adv.reshape(1, N_FEATURES)).numpy()[0]
+        pred = classifier(x_adv.reshape(1, N_FEATURES)).numpy()[0]
 
         if iter % 1 == 0:
             loss_value = loss.numpy()[0]
@@ -135,7 +143,8 @@ if __name__ == '__main__':
     model_object = initialize_dnn_model_from_name(ATTACKED_MODEL)
 
     classifier = model_object.get_model()
-    presoftmax_classifier = get_presoftmax_classifier(classifier)
+    if LOSS == "CW_LOSS":
+        classifier = get_presoftmax_classifier(classifier)
 
     trainX = model_object.get_Xtrain()
     trainy = utilities.category2indicator(model_object.get_ytrain())
@@ -151,9 +160,9 @@ if __name__ == '__main__':
         x_train = trainX[idx].reshape(1, N_FEATURES)
         y_true = trainy[idx]
 
-        pred = presoftmax_classifier(x_train.reshape(1, N_FEATURES))[0]
+        pred = classifier(x_train.reshape(1, N_FEATURES))[0]
         if np.argmax(pred) == np.argmax(y_true):
             x_train_normalized = np.clip(x_train, 0.00001, 0.99999)  # we are unable to atanh(-1) and atanh(1)
-            attack(x_train_normalized, y_true, idx, presoftmax_classifier)
+            attack(x_train_normalized, y_true, idx, classifier, LOSS)
         else:
             print('Ignore')
