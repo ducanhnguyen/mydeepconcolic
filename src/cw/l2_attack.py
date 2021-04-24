@@ -17,7 +17,7 @@ N_ATTACKING_SEED = 10000
 # shape = (1, 784)
 # OUT_FOLDER = '/Users/ducanhnguyen/Documents/mydeepconcolic/result/cw/mnist_simard/c=0.5, 500 iters, sdg'
 
-ATTACKED_MODEL_H5 = "/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/rivf/pretrained_mnist_cnn1.h5"
+ATTACKED_MODEL_H5 = "/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/rivf/MNIST_MODEl_WITH_PRE_SOFTMAX.h5"
 ATTACKED_MODEL_JSON = None
 shape = (1, 28, 28, 1)
 OUT_FOLDER = '/Users/ducanhnguyen/Documents/mydeepconcolic/result/cw/rivf'
@@ -57,7 +57,7 @@ def cw_loss(presoftmax_classifier: Sequential, tf_x, tf_w, tf_y_true, c):
     tf_prediction = max - presoftmax[true_label]
 
     tf_prediction = tf.cast(tf_prediction, dtype='float64')
-    tf_dist = tf.keras.losses.mean_squared_error(tf_adv, tf_x)
+    tf_dist = tf.keras.losses.mean_squared_error(tf.reshape(tf_adv, -1), tf.reshape(tf_x, -1))
     return tf_dist - c * tf_prediction
 
 
@@ -66,7 +66,7 @@ def traditional_loss(aftersoftmax: Sequential, tf_x, tf_w, tf_y_true, c):
     tf_prediction = tf.keras.losses.categorical_crossentropy(
         aftersoftmax(tf_adv)[0],
         tf_y_true)
-    tf_dist = tf.keras.losses.mean_squared_error(tf_adv, tf_x)
+    tf_dist = tf.keras.losses.mean_squared_error(tf.reshape(tf_adv, -1), tf.reshape(tf_x, -1))
     return tf_dist - c * tf_prediction
 
 
@@ -95,7 +95,7 @@ def attack(x_train_normalized, y_true, seed_idx, classifier, LOSS):
         pred = classifier(x_adv.reshape(shape)).numpy()[0]
 
         if iter % 1 == 0:
-            loss_value = loss.numpy()[0]
+            loss_value = loss.numpy()
             print(
                 f'iter = {iter}: loss = {loss_value}, adv label = {np.argmax(pred)}, true label = {np.argmax(y_true)}')
             iters.append(iter)
