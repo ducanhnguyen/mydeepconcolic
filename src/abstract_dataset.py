@@ -68,7 +68,7 @@ class abstract_dataset:
         return np.mean(y == yhat)
 
     def load_model(self, weight_path, structure_path, trainset_path):
-        assert (weight_path != None and trainset_path != None)
+        # assert (weight_path != None and trainset_path != None)
 
         # load structure of model
         json_file = open(structure_path, 'r')

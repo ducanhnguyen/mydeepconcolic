@@ -1,15 +1,18 @@
 import logging
 
 import keras
+import matplotlib
 import matplotlib.pyplot as plt
+matplotlib.use('TkAgg')
+
 import numpy as np
-from matplotlib import pyplot
 from tensorflow.python.keras.models import model_from_json, Model
 
 from src.mnist_dataset import mnist_dataset
 
 global logger
 logger = logging.getLogger()
+
 
 def compute_l2(adv: np.ndarray,
                ori: np.ndarray):  # 1d array, value in range of [0 .. 1]
@@ -18,10 +21,10 @@ def compute_l2(adv: np.ndarray,
 
 def compute_l0(adv: np.ndarray,
                ori: np.ndarray,
-               normalized = False):  # 1d array, value in range of [0 .. 1]
+               normalized=False):  # 1d array, value in range of [0 .. 1]
     if not normalized:
-        adv = np.round(adv*255)
-        ori = np.round(ori*255)
+        adv = np.round(adv * 255)
+        ori = np.round(ori * 255)
 
     l0_dist = 0
     for idx in range(len(adv)):
@@ -47,6 +50,37 @@ def compute_minimum_change(adv: np.ndarray,
         if 0 < delta < minimum_change:
             minimum_change = delta
     return minimum_change
+
+
+def show_four_images(x_28_28_first, x_28_28_second, x_28_28_third, x_28_28_fourth,
+                     x_28_28_first_title="", x_28_28_second_title="", x_28_28_third_title="", x_28_28_fourth_title="",
+                     path=None, display=False):
+    matplotlib.rcParams.update({'font.size': 8})
+    if path is None and not display:
+        return
+    fig = plt.figure()
+    fig1 = fig.add_subplot(1, 4, 1)
+    fig1.title.set_text(x_28_28_first_title)
+    plt.imshow(x_28_28_first, cmap="gray")
+
+    fig2 = fig.add_subplot(1, 4, 2)
+    fig2.title.set_text(x_28_28_second_title)
+    plt.imshow(x_28_28_second, cmap='gray')
+
+    fig3 = fig.add_subplot(1, 4, 3)
+    fig3.title.set_text(x_28_28_third_title)
+    plt.imshow(x_28_28_third, cmap='gray')
+
+    fig4 = fig.add_subplot(1, 4, 4)
+    fig4.title.set_text(x_28_28_fourth_title)
+    plt.imshow(x_28_28_fourth, cmap='gray')
+
+    plt.tight_layout(h_pad=5, w_pad=5)
+    if path is not None:
+        plt.savefig(path, pad_inches=0.3, bbox_inches='tight')
+
+    if display:
+        plt.show()
 
 
 def show_two_images(x_28_28_left, x_28_28_right, left_title="", right_title="", path=None, display=False):
@@ -131,7 +165,7 @@ def visualize_cnn(x_image_4D: np.ndarray,
                 break
 
 
-def category2indicator(y, nclass = 10):
+def category2indicator(y, nclass=10):
     Y = np.zeros(shape=(y.shape[0], nclass))
 
     for idx, item in enumerate(y):
@@ -139,10 +173,11 @@ def category2indicator(y, nclass = 10):
 
     return Y
 
+
 if __name__ == '__main__':
     logger.debug("initialize_dnn_model")
     model = keras.models.load_model(
-        filepath="/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/rivf/pretrained_mnist_cnn1.h5")
+        filepath="/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/rivf/autoencoder_mnist.h5", compile=False)
     model.summary()
 
     mnist_loader = mnist_dataset()

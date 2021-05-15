@@ -12,15 +12,15 @@ from src.utils import utilities
 
 N_ATTACKING_SEED = 10000
 
-# ATTACKED_MODEL_H5 = "/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/mnist_simard.h5"
-# ATTACKED_MODEL_JSON = "/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/mnist_simard.json"
-# shape = (1, 784)
-# OUT_FOLDER = '/Users/ducanhnguyen/Documents/mydeepconcolic/result/cw/mnist_simard/c=0.5, 500 iters, sdg'
+ATTACKED_MODEL_H5 = "/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/mnist_deepcheck.h5"
+ATTACKED_MODEL_JSON = "/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/mnist_deepcheck.json"
+shape = (1, 784)
+OUT_FOLDER = '/Users/ducanhnguyen/Documents/mydeepconcolic/result/cw/mnist_deepcheck/c=0.5, 500 iters, sdg_v2'
 
-ATTACKED_MODEL_H5 = "/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/rivf/MNIST_MODEl_WITH_PRE_SOFTMAX.h5"
-ATTACKED_MODEL_JSON = None
-shape = (1, 28, 28, 1)
-OUT_FOLDER = '/Users/ducanhnguyen/Documents/mydeepconcolic/result/cw/rivf'
+# ATTACKED_MODEL_H5 = "/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/rivf/MNIST_MODEl_WITH_PRE_SOFTMAX.h5"
+# ATTACKED_MODEL_JSON = None
+# shape = (1, 28, 28, 1)
+# OUT_FOLDER = '/Users/ducanhnguyen/Documents/mydeepconcolic/result/cw/rivf'
 
 LOSS = "CW_LOSS"  # "CW_LOSS", "TRADITIONAL_LOSS"
 
@@ -32,7 +32,7 @@ if LOSS == "TRADITIONAL_LOSS":
 elif LOSS == "CW_LOSS":
     C = 0.5
     SGD_LEARNING_RATE = 0.25
-    N_MAX_ITER = 500
+    N_MAX_ITER = 100
 
 
 def get_presoftmax_classifier(classifier: Sequential):
@@ -70,7 +70,7 @@ def traditional_loss(aftersoftmax: Sequential, tf_x, tf_w, tf_y_true, c):
     return tf_dist - c * tf_prediction
 
 
-def attack(x_train_normalized, y_true, seed_idx, classifier, LOSS):
+def attack(x_train_normalized, y_true, seed_idx, classifier, origin_confidence, LOSS):
     w = tf.math.atanh(x_train_normalized * 2 - 1).numpy()  # apply `change of variable'
 
     losses = []
@@ -93,7 +93,7 @@ def attack(x_train_normalized, y_true, seed_idx, classifier, LOSS):
         x_adv = (1 / 2 * (tf.math.tanh(w) + 1)).numpy()[0]
         # x_adv = np.round(x_adv * 255) / 255
         pred = classifier(x_adv.reshape(shape)).numpy()[0]
-
+        pred_softmax = tf.math.softmax(pred)
         if iter % 1 == 0:
             loss_value = loss.numpy()
             print(
@@ -107,6 +107,7 @@ def attack(x_train_normalized, y_true, seed_idx, classifier, LOSS):
             print('Found adv')
             final_found_adv = x_adv
             final_label_adv = adv_label
+            adv_confidence = pred_softmax[adv_label].numpy()
             # the label of adv is different from the true label
             # we can get a better quality adversary but I stop here
             # to reduce the computational cost
@@ -139,7 +140,9 @@ def attack(x_train_normalized, y_true, seed_idx, classifier, LOSS):
                            adv_label, None, None,
                            None, None, None,
                            None,
-                           None])
+                           None,
+                           adv_confidence,
+                           origin_confidence])
 
         # export 3
         candidate_adv_csv_path = OUT_FOLDER + f'/{seed_idx}.csv'
@@ -184,7 +187,7 @@ if __name__ == '__main__':
         seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         seed.writerow(['seed', 'l0', 'l2', 'l_inf', 'minimum_change', 'true_label', 'adv_label',
                        'position_adv_label_in_original_pred', 'first_largest',
-                       'second_largest', 'third_largest', 'fourth_largest', 'fifth_largest', 'last_largest'])
+                       'second_largest', 'third_largest', 'fourth_largest', 'fifth_largest', 'last_largest', 'adv_confidence', 'origin_confidence'])
 
     for idx in range(0, N_ATTACKING_SEED):
         print(f'Attacking seed {idx}')
@@ -192,8 +195,10 @@ if __name__ == '__main__':
         y_true = trainy[idx]
 
         pred = classifier(x_train.reshape(shape))[0]
-        if np.argmax(pred) == np.argmax(y_true):
+        pred_label = np.argmax(pred)
+        if  pred_label == np.argmax(y_true):
+            origin_confidence = tf.math.softmax(pred)[pred_label].numpy()
             x_train_normalized = np.clip(x_train, 0.00001, 0.99999)  # we are unable to atanh(-1) and atanh(1)
-            attack(x_train_normalized, y_true, idx, classifier, LOSS)
+            attack(x_train_normalized, y_true, idx, classifier, origin_confidence, LOSS)
         else:
             print('Ignore')

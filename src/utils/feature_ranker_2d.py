@@ -6,8 +6,6 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
-from src.model_loader import initialize_dnn_model
-
 global logger
 logger = logging.getLogger()
 from src.utils.mylogger import MyLogger
@@ -50,7 +48,7 @@ class feature_ranker:
                                             algorithm: enum.Enum,
                                             gradient_label: int,
                                             classifier: keras.Sequential):
-        """Apply ABS algorithm to find the most important features.
+        """Apply algorithm to find the most important features.
         Args:
             n_rows: a positive number
             n_cols: a positive number
@@ -68,49 +66,42 @@ class feature_ranker:
             input=tf.convert_to_tensor([input_image]),
             target_neuron=gradient_label,
             classifier=classifier)
-        important_features = np.ndarray(shape=(1, 3), dtype=int)
-        foundSet = {}
+        feature_ranking = []
 
         # find the position of the highest value in the gradient
-        for idx in range(0, n_important_features):
-            max_row = max_col = max_channel = None
-            max_value = -99999999
-            for rdx in range(0, n_rows):
-                for cdx in range(0, n_cols):
-                    for chdx in range(0, n_channels):
-                        changed = False
-                        hash = rdx + cdx * 1.3243 + chdx * 1.53454
-                        if hash in foundSet:
-                            continue
-                        if algorithm == RANKING_ALGORITHM.ABS:
-                            grad = gradient[rdx, cdx, chdx]
-                            if np.abs(grad) > max_value:
-                                max_value = np.abs(grad)
-                                changed = True
-                        elif algorithm == RANKING_ALGORITHM.CO:
-                            grad = gradient[rdx, cdx, chdx]
-                            if grad > max_value:
-                                max_value = grad
-                                changed = True
-                        elif algorithm == RANKING_ALGORITHM.COI:
-                            feature_value = input_image[rdx, cdx, chdx]
-                            grad = gradient[rdx, cdx, chdx]
-                            if grad * feature_value > max_value:
-                                max_value = grad * feature_value
-                                changed = True
-                        if changed:
-                            foundSet[hash] = 0
-                            max_row = rdx
-                            max_col = cdx
-                            max_channel = chdx
+        score = []
+        for rdx in range(0, n_rows):
+            for cdx in range(0, n_cols):
+                for chdx in range(0, n_channels):
+                    feature_ranking.append([rdx, cdx, chdx])
 
-            # after iterating all features
-            if max_row is not None:
-                important_features = np.append(important_features, [[max_row, max_col, max_channel]], axis=0)
-                input_image[max_row, max_col, max_channel] = np.max(gradient) + 2
+                    if algorithm == RANKING_ALGORITHM.ABS:
+                        grad = np.abs(gradient[rdx, cdx, chdx])
+                        score.append(grad)
 
-        important_features = np.delete(important_features, 0, axis=0)  # the first row is redundant
-        return important_features
+                    elif algorithm == RANKING_ALGORITHM.CO:
+                        grad = gradient[rdx, cdx, chdx]
+                        score.append(grad)
+
+                    elif algorithm == RANKING_ALGORITHM.COI:
+                        feature_value = input_image[rdx, cdx, chdx]
+                        grad = gradient[rdx, cdx, chdx]
+                        score.append(grad * feature_value)
+
+        feature_ranking = np.asarray(feature_ranking)
+        score = np.asarray(score)
+
+        index_arr = np.arange(0, n_rows * n_rows * n_channels, 1)
+        score_sort, index_arr = zip(*sorted(zip(score, index_arr), reverse=True))
+        feature_ranking_sorted = []
+        for idx in index_arr:
+            feature_ranking_sorted.append(feature_ranking[idx])
+        feature_ranking_sorted = np.asarray(feature_ranking_sorted)
+
+        if n_important_features is not None:
+            return np.asarray(feature_ranking_sorted[:n_important_features])
+        else:
+            return feature_ranking_sorted
 
     @staticmethod
     def find_important_features_of_samples(input_images: np.ndarray,
@@ -175,18 +166,22 @@ class feature_ranker:
 
 
 if __name__ == '__main__':
-    logging.basicConfig()
-    logging.root.setLevel(logging.DEBUG)
+    ATTACKED_MODEL_H5 = f"/Users/ducanhnguyen/Documents/mydeepconcolic/result/ae-attack-border/model/Alexnet.h5"
+    dnn = keras.models.load_model(filepath=ATTACKED_MODEL_H5, compile=False)
 
-    model_object = initialize_dnn_model()
+    (X_train, y_train), (_, _) = tf.keras.datasets.mnist.load_data(path='mnist.npz')
+    X_train = X_train / 255
 
-    input_image = model_object.get_Xtrain()[0].reshape(28, 28, 1)
-    n_rows = 28
-    n_cols = 28
-    n_channels = 1
-    n_important_features = 10
-    algorithm = RANKING_ALGORITHM.COI
-    gradient_label = 1
-    classifier = model_object.get_model()
-    feature_ranker.find_important_features_of_a_sample(
-        input_image, n_rows, n_cols, n_channels, n_important_features, algorithm, gradient_label, classifier)
+    input_image = X_train[0].reshape(28, 28, 1)
+    most_important_features = feature_ranker.find_important_features_of_a_sample(
+        input_image=input_image,
+        n_rows=28,
+        n_cols=28,
+        n_channels=1,
+        n_important_features=100,
+        algorithm=RANKING_ALGORITHM.COI,
+        gradient_label=1,
+        classifier=dnn)
+    feature_ranker.highlight_important_features(
+        np.asarray(most_important_features),
+        input_image)
