@@ -6,6 +6,7 @@ import keras
 import numpy as np
 import plotly.express as px
 import tensorflow as tf
+from numpy import save
 from sklearn.decomposition import PCA
 
 from src.ae_attack_border.data import wrongseeds_AlexNet
@@ -93,7 +94,7 @@ def generate_adv_for_single_attack_ALL_PATTERN(X_attack, TARGET_LABEL, ae, dnn):
     return n_adv, advs, oris
 
 
-def generate_adv_for_single_attack_BORDER_PATTERN(X_attack, TARGET_LABEL, ae, dnn):
+def generate_adv_for_single_attack_BORDER_PATTERN(X_attack, selected_seeds, TARGET_LABEL, ae, dnn):
     border_origin_images = get_border(X_attack)
     internal_origin_images = get_internal_images(X_attack, border_images=border_origin_images)
     candidate_generated_borders = ae.predict(X_attack) * border_origin_images
@@ -112,13 +113,16 @@ def generate_adv_for_single_attack_BORDER_PATTERN(X_attack, TARGET_LABEL, ae, dn
 
     advs = []
     oris = []
+    idxes = []
     for idx in range(len(candidates)):
         if compare[idx]:
             advs.append(candidates[idx])
             oris.append(X_attack[idx])
+            idxes.append(selected_seeds[idx])
     advs = np.asarray(advs)
     oris = np.asarray(oris)
-    return n_adv, advs, oris
+    idxes = np.asarray(idxes)
+    return n_adv, advs, oris, idxes
 
 
 def generate_adv_for_all_classes(BASE_PATH, N_ATTACKING_SAMPLES, WRONG_SEEDS, N_CLASSES, dnn, X_train, y_train
@@ -186,49 +190,85 @@ def smooth_vet_can(ori, adv, dnn, target_label):
     return smooth_adv, high_light, n_changed_pixels_after, n_changed_pixels_before
 
 
+def rank_pixel(diff_pixel):
+    return diff_pixel
+
+
 def smooth_vet_can_step(ori, adv, dnn, target_label, step):
     n_restored_pixels = 0
-    restored = []
-    count = 0
+    restored_pixel_by_prediction = []
 
-    ori = ori.reshape(-1)
-    smooth_adv = np.array(adv).reshape(-1)
-    for idx in range(len(ori)):
-        if count == 0:
-            pre_smooth_adv = smooth_adv.copy()
-        if ori[idx] != smooth_adv[idx]:
+    # normalize
+    ori_norm = ori.reshape(-1)
+    smooth_adv_norm = np.array(adv).reshape(-1)
+    original_adv_norm = np.array(adv).reshape(-1)
+    if np.min(ori) >= 0 and np.max(ori) <= 1:
+        ori_norm = np.round(ori_norm * 255)
+        smooth_adv_norm = np.round(smooth_adv_norm * 255)
+        original_adv_norm = np.round(original_adv_norm * 255)
+    L0_before = utilities.compute_l0(smooth_adv_norm, ori_norm, normalized=True)
+    print(f"L0_before = {L0_before}")
+
+    # get different pixels
+    diff_pixel = []
+    for idx in range(len(ori_norm)):
+        if ori_norm[idx] != smooth_adv_norm[idx]:
+            diff_pixel.append(idx)
+    diff_pixel = rank_pixel(diff_pixel)
+    diff_pixel = np.asarray(diff_pixel)
+
+    #
+    count = 0
+    old_indexes = []
+    old_values = []
+    per_l2_arr = []
+    for idx in diff_pixel:
+        if ori_norm[idx] != smooth_adv_norm[idx]:
             count += 1
-            smooth_adv[idx] = ori[idx]
-        if count == step or idx == len(ori) - 1:
-            Y_pred = dnn.predict(smooth_adv.reshape(-1, 28, 28, 1))
+            old_indexes.append(idx)
+            old_values.append(smooth_adv_norm[idx])
+            smooth_adv_norm[idx] = ori_norm[idx]
+
+        if count == step or idx == len(diff_pixel) - 1:
+            Y_pred = dnn.predict((smooth_adv_norm / 255).reshape(-1, 28, 28, 1))
             pred = np.argmax(Y_pred, axis=1)[0]
+
             if pred != target_label:
-                smooth_adv = pre_smooth_adv
+                for jdx, value in zip(old_indexes, old_values):
+                    smooth_adv_norm[jdx] = value
             else:
                 n_restored_pixels += count
+
+            old_indexes = []
+            old_values = []
             count = 0
-            restored.append(n_restored_pixels)
+            restored_pixel_by_prediction.append(n_restored_pixels)
+            # per_l2_arr.append(utilities.compute_l2(ori, smooth_adv) / utilities.compute_l2(ori, adv))
 
-    print(restored)
 
-    # output
+    L0_after = utilities.compute_l0(ori_norm, smooth_adv_norm, normalized=True)
+    print(f"L0_after = {L0_after}")
+
+    L2_after = utilities.compute_l2(ori_norm, smooth_adv_norm)
+    L2_before = utilities.compute_l2(ori_norm, original_adv_norm)
+
+    highlight = highlight_diff(original_adv_norm, smooth_adv_norm)
+    return smooth_adv_norm, highlight, L0_after, L0_before, L2_after, L2_before, np.asarray(
+        restored_pixel_by_prediction)
+
+
+def highlight_diff(img1_0_255, img2_0_255):
+    shape = img2_0_255.shape
+    img1_0_255 = img1_0_255.reshape(-1)
+    img2_0_255 = img2_0_255.reshape(-1)
     highlight = []
-    adv = adv.reshape(-1)
-
-    n_changed_pixels_before = np.sum(ori != adv)
-    print(f"n_changed_pixels_before = {n_changed_pixels_before}")
-
-    n_changed_pixels_after = np.sum(ori != smooth_adv)
-    print(f"n_changed_pixels_after = {n_changed_pixels_after}")
-
-    for idx in range(len(adv)):
-        if adv[idx] != smooth_adv[idx]:
+    for idx in range(len(img1_0_255)):
+        if img1_0_255[idx] != img2_0_255[idx]:
             highlight.append(1)
         else:
             highlight.append(0)
     highlight = np.asarray(highlight)
-
-    return smooth_adv, highlight, n_changed_pixels_after, n_changed_pixels_before
+    return highlight.reshape(shape)
 
 
 def smooth_simple_using_heuristic(ori, adv, dnn, target_label):
@@ -287,10 +327,9 @@ def smooth_simple_using_heuristic(ori, adv, dnn, target_label):
 
 if __name__ == '__main__':
     ATTACKED_MODEL_H5 = f"../../result/ae-attack-border/model/Alexnet.h5"
-    BASE_PATH = "../../result/ae-attack-border/epsilon=0,5/Alexnet/autoencoder_Alexnetborder"
     WRONG_SEEDS = wrongseeds_AlexNet
 
-    N_ATTACKING_SAMPLES = 2000
+    N_ATTACKING_SAMPLES = 1000
     N_CLASSES = 10
 
     (X_train, y_train), (_, _) = tf.keras.datasets.mnist.load_data(path='mnist.npz')
@@ -300,6 +339,7 @@ if __name__ == '__main__':
 
     ALL_ATTACK = False
     if ALL_ATTACK:
+        BASE_PATH = "../../result/ae-attack-border/epsilon=0,5/Alexnet/autoencoder_Alexnetborder"
         adv_table = generate_adv_for_all_classes(BASE_PATH, N_ATTACKING_SAMPLES, WRONG_SEEDS, N_CLASSES, dnn, X_train,
                                                  y_train, start=None, end=None)
 
@@ -310,64 +350,72 @@ if __name__ == '__main__':
 
         true_label_arr = []
         pred_label_arr = []
-        n_changed_pixels_after_arr = []
-        n_changed_pixels_before_arr = []
+        L0_after_arr = []
+        L0_before_arr = []
         epsilon_arr = []
 
         epsilon_all = ["0,0", "0,1", "0,2", "0,3", "0,4", "0,5", "0,6", "0,7", "0,8", "0,9", "1,0"]
         # epsilon_all = ["0,0", "0,1"]
         # AE_MODEL_H5 = f"{BASE_PATH}_{ORI_LABEL}_{TARGET_LABEL}.h5"
 
-        OUT_PATH = "../../result/ae-attack-border/Alexnet/ae4dnn/autoencoder_models/OUT/"
+        OUT_PATH = "../../result/ae-attack-border/Alexnet/ae_border/autoencoder_models/OUT/"
         if not os.path.exists(OUT_PATH):
             os.mkdir(OUT_PATH)
         CSV_PATH = OUT_PATH + 'out.csv'
         with open(CSV_PATH, mode='w') as f:
             seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             seed.writerow(
-                ['epsilon', 'idx', 'true_label', 'pred_label', 'n_changed_pixels (before)', 'n_changed_pixels (after)'])
+                ['epsilon', 'idx', 'true_label', 'pred_label', 'L0 (before)', 'L0 (after)', 'L2 (before)',
+                 'L2 (after)'])
             f.close()
 
         for epsilon in epsilon_all:
-            AE_MODEL_H5 = "../../result/ae-attack-border/Alexnet/ae4dnn/autoencoder_models/ae4dnn_Alexnet_9_7weight=" + epsilon + "autoencoder.h5"
-            # AE_MODEL_H5 = os.path.dirname(os.path.abspath(AE_MODEL_H5))
+            AE_MODEL_H5 = f"../../result/ae-attack-border/Alexnet/ae_border/autoencoder_models" \
+                          f"/ae_border_Alexnet_9_7weight={epsilon}_1000autoencoder.h5"
             ae = keras.models.load_model(filepath=AE_MODEL_H5, compile=False)
-            X_attack, selected_seeds = get_X_attack(X_train, y_train, WRONG_SEEDS, ORI_LABEL, N_ATTACKING_SAMPLES=2000)
-            # n_adv, advs, oris = generate_adv_for_single_attack_BORDER_PATTERN(X_attack, TARGET_LABEL, ae, dnn)
-            n_adv, advs, oris = generate_adv_for_single_attack_ALL_PATTERN(X_attack, TARGET_LABEL, ae, dnn)
+            X_attack, selected_seeds = get_X_attack(X_train, y_train, WRONG_SEEDS, ORI_LABEL, N_ATTACKING_SAMPLES=1000)
+
+            n_adv, advs, oris, adv_idxes = generate_adv_for_single_attack_BORDER_PATTERN(X_attack, selected_seeds,
+                                                                                         TARGET_LABEL, ae, dnn)
+            # n_adv, advs, oris = generate_adv_for_single_attack_ALL_PATTERN(X_attack, TARGET_LABEL, ae, dnn)
+
             print(f"epsilon = {epsilon}: #adv = {n_adv}")
 
-            idx_img = 0
-            for ori, adv in zip(oris, advs):
-                idx_img += 1
-                step = 20
-                smooth_adv, highlight, n_changed_pixels_after, n_changed_pixels_before = \
+            for ori, adv, seed_idx in zip(oris, advs, adv_idxes):
+                step = 1
+                smooth_adv, highlight, L0_after, L0_before, L2_after, L2_before, restored_pixel_by_prediction = \
                     smooth_vet_can_step(
                         ori, adv, dnn,
                         TARGET_LABEL,
                         step)
+                per_pixel_by_prediction = restored_pixel_by_prediction / L0_before
 
                 epsilon_arr.append(epsilon)
                 true_label_arr.append(ORI_LABEL)
                 pred_label_arr.append(TARGET_LABEL)
-                n_changed_pixels_after_arr.append(n_changed_pixels_after)
-                n_changed_pixels_before_arr.append(n_changed_pixels_before)
+                L0_after_arr.append(L0_after)
+                L0_before_arr.append(L0_before)
+
+                save(f"{OUT_PATH}/epsilon{epsilon}_{ORI_LABEL}to{TARGET_LABEL}_step{step}_idx{seed_idx}_L0.npy"
+                     , per_pixel_by_prediction)
 
                 utilities.show_four_images(x_28_28_first=ori.reshape(28, 28),
-                                           x_28_28_first_title="original image",
+                                           x_28_28_first_title=f"original image\nidx = {seed_idx}",
                                            x_28_28_second=adv.reshape(28, 28),
-                                           x_28_28_second_title=f"adv\ntarget = {TARGET_LABEL}\nL0(this, ori) = {n_changed_pixels_before}",
+                                           x_28_28_second_title=f"adv\ntarget = {TARGET_LABEL}\nL0(this, ori) = {L0_before}\nL2(this, ori) = {np.round(L2_before, 2)}",
                                            x_28_28_third=smooth_adv.reshape(28, 28),
-                                           x_28_28_third_title=f"smooth adv\nL0(this, ori) = {n_changed_pixels_after}\nuse step = {step}",
+                                           x_28_28_third_title=f"smooth adv\nL0(this, ori) = {L0_after}\nL2(this, ori) = {np.round(L2_after, 2)}\nuse step = {step}",
                                            x_28_28_fourth=highlight.reshape(28, 28),
                                            x_28_28_fourth_title="diff(adv, smooth-adv)\nwhite means difference",
                                            display=False,
-                                           path=f"{OUT_PATH}/epsilon_{epsilon}_{ORI_LABEL}to{TARGET_LABEL}_step_{step}_idx{idx_img}")
+                                           path=f"{OUT_PATH}/epsilon{epsilon}_{ORI_LABEL}to{TARGET_LABEL}_step{step}_idx{seed_idx}")
 
                 with open(CSV_PATH, mode='a') as f:
                     seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                    seed.writerow([epsilon, idx_img, ORI_LABEL, TARGET_LABEL, n_changed_pixels_before,
-                                   n_changed_pixels_after])
+                    seed.writerow([epsilon, seed_idx, ORI_LABEL, TARGET_LABEL, L0_before,
+                                   L0_after,
+                                   L2_before,
+                                   L2_after])
                     f.close()
 
     PCA_ALL = False
@@ -408,15 +456,15 @@ if __name__ == '__main__':
         Y_pred = dnn.predict(candidate_adv.reshape(-1, 28, 28, 1))
         y_pred = np.argmax(Y_pred, axis=1)
 
-        for idx in range(len(y_pred)):
-            if y_pred[idx] == TARGET_LABEL:
+        for seed_idx in range(len(y_pred)):
+            if y_pred[seed_idx] == TARGET_LABEL:
                 utilities.show_four_images(
-                    x_28_28_first=X_attack[idx].reshape(28, 28),
-                    x_28_28_second=out_ae[idx].reshape(28, 28),
-                    x_28_28_third=out_border[idx].reshape(28, 28),
-                    x_28_28_fourth=candidate_adv[idx].reshape(28, 28),
+                    x_28_28_first=X_attack[seed_idx].reshape(28, 28),
+                    x_28_28_second=out_ae[seed_idx].reshape(28, 28),
+                    x_28_28_third=out_border[seed_idx].reshape(28, 28),
+                    x_28_28_fourth=candidate_adv[seed_idx].reshape(28, 28),
                     x_28_28_first_title="origin",
                     x_28_28_second_title="output of AE",
                     x_28_28_third_title="new border pixel",
-                    x_28_28_fourth_title=f"candidate adv\npred = {y_pred[idx]}",
+                    x_28_28_fourth_title=f"candidate adv\npred = {y_pred[seed_idx]}",
                     display=True)
