@@ -199,43 +199,45 @@ def smooth_vet_can_step(ori, adv, dnn, target_label, step):
     restored_pixel_by_prediction = []
 
     # normalize
-    ori_norm = ori.reshape(-1)
-    smooth_adv_norm = np.array(adv).reshape(-1)
-    original_adv_norm = np.array(adv).reshape(-1)
+    ori_0_255 = ori.reshape(-1)
+    smooth_adv_0_255 = np.array(adv).reshape(-1)
+    original_adv_0_255 = np.array(adv).reshape(-1)
     if np.min(ori) >= 0 and np.max(ori) <= 1:
-        ori_norm = np.round(ori_norm * 255)
-        smooth_adv_norm = np.round(smooth_adv_norm * 255)
-        original_adv_norm = np.round(original_adv_norm * 255)
-    L0_before = utilities.compute_l0(smooth_adv_norm, ori_norm, normalized=True)
+        ori_0_255 = np.round(ori_0_255 * 255)
+        smooth_adv_0_255 = np.round(smooth_adv_0_255 * 255)
+        original_adv_0_255 = np.round(original_adv_0_255 * 255)
+
+    L0_before = utilities.compute_l0(smooth_adv_0_255, ori_0_255, normalized=True)
     print(f"L0_before = {L0_before}")
 
     # get different pixels
-    diff_pixel = []
-    for idx in range(len(ori_norm)):
-        if ori_norm[idx] != smooth_adv_norm[idx]:
-            diff_pixel.append(idx)
-    diff_pixel = rank_pixel(diff_pixel)
-    diff_pixel = np.asarray(diff_pixel)
+    diff_pixel_arr = []
+    for diff_pixel_idx in range(len(ori_0_255)):
+        if ori_0_255[diff_pixel_idx] != smooth_adv_0_255[diff_pixel_idx]:
+            diff_pixel_arr.append(diff_pixel_idx)
+    diff_pixel_arr = rank_pixel(diff_pixel_arr)
+    diff_pixel_arr = np.asarray(diff_pixel_arr)
 
     #
     count = 0
     old_indexes = []
     old_values = []
-    per_l2_arr = []
-    for idx in diff_pixel:
-        if ori_norm[idx] != smooth_adv_norm[idx]:
+    for diff_pixel_idx in diff_pixel_arr:
+        if ori_0_255[diff_pixel_idx] != smooth_adv_0_255[diff_pixel_idx]:
             count += 1
-            old_indexes.append(idx)
-            old_values.append(smooth_adv_norm[idx])
-            smooth_adv_norm[idx] = ori_norm[idx]
+            old_indexes.append(diff_pixel_idx)
+            old_values.append(smooth_adv_0_255[diff_pixel_idx])
+            smooth_adv_0_255[diff_pixel_idx] = ori_0_255[diff_pixel_idx]  # try to restore
 
-        if count == step or idx == len(diff_pixel) - 1:
-            Y_pred = dnn.predict((smooth_adv_norm / 255).reshape(-1, 28, 28, 1))
+        if count == step \
+                or diff_pixel_idx == len(diff_pixel_arr) - 1:
+            Y_pred = dnn.predict((smooth_adv_0_255 / 255).reshape(-1, 28, 28, 1))
             pred = np.argmax(Y_pred, axis=1)[0]
 
             if pred != target_label:
+                # revert the changes
                 for jdx, value in zip(old_indexes, old_values):
-                    smooth_adv_norm[jdx] = value
+                    smooth_adv_0_255[jdx] = value
             else:
                 n_restored_pixels += count
 
@@ -243,17 +245,16 @@ def smooth_vet_can_step(ori, adv, dnn, target_label, step):
             old_values = []
             count = 0
             restored_pixel_by_prediction.append(n_restored_pixels)
-            # per_l2_arr.append(utilities.compute_l2(ori, smooth_adv) / utilities.compute_l2(ori, adv))
 
-
-    L0_after = utilities.compute_l0(ori_norm, smooth_adv_norm, normalized=True)
+    L0_after = utilities.compute_l0(ori_0_255, smooth_adv_0_255, normalized=True)
     print(f"L0_after = {L0_after}")
 
-    L2_after = utilities.compute_l2(ori_norm, smooth_adv_norm)
-    L2_before = utilities.compute_l2(ori_norm, original_adv_norm)
+    L2_after = utilities.compute_l2(ori_0_255, smooth_adv_0_255)
+    L2_before = utilities.compute_l2(ori_0_255, original_adv_0_255)
 
-    highlight = highlight_diff(original_adv_norm, smooth_adv_norm)
-    return smooth_adv_norm, highlight, L0_after, L0_before, L2_after, L2_before, np.asarray(
+    highlight = highlight_diff(original_adv_0_255, smooth_adv_0_255)
+
+    return smooth_adv_0_255, highlight, L0_after, L0_before, L2_after, L2_before, np.asarray(
         restored_pixel_by_prediction)
 
 

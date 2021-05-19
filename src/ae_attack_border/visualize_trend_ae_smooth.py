@@ -1,5 +1,6 @@
 from os import listdir
 from os.path import isfile, join
+
 import numpy as np
 from numpy import load
 
@@ -22,13 +23,13 @@ if __name__ == '__main__':
 
     min_pred = 999
     max_pred = 0
+    pred_arr = []
     for row in per_pixel_by_prediction_arr:
-        if min_pred > len(row):
-            min_pred = len(row)
-        if max_pred < len(row):
-            max_pred = len(row)
+        pred_arr.append(len(row))
+    pred_arr = np.asarray(pred_arr)
 
-    idxes = np.arange(0, max_pred)
+    # line chart
+    idxes = np.arange(0, 784)
     for idx in idxes:
         print(f'index {idx}')
         tmp = []
@@ -46,6 +47,22 @@ if __name__ == '__main__':
 
     print(avg_arr)
 
-    utilities.plot_line_chart(idxes, avg_arr, x_title="#number of prediction", y_title="#restored pixel/#different pixel (%)",
-                              title=f"#adv = {len(per_pixel_by_prediction_arr)}; min predictin = {min_pred}, max prediction = {max_pred}")
+    # utilities.plot_line_chart(idxes, avg_arr, x_title="#number of prediction",
+    #                           y_title="#restored pixel/#different pixel (%)",
+    #                           title=f"#adv = {len(per_pixel_by_prediction_arr)}; min prediction = {np.min(pred_arr)}"
+    #                                 f", max prediction = {np.max(pred_arr)}")
 
+    import csv
+    with open('/Users/ducanhnguyen/Documents/mydeepconcolic/tmp.csv', mode='w') as f:
+        seed = csv.writer(f)
+        for value in avg_arr:
+            seed.writerow([str(np.round(value, 5))])
+        f.close()
+
+    # boxplot
+    # import matplotlib.pyplot as plt
+    #
+    # fig1, ax1 = plt.subplots()
+    # ax1.set_title('Box plot of prediction times')
+    # ax1.boxplot(pred_arr)
+    # plt.show()
