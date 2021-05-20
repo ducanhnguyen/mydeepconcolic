@@ -1,6 +1,6 @@
 import csv as csv
 import os
-
+import random
 import cv2
 import keras
 import numpy as np
@@ -190,9 +190,13 @@ def smooth_vet_can(ori, adv, dnn, target_label):
     return smooth_adv, high_light, n_changed_pixels_after, n_changed_pixels_before
 
 
-def rank_pixel(diff_pixel):
+def rank_pixel_S2(diff_pixel): # top-left to bottom-right
     return diff_pixel
 
+def rank_pixel_S1(diff_pixel): # randomly
+    diff_pixel = np.asarray(diff_pixel)
+    random.shuffle(diff_pixel)
+    return diff_pixel
 
 def smooth_vet_can_step(ori, adv, dnn, target_label, step):
     n_restored_pixels = 0
@@ -215,7 +219,7 @@ def smooth_vet_can_step(ori, adv, dnn, target_label, step):
     for diff_pixel_idx in range(len(ori_0_255)):
         if ori_0_255[diff_pixel_idx] != smooth_adv_0_255[diff_pixel_idx]:
             diff_pixel_arr.append(diff_pixel_idx)
-    diff_pixel_arr = rank_pixel(diff_pixel_arr)
+    diff_pixel_arr = rank_pixel_S1(diff_pixel_arr)
     diff_pixel_arr = np.asarray(diff_pixel_arr)
 
     #
@@ -359,7 +363,7 @@ if __name__ == '__main__':
         # epsilon_all = ["0,0", "0,1"]
         # AE_MODEL_H5 = f"{BASE_PATH}_{ORI_LABEL}_{TARGET_LABEL}.h5"
 
-        OUT_PATH = "../../result/ae-attack-border/Alexnet/ae_border/autoencoder_models/OUT/"
+        OUT_PATH = "../../result/ae-attack-border/Alexnet/ae_border/autoencoder_models/OUT_S1_step4/"
         if not os.path.exists(OUT_PATH):
             os.mkdir(OUT_PATH)
         CSV_PATH = OUT_PATH + 'out.csv'
@@ -383,7 +387,7 @@ if __name__ == '__main__':
             print(f"epsilon = {epsilon}: #adv = {n_adv}")
 
             for ori, adv, seed_idx in zip(oris, advs, adv_idxes):
-                step = 1
+                step = 4
                 smooth_adv, highlight, L0_after, L0_before, L2_after, L2_before, restored_pixel_by_prediction = \
                     smooth_vet_can_step(
                         ori, adv, dnn,
