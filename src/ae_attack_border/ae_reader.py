@@ -1,6 +1,6 @@
 import csv as csv
 import os
-import random
+
 import cv2
 import keras
 import numpy as np
@@ -9,9 +9,9 @@ import tensorflow as tf
 from numpy import save
 from sklearn.decomposition import PCA
 
+from src.ae_attack_border.adv_smoother import smooth_vet_can_step, smooth_vet_can_step_adaptive
 from src.ae_attack_border.data import wrongseeds_AlexNet
 from src.utils import utilities
-from src.utils.feature_ranker_2d import feature_ranker, RANKING_ALGORITHM
 
 
 def get_border(images: np.ndarray) -> np.ndarray:
@@ -62,10 +62,6 @@ def get_X_attack(X_train, y_train, wrongseeds, ORI_LABEL, N_ATTACKING_SAMPLES, s
     # X_attack = X_attack[:N_ATTACKING_SAMPLES]
     # print(f'The shape of X_attack = {X_attack.shape}')
     return X_attack, selected_seed
-
-
-def visualize_border(X_attack):
-    border_origin_images = get_border(X_attack)
 
 
 def generate_adv_for_single_attack_ALL_PATTERN(X_attack, TARGET_LABEL, ae, dnn):
@@ -139,14 +135,18 @@ def generate_adv_for_all_classes(BASE_PATH, N_ATTACKING_SAMPLES, WRONG_SEEDS, N_
                 AE_MODEL_H5 = f"{BASE_PATH}_{ori}_{target}.h5"
                 ae = keras.models.load_model(filepath=AE_MODEL_H5, compile=False)
 
-                n_adv, _, _ = generate_adv_for_single_attack_BORDER_PATTERN(X_attack[:N_ATTACKING_SAMPLES], target, ae,
-                                                                            dnn)
+                n_adv, _, _, idxes = generate_adv_for_single_attack_BORDER_PATTERN(
+                    X_attack[:N_ATTACKING_SAMPLES],
+                    target,
+                    ae,
+                    dnn)
                 print(f'attacking {ori} -> {target}: n_adv = {n_adv}')
                 row.append(n_adv)
 
                 # for generalization
-                n_adv2, _, _ = generate_adv_for_single_attack_BORDER_PATTERN(X_attack[N_ATTACKING_SAMPLES:], target, ae,
-                                                                             dnn)
+                n_adv2, _, _, idxes = generate_adv_for_single_attack_BORDER_PATTERN(
+                    X_attack[N_ATTACKING_SAMPLES:], target, ae,
+                    dnn)
                 print(f'GENERALIZATION. # ori = {len(X_attack[2000:])} attacking {ori} -> {target}: n_adv = {n_adv2}')
                 print("")
             else:
@@ -154,180 +154,6 @@ def generate_adv_for_all_classes(BASE_PATH, N_ATTACKING_SAMPLES, WRONG_SEEDS, N_
 
         adv_table.append(row)
     return adv_table
-
-
-"""
-Delete every single pixel and check whether it is adversary
-Poor performance
-"""
-
-
-def smooth_vet_can(ori, adv, dnn, target_label):
-    ori = ori.reshape(-1)
-    smooth_adv = np.array(adv).reshape(-1)
-    high_light = np.array(adv).reshape(-1)
-    n_restored_pixels = 0
-    n_changed_pixels_before = np.sum(ori != smooth_adv)
-    print(f"n_changed_pixels_before = {n_changed_pixels_before}")
-
-    restored = []
-    for idx in range(len(ori)):
-        if ori[idx] != smooth_adv[idx]:
-            old = smooth_adv[idx]
-            smooth_adv[idx] = ori[idx]
-            Y_pred = dnn.predict(smooth_adv.reshape(-1, 28, 28, 1))
-            pred = np.argmax(Y_pred, axis=1)[0]
-            if pred != target_label:
-                smooth_adv[idx] = old
-            else:
-                n_restored_pixels += 1
-                high_light[idx] = 2
-            restored.append(n_restored_pixels)
-
-    print(restored)
-    n_changed_pixels_after = n_changed_pixels_before - n_restored_pixels
-    print(f"n_changed_pixels_after = {n_changed_pixels_after}")
-    return smooth_adv, high_light, n_changed_pixels_after, n_changed_pixels_before
-
-
-def rank_pixel_S2(diff_pixel): # top-left to bottom-right
-    return diff_pixel
-
-def rank_pixel_S1(diff_pixel): # randomly
-    diff_pixel = np.asarray(diff_pixel)
-    random.shuffle(diff_pixel)
-    return diff_pixel
-
-def smooth_vet_can_step(ori, adv, dnn, target_label, step):
-    n_restored_pixels = 0
-    restored_pixel_by_prediction = []
-
-    # normalize
-    ori_0_255 = ori.reshape(-1)
-    smooth_adv_0_255 = np.array(adv).reshape(-1)
-    original_adv_0_255 = np.array(adv).reshape(-1)
-    if np.min(ori) >= 0 and np.max(ori) <= 1:
-        ori_0_255 = np.round(ori_0_255 * 255)
-        smooth_adv_0_255 = np.round(smooth_adv_0_255 * 255)
-        original_adv_0_255 = np.round(original_adv_0_255 * 255)
-
-    L0_before = utilities.compute_l0(smooth_adv_0_255, ori_0_255, normalized=True)
-    print(f"L0_before = {L0_before}")
-
-    # get different pixels
-    diff_pixel_arr = []
-    for diff_pixel_idx in range(len(ori_0_255)):
-        if ori_0_255[diff_pixel_idx] != smooth_adv_0_255[diff_pixel_idx]:
-            diff_pixel_arr.append(diff_pixel_idx)
-    diff_pixel_arr = rank_pixel_S1(diff_pixel_arr)
-    diff_pixel_arr = np.asarray(diff_pixel_arr)
-
-    #
-    count = 0
-    old_indexes = []
-    old_values = []
-    for diff_pixel_idx in diff_pixel_arr:
-        if ori_0_255[diff_pixel_idx] != smooth_adv_0_255[diff_pixel_idx]:
-            count += 1
-            old_indexes.append(diff_pixel_idx)
-            old_values.append(smooth_adv_0_255[diff_pixel_idx])
-            smooth_adv_0_255[diff_pixel_idx] = ori_0_255[diff_pixel_idx]  # try to restore
-
-        if count == step \
-                or diff_pixel_idx == len(diff_pixel_arr) - 1:
-            Y_pred = dnn.predict((smooth_adv_0_255 / 255).reshape(-1, 28, 28, 1))
-            pred = np.argmax(Y_pred, axis=1)[0]
-
-            if pred != target_label:
-                # revert the changes
-                for jdx, value in zip(old_indexes, old_values):
-                    smooth_adv_0_255[jdx] = value
-            else:
-                n_restored_pixels += count
-
-            old_indexes = []
-            old_values = []
-            count = 0
-            restored_pixel_by_prediction.append(n_restored_pixels)
-
-    L0_after = utilities.compute_l0(ori_0_255, smooth_adv_0_255, normalized=True)
-    print(f"L0_after = {L0_after}")
-
-    L2_after = utilities.compute_l2(ori_0_255, smooth_adv_0_255)
-    L2_before = utilities.compute_l2(ori_0_255, original_adv_0_255)
-
-    highlight = highlight_diff(original_adv_0_255, smooth_adv_0_255)
-
-    return smooth_adv_0_255, highlight, L0_after, L0_before, L2_after, L2_before, np.asarray(
-        restored_pixel_by_prediction)
-
-
-def highlight_diff(img1_0_255, img2_0_255):
-    shape = img2_0_255.shape
-    img1_0_255 = img1_0_255.reshape(-1)
-    img2_0_255 = img2_0_255.reshape(-1)
-    highlight = []
-    for idx in range(len(img1_0_255)):
-        if img1_0_255[idx] != img2_0_255[idx]:
-            highlight.append(1)
-        else:
-            highlight.append(0)
-    highlight = np.asarray(highlight)
-    return highlight.reshape(shape)
-
-
-def smooth_simple_using_heuristic(ori, adv, dnn, target_label):
-    '''
-    Get important features
-    '''
-    important_features = feature_ranker().find_important_features_of_a_sample(input_image=adv.reshape(28, 28, 1),
-                                                                              n_rows=28, n_cols=28, n_channels=1,
-                                                                              n_important_features=None,
-                                                                              algorithm=RANKING_ALGORITHM.COI,
-                                                                              gradient_label=target_label,
-                                                                              classifier=dnn)
-    f = []
-    for idx in range(len(important_features)):
-        f.append(important_features[idx][0] * 28 + important_features[idx][1])
-    f = np.asarray(f)
-    f = f[::-1]  # tinh importance tang dan
-    N_PIXELS = len(f)
-
-    '''
-    Generate smooth advs
-    '''
-    possible_delta_arr = np.arange(0, 101, 1)
-    smooth_adv_arr = []
-    ori = ori.reshape(-1)
-    adv = adv.reshape(-1)
-    for delta in possible_delta_arr:
-        n_most = int(np.round(delta * N_PIXELS / 100))
-        smooth_adv = np.array(adv).reshape(-1)
-        # smooth_adv = np.array(ori).reshape(-1)
-        for idx in range(n_most):
-            real_idx = f[idx]
-            # smooth_adv[real_idx] = adv[real_idx]
-            smooth_adv[real_idx] = ori[real_idx]
-        smooth_adv_arr.append(smooth_adv)
-
-    smooth_adv_arr = np.asarray(smooth_adv_arr)
-
-    '''
-    Predict
-    '''
-    smooth_adv_arr = smooth_adv_arr.reshape(-1, 28, 28, 1)
-    Y_pred = dnn.predict(smooth_adv_arr)
-    y_pred = np.argmax(Y_pred, axis=1)
-    for idx in range(len(y_pred) - 1, -1, -1):
-        # for idx in range(len(y_pred)):
-        if y_pred[idx] == TARGET_LABEL:
-            smooth_adv = smooth_adv_arr[idx]
-            n_changed_pixels_after = np.sum(smooth_adv.reshape(-1) != ori.reshape(-1))
-            n_changed_pixels_before = np.sum(adv.reshape(-1) != ori.reshape(-1))
-            high_light = np.asarray(adv.reshape(-1) == smooth_adv.reshape(-1))
-            return smooth_adv, high_light, n_changed_pixels_after, n_changed_pixels_before
-
-    return None
 
 
 if __name__ == '__main__':
@@ -350,20 +176,15 @@ if __name__ == '__main__':
 
     SINGLE_ATTACK_MODE = True
     if SINGLE_ATTACK_MODE:
+        # Configure constants
         ORI_LABEL = 9
         TARGET_LABEL = 7
+        OUT_PATH = "../../result/ae-attack-border/Alexnet/ae_border/autoencoder_models/OUT_S2_stepK/"
+        EPSILON_ALL = ["0,0", "0,1", "0,2", "0,3", "0,4", "0,5", "0,6", "0,7", "0,8", "0,9", "1,0"]
+        STEP = 6
+        RANKING_STRATEGY = 'S2'
 
-        true_label_arr = []
-        pred_label_arr = []
-        L0_after_arr = []
-        L0_before_arr = []
-        epsilon_arr = []
-
-        epsilon_all = ["0,0", "0,1", "0,2", "0,3", "0,4", "0,5", "0,6", "0,7", "0,8", "0,9", "1,0"]
-        # epsilon_all = ["0,0", "0,1"]
-        # AE_MODEL_H5 = f"{BASE_PATH}_{ORI_LABEL}_{TARGET_LABEL}.h5"
-
-        OUT_PATH = "../../result/ae-attack-border/Alexnet/ae_border/autoencoder_models/OUT_S1_step4/"
+        # Configure out folder
         if not os.path.exists(OUT_PATH):
             os.mkdir(OUT_PATH)
         CSV_PATH = OUT_PATH + 'out.csv'
@@ -374,7 +195,8 @@ if __name__ == '__main__':
                  'L2 (after)'])
             f.close()
 
-        for epsilon in epsilon_all:
+        # Generate adv
+        for epsilon in EPSILON_ALL:
             AE_MODEL_H5 = f"../../result/ae-attack-border/Alexnet/ae_border/autoencoder_models" \
                           f"/ae_border_Alexnet_9_7weight={epsilon}_1000autoencoder.h5"
             ae = keras.models.load_model(filepath=AE_MODEL_H5, compile=False)
@@ -387,21 +209,17 @@ if __name__ == '__main__':
             print(f"epsilon = {epsilon}: #adv = {n_adv}")
 
             for ori, adv, seed_idx in zip(oris, advs, adv_idxes):
-                step = 4
+                # if seed_idx != 172:
+                #     continue
                 smooth_adv, highlight, L0_after, L0_before, L2_after, L2_before, restored_pixel_by_prediction = \
-                    smooth_vet_can_step(
+                    smooth_vet_can_step_adaptive(
                         ori, adv, dnn,
                         TARGET_LABEL,
-                        step)
+                        STEP,
+                        RANKING_STRATEGY)
                 per_pixel_by_prediction = restored_pixel_by_prediction / L0_before
 
-                epsilon_arr.append(epsilon)
-                true_label_arr.append(ORI_LABEL)
-                pred_label_arr.append(TARGET_LABEL)
-                L0_after_arr.append(L0_after)
-                L0_before_arr.append(L0_before)
-
-                save(f"{OUT_PATH}/epsilon{epsilon}_{ORI_LABEL}to{TARGET_LABEL}_step{step}_idx{seed_idx}_L0.npy"
+                save(f"{OUT_PATH}/epsilon{epsilon}_{ORI_LABEL}to{TARGET_LABEL}_step{STEP}_idx{seed_idx}_L0.npy"
                      , per_pixel_by_prediction)
 
                 utilities.show_four_images(x_28_28_first=ori.reshape(28, 28),
@@ -409,11 +227,11 @@ if __name__ == '__main__':
                                            x_28_28_second=adv.reshape(28, 28),
                                            x_28_28_second_title=f"adv\ntarget = {TARGET_LABEL}\nL0(this, ori) = {L0_before}\nL2(this, ori) = {np.round(L2_before, 2)}",
                                            x_28_28_third=smooth_adv.reshape(28, 28),
-                                           x_28_28_third_title=f"smooth adv\nL0(this, ori) = {L0_after}\nL2(this, ori) = {np.round(L2_after, 2)}\nuse step = {step}",
+                                           x_28_28_third_title=f"smooth adv\nL0(this, ori) = {L0_after}\nL2(this, ori) = {np.round(L2_after, 2)}\nuse step = {STEP}",
                                            x_28_28_fourth=highlight.reshape(28, 28),
                                            x_28_28_fourth_title="diff(adv, smooth-adv)\nwhite means difference",
                                            display=False,
-                                           path=f"{OUT_PATH}/epsilon{epsilon}_{ORI_LABEL}to{TARGET_LABEL}_step{step}_idx{seed_idx}")
+                                           path=f"{OUT_PATH}/epsilon{epsilon}_{ORI_LABEL}to{TARGET_LABEL}_step{STEP}_idx{seed_idx}")
 
                 with open(CSV_PATH, mode='a') as f:
                     seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)

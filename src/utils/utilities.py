@@ -4,6 +4,7 @@ import keras
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import pyplot
 from tensorflow.python.keras.models import model_from_json, Model
 
 from src.mnist_dataset import mnist_dataset
@@ -191,6 +192,19 @@ def category2indicator(y, nclass=10):
 
     return Y
 
+
+def highlight_diff(img1_0_255, img2_0_255):
+    shape = img2_0_255.shape
+    img1_0_255 = img1_0_255.reshape(-1)
+    img2_0_255 = img2_0_255.reshape(-1)
+    highlight = []
+    for idx in range(len(img1_0_255)):
+        if img1_0_255[idx] != img2_0_255[idx]:
+            highlight.append(1)
+        else:
+            highlight.append(0)
+    highlight = np.asarray(highlight)
+    return highlight.reshape(shape)
 
 if __name__ == '__main__':
     logger.debug("initialize_dnn_model")

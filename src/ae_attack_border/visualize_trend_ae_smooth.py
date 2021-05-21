@@ -7,7 +7,7 @@ from numpy import load
 from src.utils import utilities
 
 if __name__ == '__main__':
-    BASE_PATH = '/Users/ducanhnguyen/Documents/mydeepconcolic/result/ae-attack-border/Alexnet/ae_border/autoencoder_models/OUT'
+    BASE_PATH = '/Users/ducanhnguyen/Documents/mydeepconcolic/result/ae-attack-border/Alexnet/ae_border/autoencoder_models/OUT_S2_stepK'
     onlyfiles = [f for f in listdir(BASE_PATH) if isfile(join(BASE_PATH, f))]
     per_pixel_by_prediction_arr = []
 
@@ -45,24 +45,25 @@ if __name__ == '__main__':
             avg = np.average(tmp)
             avg_arr.append(avg)
 
-    print(avg_arr)
+    # print(avg_arr)
 
     # utilities.plot_line_chart(idxes, avg_arr, x_title="#number of prediction",
     #                           y_title="#restored pixel/#different pixel (%)",
     #                           title=f"#adv = {len(per_pixel_by_prediction_arr)}; min prediction = {np.min(pred_arr)}"
     #                                 f", max prediction = {np.max(pred_arr)}")
 
+    # print(np.average(avg_arr))
     import csv
     with open('/Users/ducanhnguyen/Documents/mydeepconcolic/tmp.csv', mode='w') as f:
         seed = csv.writer(f)
         for value in avg_arr:
             seed.writerow([str(np.round(value, 5))])
         f.close()
-
-    # boxplot
+    #
+    # # boxplot
     # import matplotlib.pyplot as plt
     #
     # fig1, ax1 = plt.subplots()
-    # ax1.set_title('Box plot of prediction times')
+    # ax1.set_title('Box plot of changed pixels')
     # ax1.boxplot(pred_arr)
     # plt.show()
