@@ -4,10 +4,8 @@ from os.path import isfile, join
 import numpy as np
 from numpy import load
 
-from src.utils import utilities
-
 if __name__ == '__main__':
-    BASE_PATH = '/Users/ducanhnguyen/Documents/mydeepconcolic/result/ae-attack-border/Alexnet/ae_border/autoencoder_models/OUT_S2_stepK'
+    BASE_PATH = '/Users/ducanhnguyen/Documents/mydeepconcolic/result/ae-attack-border/Lenet/ae_border/autoencoder_models/S3step12'
     onlyfiles = [f for f in listdir(BASE_PATH) if isfile(join(BASE_PATH, f))]
     per_pixel_by_prediction_arr = []
 
@@ -54,7 +52,7 @@ if __name__ == '__main__':
 
     # print(np.average(avg_arr))
     import csv
-    with open('/Users/ducanhnguyen/Documents/mydeepconcolic/tmp.csv', mode='w') as f:
+    with open('/Users/ducanhnguyen/Documents/mydeepconcolic/S3step12.csv', mode='w') as f:
         seed = csv.writer(f)
         for value in avg_arr:
             seed.writerow([str(np.round(value, 5))])

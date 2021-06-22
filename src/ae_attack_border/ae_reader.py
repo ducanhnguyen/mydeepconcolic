@@ -10,7 +10,7 @@ from numpy import save
 from sklearn.decomposition import PCA
 
 from src.ae_attack_border.adv_smoother import smooth_vet_can_step, smooth_vet_can_step_adaptive
-from src.ae_attack_border.data import wrongseeds_AlexNet
+from src.ae_attack_border.data import wrongseeds_AlexNet, wrongseeds_LeNet
 from src.utils import utilities
 
 
@@ -157,8 +157,8 @@ def generate_adv_for_all_classes(BASE_PATH, N_ATTACKING_SAMPLES, WRONG_SEEDS, N_
 
 
 if __name__ == '__main__':
-    ATTACKED_MODEL_H5 = f"../../result/ae-attack-border/model/Alexnet.h5"
-    WRONG_SEEDS = wrongseeds_AlexNet
+    ATTACKED_MODEL_H5 = f"../../result/ae-attack-border/model/Lenet.h5"
+    WRONG_SEEDS = wrongseeds_LeNet
 
     N_ATTACKING_SAMPLES = 1000
     N_CLASSES = 10
@@ -178,68 +178,78 @@ if __name__ == '__main__':
     if SINGLE_ATTACK_MODE:
         # Configure constants
         ORI_LABEL = 9
-        TARGET_LABEL = 7
-        OUT_PATH = "../../result/ae-attack-border/Alexnet/ae_border/autoencoder_models/OUT_S2_stepK/"
+        TARGET_LABEL = 4 # 2nd label
+
         EPSILON_ALL = ["0,0", "0,1", "0,2", "0,3", "0,4", "0,5", "0,6", "0,7", "0,8", "0,9", "1,0"]
-        STEP = 6
-        RANKING_STRATEGY = 'S2'
+        steps = [6, 6, 6, 1, 1, 1]
+        strategies = ['S1', 'S2', 'S3', 'S1', 'S2', 'S3']
+        for (STEP, RANKING_STRATEGY) in zip(steps, strategies):
+            OUT_PATH = f"../../result/ae-attack-border/Lenet/ae_border/autoencoder_models/{RANKING_STRATEGY}step{STEP}/"
 
-        # Configure out folder
-        if not os.path.exists(OUT_PATH):
-            os.mkdir(OUT_PATH)
-        CSV_PATH = OUT_PATH + 'out.csv'
-        with open(CSV_PATH, mode='w') as f:
-            seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            seed.writerow(
-                ['epsilon', 'idx', 'true_label', 'pred_label', 'L0 (before)', 'L0 (after)', 'L2 (before)',
-                 'L2 (after)'])
-            f.close()
+            # Configure out folder
+            if not os.path.exists(OUT_PATH):
+                os.mkdir(OUT_PATH)
 
-        # Generate adv
-        for epsilon in EPSILON_ALL:
-            AE_MODEL_H5 = f"../../result/ae-attack-border/Alexnet/ae_border/autoencoder_models" \
-                          f"/ae_border_Alexnet_9_7weight={epsilon}_1000autoencoder.h5"
-            ae = keras.models.load_model(filepath=AE_MODEL_H5, compile=False)
-            X_attack, selected_seeds = get_X_attack(X_train, y_train, WRONG_SEEDS, ORI_LABEL, N_ATTACKING_SAMPLES=1000)
-
-            n_adv, advs, oris, adv_idxes = generate_adv_for_single_attack_BORDER_PATTERN(X_attack, selected_seeds,
-                                                                                         TARGET_LABEL, ae, dnn)
-            # n_adv, advs, oris = generate_adv_for_single_attack_ALL_PATTERN(X_attack, TARGET_LABEL, ae, dnn)
-
-            print(f"epsilon = {epsilon}: #adv = {n_adv}")
-
-            for ori, adv, seed_idx in zip(oris, advs, adv_idxes):
-                # if seed_idx != 172:
-                #     continue
-                smooth_adv, highlight, L0_after, L0_before, L2_after, L2_before, restored_pixel_by_prediction = \
-                    smooth_vet_can_step_adaptive(
-                        ori, adv, dnn,
-                        TARGET_LABEL,
-                        STEP,
-                        RANKING_STRATEGY)
-                per_pixel_by_prediction = restored_pixel_by_prediction / L0_before
-
-                save(f"{OUT_PATH}/epsilon{epsilon}_{ORI_LABEL}to{TARGET_LABEL}_step{STEP}_idx{seed_idx}_L0.npy"
-                     , per_pixel_by_prediction)
-
-                utilities.show_four_images(x_28_28_first=ori.reshape(28, 28),
-                                           x_28_28_first_title=f"original image\nidx = {seed_idx}",
-                                           x_28_28_second=adv.reshape(28, 28),
-                                           x_28_28_second_title=f"adv\ntarget = {TARGET_LABEL}\nL0(this, ori) = {L0_before}\nL2(this, ori) = {np.round(L2_before, 2)}",
-                                           x_28_28_third=smooth_adv.reshape(28, 28),
-                                           x_28_28_third_title=f"smooth adv\nL0(this, ori) = {L0_after}\nL2(this, ori) = {np.round(L2_after, 2)}\nuse step = {STEP}",
-                                           x_28_28_fourth=highlight.reshape(28, 28),
-                                           x_28_28_fourth_title="diff(adv, smooth-adv)\nwhite means difference",
-                                           display=False,
-                                           path=f"{OUT_PATH}/epsilon{epsilon}_{ORI_LABEL}to{TARGET_LABEL}_step{STEP}_idx{seed_idx}")
-
-                with open(CSV_PATH, mode='a') as f:
+            CSV_PATH = OUT_PATH + 'out.csv'
+            if not os.path.exists(CSV_PATH):
+                with open(CSV_PATH, mode='w') as f:
                     seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                    seed.writerow([epsilon, seed_idx, ORI_LABEL, TARGET_LABEL, L0_before,
-                                   L0_after,
-                                   L2_before,
-                                   L2_after])
+                    seed.writerow(
+                        ['epsilon', 'idx', 'true_label', 'pred_label', 'L0 (before)', 'L0 (after)', 'L2 (before)',
+                         'L2 (after)'])
                     f.close()
+
+            # Generate adv
+            for epsilon in EPSILON_ALL:
+                AE_MODEL_H5 = f"../../result/ae-attack-border/Lenet/ae_border/autoencoder_models" \
+                              f"/ae_border_Lenet_9_4weight={epsilon}_1000autoencoder.h5"
+                ae = keras.models.load_model(filepath=AE_MODEL_H5, compile=False)
+                X_attack, selected_seeds = get_X_attack(X_train, y_train, WRONG_SEEDS, ORI_LABEL, N_ATTACKING_SAMPLES=1000)
+
+                n_adv, advs, oris, adv_idxes = generate_adv_for_single_attack_BORDER_PATTERN(X_attack, selected_seeds,
+                                                                                             TARGET_LABEL, ae, dnn)
+                # n_adv, advs, oris = generate_adv_for_single_attack_ALL_PATTERN(X_attack, TARGET_LABEL, ae, dnn)
+
+                print(f"AE_MODEL_H5 = {AE_MODEL_H5}\t\tepsilon = {epsilon}: #adv = {n_adv}")
+
+                for ori, adv, seed_idx in zip(oris, advs, adv_idxes):
+                    img_path = f"{OUT_PATH}/epsilon{epsilon}_{ORI_LABEL}to{TARGET_LABEL}_step{STEP}_idx{seed_idx}"
+                    if os.path.exists(img_path):
+                        print(f"{img_path} exists. Move to the next attacking samples!")
+                        continue
+
+                    print(f"Handle {seed_idx}")
+                    # if seed_idx != 172:
+                    #     continue
+                    smooth_adv, highlight, L0_after, L0_before, L2_after, L2_before, restored_pixel_by_prediction = \
+                        smooth_vet_can_step_adaptive(
+                            ori, adv, dnn,
+                            TARGET_LABEL,
+                            STEP,
+                            RANKING_STRATEGY)
+                    per_pixel_by_prediction = restored_pixel_by_prediction / L0_before
+
+                    save(f"{OUT_PATH}/epsilon{epsilon}_{ORI_LABEL}to{TARGET_LABEL}_step{STEP}_idx{seed_idx}_L0.npy"
+                         , per_pixel_by_prediction)
+
+                    utilities.show_four_images(x_28_28_first=ori.reshape(28, 28),
+                                               x_28_28_first_title=f"original image\nidx = {seed_idx}",
+                                               x_28_28_second=adv.reshape(28, 28),
+                                               x_28_28_second_title=f"adv\ntarget = {TARGET_LABEL}\nL0(this, ori) = {L0_before}\nL2(this, ori) = {np.round(L2_before, 2)}",
+                                               x_28_28_third=smooth_adv.reshape(28, 28),
+                                               x_28_28_third_title=f"smooth adv\nL0(this, ori) = {L0_after}\nL2(this, ori) = {np.round(L2_after, 2)}\nuse step = {STEP}",
+                                               x_28_28_fourth=highlight.reshape(28, 28),
+                                               x_28_28_fourth_title="diff(adv, smooth-adv)\nwhite means difference",
+                                               display=False,
+                                               path=img_path)
+
+                    with open(CSV_PATH, mode='a') as f:
+                        seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                        seed.writerow([epsilon, seed_idx, ORI_LABEL, TARGET_LABEL, L0_before,
+                                       L0_after,
+                                       L2_before,
+                                       L2_after])
+                        f.close()
 
     PCA_ALL = False
     if PCA_ALL:

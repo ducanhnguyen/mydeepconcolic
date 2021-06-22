@@ -19,7 +19,7 @@ def smooth_vet_can_step(ori, adv, dnn, target_label, step, strategy):
         original_adv_0_255 = np.round(original_adv_0_255 * 255)
 
     L0_before = utilities.compute_l0(smooth_adv_0_255, ori_0_255, normalized=True)
-    print(f"L0_before = {L0_before}")
+    # print(f"L0_before = {L0_before}")
 
     # get different pixels
     diff_pixel_arr = []
@@ -65,7 +65,7 @@ def smooth_vet_can_step(ori, adv, dnn, target_label, step, strategy):
             restored_pixel_by_prediction.append(n_restored_pixels)
 
     L0_after = utilities.compute_l0(ori_0_255, smooth_adv_0_255, normalized=True)
-    print(f"L0_after = {L0_after}")
+    # print(f"L0_after = {L0_after}")
 
     L2_after = utilities.compute_l2(ori_0_255, smooth_adv_0_255)
     L2_before = utilities.compute_l2(ori_0_255, original_adv_0_255)

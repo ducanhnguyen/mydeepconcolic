@@ -1,8 +1,9 @@
 import csv
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-import os
+
 
 def is_int(s: str):
     try:
@@ -109,57 +110,65 @@ def analyze_randomly(path):
     # num_adv_arr = np.round(num_adv_arr / num_adv_arr[len(num_adv_arr) - 1] * 100, 1)
 
     total_samples = np.asarray(total_samples)
-    total_samples = np.round(total_samples / total_samples[len(total_samples) - 1] * 100, 1)
+
+    if len(total_samples) >= 1:
+        total_samples = np.round(total_samples / total_samples[len(total_samples) - 1] * 100, 1)
+    else:
+        total_samples = None
+        num_adv_arr = None
     return num_adv_arr, total_samples
 
 
-def plot_n_pixel_attack_randomly_vs_directly():
+def plot_n_pixel_attack_randomly_vs_directly(type_of_attack):  # simard = M1, ann-keras = m2, simple= m3, deepcheck = m4
     # when not using sample ranking algorithm
     num_adv_arr, total_samples = analyze_randomly(
-        '/Users/ducanhnguyen/Documents/mydeepconcolic/result/edgeAttack_delta100_secondLabelTarget/result/mnist_simard/summary.csv')
-    plt.plot(total_samples, num_adv_arr, '--b', label='mnist_simard')
+        f'/Users/ducanhnguyen/Documents/mydeepconcolic/result/{type_of_attack}/result/mnist_simard/summary.csv')
+    if total_samples is not None and num_adv_arr is not None:
+        plt.plot(total_samples, num_adv_arr, '-k', linewidth=1, label='M1 (random)')
 
     num_adv_arr, total_samples = analyze_randomly(
-        '/Users/ducanhnguyen/Documents/mydeepconcolic/result/edgeAttack_delta100_secondLabelTarget/result/mnist_simple/summary.csv')
-    plt.plot(total_samples, num_adv_arr, '--g', label='mnist_simple')
+        f'/Users/ducanhnguyen/Documents/mydeepconcolic/result/{type_of_attack}/result/mnist_ann_keras/summary.csv')
+    if total_samples is not None and num_adv_arr is not None:
+        plt.plot(total_samples, num_adv_arr, '-sk', linewidth=1, markevery=250, markersize=3, label='M2 (random)')
 
     num_adv_arr, total_samples = analyze_randomly(
-        '/Users/ducanhnguyen/Documents/mydeepconcolic/result/edgeAttack_delta100_secondLabelTarget/result/mnist_deepcheck/summary.csv')
-    plt.plot(total_samples, num_adv_arr, '--r', label='mnist_deepcheck')
+        f'/Users/ducanhnguyen/Documents/mydeepconcolic/result/{type_of_attack}/result/mnist_simple/summary.csv')
+    if total_samples is not None and num_adv_arr is not None:
+        plt.plot(total_samples, num_adv_arr, '->k', linewidth=1, markevery=250, markersize=3, label='M3 (random)')
 
     num_adv_arr, total_samples = analyze_randomly(
-        '/Users/ducanhnguyen/Documents/mydeepconcolic/result/edgeAttack_delta100_secondLabelTarget/result/mnist_ann_keras/summary.csv')
-    plt.plot(total_samples, num_adv_arr, '--k', label='mnist_ann_keras')
+        f'/Users/ducanhnguyen/Documents/mydeepconcolic/result/{type_of_attack}/result/mnist_deepcheck/summary.csv')
+    if total_samples is not None and num_adv_arr is not None:
+        plt.plot(total_samples, num_adv_arr, '-.k', linewidth=1, label='M4 (random)')
 
     # when using sample ranking algorithm
     num_adv_arr, total_samples, threshold_arr = analyze_by_threshold(
-        '/Users/ducanhnguyen/Documents/mydeepconcolic/result/edgeAttack_delta100_secondLabelTarget/result/mnist_simard/summary.csv')
-    plt.plot(total_samples, num_adv_arr, 'b')
+        f'/Users/ducanhnguyen/Documents/mydeepconcolic/result/{type_of_attack}/result/mnist_simard/summary.csv')
+    if total_samples is not None and num_adv_arr is not None:
+        plt.plot(total_samples, num_adv_arr, '-g', linewidth=1, label='M1 (ranking)')
 
     num_adv_arr, total_samples, threshold_arr = analyze_by_threshold(
-        '/Users/ducanhnguyen/Documents/mydeepconcolic/result/edgeAttack_delta100_secondLabelTarget/result/mnist_simple/summary.csv')
-    plt.plot(total_samples, num_adv_arr, 'g')
+        f'/Users/ducanhnguyen/Documents/mydeepconcolic/result/{type_of_attack}/result/mnist_ann_keras/summary.csv')
+    if total_samples is not None and num_adv_arr is not None:
+        plt.plot(total_samples, num_adv_arr, '-sg', linewidth=1, markevery=0.05, markersize=3, label='M2 (ranking)')
 
     num_adv_arr, total_samples, threshold_arr = analyze_by_threshold(
-        '/Users/ducanhnguyen/Documents/mydeepconcolic/result/edgeAttack_delta100_secondLabelTarget/result/mnist_deepcheck/summary.csv')
-    plt.plot(total_samples, num_adv_arr, 'r')
+        f'/Users/ducanhnguyen/Documents/mydeepconcolic/result/{type_of_attack}/result/mnist_simple/summary.csv')
+    if total_samples is not None and num_adv_arr is not None:
+        plt.plot(total_samples, num_adv_arr, '->g', linewidth=1, markevery=0.05, markersize=3, label='M3 (ranking)')
 
     num_adv_arr, total_samples, threshold_arr = analyze_by_threshold(
-        '/Users/ducanhnguyen/Documents/mydeepconcolic/result/edgeAttack_delta100_secondLabelTarget/result/mnist_ann_keras/summary.csv')
-    plt.plot(total_samples, num_adv_arr, 'k')
+        f'/Users/ducanhnguyen/Documents/mydeepconcolic/result/{type_of_attack}/result/mnist_deepcheck/summary.csv')
+    if total_samples is not None and num_adv_arr is not None:
+        plt.plot(total_samples, num_adv_arr, '-.g', linewidth=1, label='M4 (ranking)')
 
-
-    #
     plt.xlabel('% of attacking samples')
     plt.ylabel('# adversaries')
     plt.tight_layout()
-    plt.legend()
+    # plt.legend(fontsize=10, ncol=2,handleheight=2, labelspacing=0.05, loc='lower right')
+    plt.legend('',frameon=False)
     plt.show()
 
 
 if __name__ == '__main__':
-    plot_n_pixel_attack_randomly_vs_directly()
-    # num_adv_arr, total_samples, threshold_arr = analyze_by_threshold(
-    #     '/Users/ducanhnguyen/Documents/mydeepconcolic/result/changeOnEdge_delta100_upperBound/result/mnist_deepcheck/summary.csv')
-    # for u, v in zip(num_adv_arr, total_samples):
-    #     print(f'%adv = {u}, %total = {v}')
+    plot_n_pixel_attack_randomly_vs_directly("bestFeatureAttack_delta255_secondLabelTarget")
