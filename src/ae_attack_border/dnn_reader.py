@@ -5,6 +5,11 @@ AlexNet
     acc train set = 0.9903166666666666
     acc test set = 0.9875
     
+LeNet_v2
+    acc train set =  0.9986166666666667
+    acc test set =  0.9882
+    wrongseeds_LeNet_v2 = [80, 494, 635, 902, 2426, 2427, 2488, 5298, 6315, 6848, 6885, 8200]
+
 LeNet
     acc train set = 0.9960833333333333
     acc test set = 0.9851
@@ -19,7 +24,7 @@ vgg16
 import keras
 
 if __name__ == '__main__':
-    ATTACKED_MODEL_H5 = f"/Users/ducanhnguyen/Documents/mydeepconcolic/result/ae-attack-border/model/Lenet.h5"
+    ATTACKED_MODEL_H5 = f"/Users/ducanhnguyen/Documents/mydeepconcolic/result/ae-attack-border/model/Lenet_v2.h5"
     print(ATTACKED_MODEL_H5)
     dnn = keras.models.load_model(filepath=ATTACKED_MODEL_H5, compile=False)
     dnn.summary()
@@ -30,11 +35,14 @@ if __name__ == '__main__':
 
     Y_pred = dnn.predict(X_train.reshape(-1, 28, 28, 1))
     y_pred = np.argmax(Y_pred, axis=1)
-    print(y_pred)
-    print(y_train)
     print(f"acc train set = {(len(y_train) - np.sum(y_pred != y_train)) / len(y_train)}")
+
     wrong_seeds = []
     for idx in range(len(y_test)):
         if y_pred[idx] != y_train[idx]:
             wrong_seeds.append(idx)
     print(wrong_seeds)
+
+    Y_pred = dnn.predict(X_test.reshape(-1, 28, 28, 1))
+    y_pred = np.argmax(Y_pred, axis=1)
+    print(f"acc test set = {(len(y_test) - np.sum(y_pred != y_test)) / len(y_test)}")

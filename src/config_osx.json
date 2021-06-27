@@ -23,7 +23,7 @@
     "train_set": "{base_path}/dataset/digit-recognizer/train.csv",
     "test_set": "{base_path}/dataset/digit-recognizer/test.csv",
     "num_classes": 10,
-    "start_seed": 0,
+    "start_seed": 5546,
     "end_seed": 10000
   },
   "mnist_deepcheck": {
@@ -88,8 +88,8 @@
     "feature_upper_bound": 255,
     "feature_input_type": "int",
     "delta_prefix_name": "delta",
-    "output_layer_type_constraint": "true_index_smaller_than_second_index",
-    "strategy": "change_close_to_edge",
+    "output_layer_type_constraint": "or",
+    "strategy": "change_1_most_important_pixels",
     "supported_strategies": [
       "change_nonzero_pixels",
       "change_edge",
@@ -97,8 +97,8 @@
       "change_5_most_important_pixels"
     ]
   },
-  "n_threads": 2,
+  "n_threads": 3,
   "output_folder": "{base_path}/result/{dataset}",
-  "dataset": "mnist_simple",
+  "dataset": "mnist_ann_keras",
   "base_path": "/Users/ducanhnguyen/Documents/mydeepconcolic"
 }

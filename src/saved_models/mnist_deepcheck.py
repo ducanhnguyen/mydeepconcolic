@@ -10,6 +10,9 @@ Accuracy on train set: 0.9676166772842407
 Overall test score: 0.22557860612869263
 Accuracy on test set: 0.9440000057220459
 '''
+import os
+
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
 class MNIST_DEEPCHECK(mnist_dataset):
 
     def __init__(self):

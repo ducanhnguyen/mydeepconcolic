@@ -36,7 +36,7 @@ class UNTARGETED_FGSM:
 if __name__ == '__main__':
     # INITIALIZATION
     START_SEED = 0  # modified
-    END_SEED = 10000  # modified
+    END_SEED = 1  # modified
     models = ["mnist_ann_keras", "mnist_deepcheck", "mnist_simard", "mnist_simple"]
 
     for name_model in models:
