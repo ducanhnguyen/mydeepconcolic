@@ -1,4 +1,3 @@
-
 import os
 import keras
 from src.ae_attack_border.ae_custom_layer import concate_start_to_end
@@ -14,6 +13,7 @@ import numpy as np
 MNIST_N_ROW = 28
 MNIST_N_COL = 28
 MNIST_N_CHANNEL = 1
+MNIST_N_FEATURES = 784
 
 
 def create_different_matrix(oris, advs):
@@ -108,9 +108,21 @@ def adaptive_optimize(oris, advs, adv_idxes, ranking_algorithm, step, target_lab
         step = int(np.round(step / 2))
 
     # export the restored rate
+    n_restored_pixels_final = np.transpose(n_restored_pixels_final)
+    restored_rate = np.zeros(shape=(len(oris), MNIST_N_FEATURES))
+    for idx in range(0, len(oris)):
+        ori = oris[idx]
+        adv = advs[idx]
+        L0_before = utilities.compute_l0(adv, ori)
+        for jdx in range(0, MNIST_N_FEATURES):
+            if jdx < len(n_restored_pixels_final[idx]):
+                restored_rate[idx][jdx] = n_restored_pixels_final[idx][jdx] / L0_before
+            else:
+                restored_rate[idx][jdx] = np.max(restored_rate[idx])
+    restored_rate = np.average(restored_rate, axis=0)
     with open(f"{output_folder}/restored_rate.csv", mode='w') as f:
         seed = csv.writer(f)
-        for value in n_restored_pixels_final:
+        for value in restored_rate:
             seed.writerow([str(np.round(value, 5))])
         f.close()
 
@@ -164,14 +176,13 @@ def optimize(oris, advs, step, target_label, dnn, J):
     :param dnn:
     :return:
     """
-    n_restored_pixels = [] # the total of restored pixels of all adversarial examples
+    n_restored_pixels = []  # the total of restored pixels of all adversarial examples
     optimized_advs = np.copy(advs)
     max_priority = np.max(J)
-    count = 0
+    n_diff_features_before = np.sum(np.round(oris * 255) != np.round(optimized_advs * 255), axis=1)
     for idx in range(0, 10000000):
         print(f"\nPerforming {idx}-th restoration for the batch")
         clone = np.copy(optimized_advs)
-        n_diff_features_before = np.sum(np.round(oris * 255) == np.round(optimized_advs * 255))
 
         # Find out matrix of adversarial features
         start_priority = step * idx + 1  # must start from 1 (highest priority)
@@ -202,16 +213,15 @@ def optimize(oris, advs, step, target_label, dnn, J):
                 for kdx in range(0, len(optimized_advs[jdx])):
                     optimized_advs[jdx][kdx] = clone[jdx][kdx]
         #
-        n_diff_features_after = np.sum(np.round(oris*255) == np.round(optimized_advs*255))
-        count += n_diff_features_after - n_diff_features_before + 1
-        n_restored_pixels.append(count)
+        n_diff_features_after = np.sum(np.round(oris * 255) != np.round(optimized_advs * 255), axis=1)
+        n_restored_pixels.append(n_diff_features_before - n_diff_features_after + 1)
 
     # pred = dnn.predict(optimized_advs.reshape(-1, 28, 28, 1))
     # labels = np.argmax(pred, axis=1)
     # for item in labels:
     #     if item != target_label:
     #         print("Fail")
-    return optimized_advs, n_restored_pixels
+    return optimized_advs, np.asarray(n_restored_pixels)
 
 
 if __name__ == '__main__':
@@ -257,8 +267,8 @@ if __name__ == '__main__':
 
             # OPTIMIZER
             step = 6
-            oris = oris[:10].reshape(-1, 784)
-            advs = advs[:10].reshape(-1, 784)
+            oris = oris.reshape(-1, 784)
+            advs = advs.reshape(-1, 784)
             ranking_algorithm = RANKING_ALGORITHM.COI
             adaptive_optimize(oris, advs, adv_idxes, ranking_algorithm, step, TARGET_LABEL, dnn,
                               output_folder="/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch")
