@@ -1,13 +1,12 @@
-import csv as csv
+
 import os
 import keras
 from src.ae_attack_border.ae_custom_layer import concate_start_to_end
 import tensorflow as tf
-
+import csv as csv
 from src.ae_attack_border.ae_reader import get_X_attack, generate_adv_for_single_attack_SALIENCE, \
     generate_adv_for_single_attack_ALL_FEATURE
 from src.ae_attack_border.data import wrongseeds_AlexNet
-from src.ae_attack_border.pixel_ranking import rank_pixel_S3
 from src.utils import utilities
 from src.utils.feature_ranker_2d import feature_ranker, RANKING_ALGORITHM
 import numpy as np
@@ -70,7 +69,20 @@ def adaptive_optimize(oris, advs, adv_idxes, ranking_algorithm, step, target_lab
     :param dnn: a CNN model
     :return:
     """
+    n_restored_pixels_final = []
+    # Configure out folder
+    if not os.path.exists(output_folder):
+        os.mkdir(output_folder)
+    CSV_PATH = output_folder + '/out.csv'
+    if not os.path.exists(CSV_PATH):
+        with open(CSV_PATH, mode='w') as f:
+            seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            seed.writerow(
+                ['epsilon', 'idx', 'true_label', 'pred_label', 'L0 (before)', 'L0 (after)', 'L2 (before)',
+                 'L2 (after)'])
+            f.close()
 
+    #
     optimized_advs = np.copy(advs)
     feature_ranking_matrix = create_ranking_matrix(advs, ranking_algorithm, target_label)
     while step > 0:
@@ -86,12 +98,26 @@ def adaptive_optimize(oris, advs, adv_idxes, ranking_algorithm, step, target_lab
                 if I[idx][pos] == 1:  # only prioritize adversarial features
                     J[idx][pos] = max(J[idx]) + 1
 
-        optimized_advs = optimize(oris, optimized_advs, step, target_label, dnn, J)
+        optimized_advs, n_restored_pixels = optimize(oris, optimized_advs, step, target_label, dnn, J)
+        if len(n_restored_pixels_final) >= 1:
+            latest = n_restored_pixels_final[-1]
+        else:
+            latest = 0
+        for item in n_restored_pixels:
+            n_restored_pixels_final.append(latest + item)
         step = int(np.round(step / 2))
 
-    # export
+    # export the restored rate
+    with open(f"{output_folder}/restored_rate.csv", mode='w') as f:
+        seed = csv.writer(f)
+        for value in n_restored_pixels_final:
+            seed.writerow([str(np.round(value, 5))])
+        f.close()
+
+    # export the summary
     for idx in range(0, len(oris)):
-        print(f"Exporting seed {adv_idxes[idx]}")
+        seed_idx = adv_idxes[idx]
+        print(f"Exporting seed {seed_idx}")
         ori = oris[idx]
         adv = advs[idx]
         optimized_adv = optimized_advs[idx]
@@ -100,24 +126,32 @@ def adaptive_optimize(oris, advs, adv_idxes, ranking_algorithm, step, target_lab
         L0_after = utilities.compute_l0(optimized_adv, ori)
         L2_after = utilities.compute_l2(optimized_adv, ori)
         highlight = utilities.highlight_diff(np.round(adv * 255), np.round(optimized_adv * 255))
-        img_path = f"{output_folder}/{idx}.png"
+        img_path = f"{output_folder}/{seed_idx}.png"
 
         pred = dnn.predict(optimized_advs.reshape(-1, 28, 28, 1))
         label = np.argmax(pred, axis=1)[0]
 
         if label == target_label:
-            utilities.show_four_images(x_28_28_first=ori.reshape(28, 28),
-                                       x_28_28_first_title=f"attacking sample",
-                                       x_28_28_second=adv.reshape(28, 28),
-                                       x_28_28_second_title=f"adv\ntarget = {target_label}\nL0(this, ori) = {L0_before}\nL2(this, ori) = {np.round(L2_before, 2)}",
-                                       x_28_28_third=optimized_adv.reshape(28, 28),
-                                       x_28_28_third_title=f"optimized adv\nL0(this, ori) = {L0_after}\nL2(this, ori) = {np.round(L2_after, 2)}\nuse step = {step}",
-                                       x_28_28_fourth=highlight.reshape(28, 28),
-                                       x_28_28_fourth_title="diff(adv, optimized adv)\nwhite means difference",
-                                       display=False,
-                                       path=img_path)
+            # utilities.show_four_images(x_28_28_first=ori.reshape(28, 28),
+            #                            x_28_28_first_title=f"attacking sample",
+            #                            x_28_28_second=adv.reshape(28, 28),
+            #                            x_28_28_second_title=f"adv\ntarget = {target_label}\nL0(this, ori) = {L0_before}\nL2(this, ori) = {np.round(L2_before, 2)}",
+            #                            x_28_28_third=optimized_adv.reshape(28, 28),
+            #                            x_28_28_third_title=f"optimized adv\nL0(this, ori) = {L0_after}\nL2(this, ori) = {np.round(L2_after, 2)}\nuse step = {step}",
+            #                            x_28_28_fourth=highlight.reshape(28, 28),
+            #                            x_28_28_fourth_title="diff(adv, optimized adv)\nwhite means difference",
+            #                            display=False,
+            #                            path=img_path)
+
+            with open(CSV_PATH, mode='a') as f:
+                seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                seed.writerow([epsilon, seed_idx, ORI_LABEL, TARGET_LABEL, L0_before,
+                               L0_after,
+                               L2_before,
+                               L2_after])
+                f.close()
         else:
-            print(f"Problem with seed {idx}")
+            print(f"Problem with seed {seed_idx} on the attacking set")
 
 
 def optimize(oris, advs, step, target_label, dnn, J):
@@ -130,11 +164,14 @@ def optimize(oris, advs, step, target_label, dnn, J):
     :param dnn:
     :return:
     """
+    n_restored_pixels = [] # the total of restored pixels of all adversarial examples
     optimized_advs = np.copy(advs)
     max_priority = np.max(J)
+    count = 0
     for idx in range(0, 10000000):
-        print(f"Performing {idx}-th restoration for the batch")
+        print(f"\nPerforming {idx}-th restoration for the batch")
         clone = np.copy(optimized_advs)
+        n_diff_features_before = np.sum(np.round(oris * 255) == np.round(optimized_advs * 255))
 
         # Find out matrix of adversarial features
         start_priority = step * idx + 1  # must start from 1 (highest priority)
@@ -164,13 +201,17 @@ def optimize(oris, advs, step, target_label, dnn, J):
                 print(f"The restoration fails. Reverting the restoration for {jdx}-th adversarial example")
                 for kdx in range(0, len(optimized_advs[jdx])):
                     optimized_advs[jdx][kdx] = clone[jdx][kdx]
+        #
+        n_diff_features_after = np.sum(np.round(oris*255) == np.round(optimized_advs*255))
+        count += n_diff_features_after - n_diff_features_before + 1
+        n_restored_pixels.append(count)
 
     # pred = dnn.predict(optimized_advs.reshape(-1, 28, 28, 1))
     # labels = np.argmax(pred, axis=1)
     # for item in labels:
     #     if item != target_label:
     #         print("Fail")
-    return optimized_advs
+    return optimized_advs, n_restored_pixels
 
 
 if __name__ == '__main__':
@@ -215,9 +256,9 @@ if __name__ == '__main__':
                                                                                           TARGET_LABEL, ae, dnn)
 
             # OPTIMIZER
-            step = 12
-            oris = oris.reshape(-1, 784)
-            advs = advs.reshape(-1, 784)
+            step = 6
+            oris = oris[:10].reshape(-1, 784)
+            advs = advs[:10].reshape(-1, 784)
             ranking_algorithm = RANKING_ALGORITHM.COI
             adaptive_optimize(oris, advs, adv_idxes, ranking_algorithm, step, TARGET_LABEL, dnn,
                               output_folder="/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch")
