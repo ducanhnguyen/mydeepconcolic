@@ -65,30 +65,30 @@ def get_X_attack(X_train, y_train, wrongseeds, ORI_LABEL, N_ATTACKING_SAMPLES, s
     return X_attack, selected_seed
 
 
-def generate_adv_for_single_attack_ALL_PATTERN(X_attack, TARGET_LABEL, ae, dnn):
-    candidate_generated_borders = ae.predict(X_attack)
-    candidates = np.clip(candidate_generated_borders, 0, 1)
+def generate_adv_for_single_attack_ALL_FEATURE(X_attack, selected_seeds, TARGET_LABEL, ae, dnn):
+    candidates = ae.predict(X_attack)
 
     # compute the number of adv
     candidates = np.asarray(candidates)
-    # print(f'The shape of candidate adv = {candidates.shape}')
     Y_pred = dnn.predict(candidates.reshape(-1, 28, 28, 1))
     y_pred = np.argmax(Y_pred, axis=1)
-    # print(f"candidate label = {y_pred}")
 
     compare = y_pred == TARGET_LABEL
     n_adv = np.sum(compare)
-    # print(f"#adv = {n_adv}")
 
     advs = []
     oris = []
+    idxes = []
     for idx in range(len(candidates)):
         if compare[idx]:
             advs.append(candidates[idx])
             oris.append(X_attack[idx])
+            idxes.append(selected_seeds[idx])
     advs = np.asarray(advs)
     oris = np.asarray(oris)
-    return n_adv, advs, oris
+    idxes = np.asarray(idxes)
+    return n_adv, advs, oris, idxes
+
 
 def generate_adv_for_single_attack_SALIENCE(X_attack, selected_seeds, TARGET_LABEL, ae, dnn):
     '''
@@ -206,8 +206,9 @@ def generate_adv_for_all_classes(BASE_PATH, N_ATTACKING_SAMPLES, WRONG_SEEDS, N_
 
 
 if __name__ == '__main__':
-    ATTACKED_MODEL_H5 = f"../../result/ae-attack-border/model/Lenet_v2.h5"
-    WRONG_SEEDS = wrongseeds_LeNet_v2
+    MODEL = 'Alexnet'
+    ATTACKED_MODEL_H5 = f"../../result/ae-attack-border/model/{MODEL}.h5"
+    WRONG_SEEDS = wrongseeds_AlexNet
     IS_SALIENCY_ATTACK = False
     N_ATTACKING_SAMPLES = 1000
     N_CLASSES = 10
@@ -226,16 +227,16 @@ if __name__ == '__main__':
     SINGLE_ATTACK_MODE = True
     if SINGLE_ATTACK_MODE:
         # Configure constants
-        MODEL = 'Lenet_v2'
+
         ORI_LABEL = 9
 
-        TARGET_LABEL = 4 # 2nd label ##########################################################
+        TARGET_LABEL = 7  # 2nd label ##########################################################
 
-        EPSILON_ALL = ["0,0", "0,1", "0,2", "0,3", "0,4", "0,5", "0,6", "0,7", "0,8", "0,9", "1,0"]
-        steps = [6]
-        strategies = ['S3']
+        EPSILON_ALL = ["0,0", "0,1", "0,2", "0,3", "0,4"]
+        steps = [6, 6, 6, 1, 1, 1]
+        strategies = ['S3', 'S2', 'S1', 'S3', 'S2', 'S1']
         for (STEP, RANKING_STRATEGY) in zip(steps, strategies):
-            OUT_PATH = f"../../result/ae-attack-border/{MODEL}/edge/tmp_{RANKING_STRATEGY}step{STEP}/"
+            OUT_PATH = f"../../result/ae-attack-border/{MODEL}/allfeature/tmp_{RANKING_STRATEGY}step{STEP}/"
 
             # Configure out folder
             if not os.path.exists(OUT_PATH):
@@ -252,17 +253,24 @@ if __name__ == '__main__':
 
             # Generate adv
             for epsilon in EPSILON_ALL:
-                AE_MODEL_H5 = f"../../result/ae-attack-border/{MODEL}/edge/autoencoder_models/ae_border_{MODEL}_{ORI_LABEL}_{TARGET_LABEL}weight={epsilon}_1000autoencoder.h5"
+                AE_MODEL_H5 = f"../../result/ae-attack-border/{MODEL}/allfeature/autoencoder_models/ae4dnn_{MODEL}_{ORI_LABEL}_{TARGET_LABEL}weight={epsilon}_1000autoencoder.h5"
                 if not os.path.exists(AE_MODEL_H5):
                     continue
-                ae = keras.models.load_model(filepath=AE_MODEL_H5,  compile=False, custom_objects = {'concate_start_to_end': concate_start_to_end})
-                X_attack, selected_seeds = get_X_attack(X_train, y_train, WRONG_SEEDS, ORI_LABEL, N_ATTACKING_SAMPLES=1000)
+
+                X_attack, selected_seeds = get_X_attack(X_train, y_train, WRONG_SEEDS, ORI_LABEL,
+                                                        N_ATTACKING_SAMPLES=1000)
 
                 if IS_SALIENCY_ATTACK:
+                    ae = keras.models.load_model(filepath=AE_MODEL_H5, compile=False,
+                                                 custom_objects={'concate_start_to_end': concate_start_to_end})
                     n_adv, advs, oris, adv_idxes = generate_adv_for_single_attack_SALIENCE(X_attack, selected_seeds,
-                                                                                                 TARGET_LABEL, ae, dnn)
+                                                                                           TARGET_LABEL, ae, dnn)
                 else:
-                    n_adv, advs, oris, adv_idxes = generate_adv_for_single_attack_BORDER_PATTERN(X_attack,
+                    ae = keras.models.load_model(filepath=AE_MODEL_H5, compile=False)
+                    # n_adv, advs, oris, adv_idxes = generate_adv_for_single_attack_BORDER_PATTERN(X_attack,
+                    #                                                                              selected_seeds,
+                    #                                                                              TARGET_LABEL, ae, dnn)
+                    n_adv, advs, oris, adv_idxes = generate_adv_for_single_attack_ALL_FEATURE(X_attack,
                                                                                                  selected_seeds,
                                                                                                  TARGET_LABEL, ae, dnn)
                 # n_adv, advs, oris = generate_adv_for_single_attack_ALL_PATTERN(X_attack, TARGET_LABEL, ae, dnn)
@@ -287,20 +295,19 @@ if __name__ == '__main__':
                             RANKING_STRATEGY)
                     per_pixel_by_prediction = restored_pixel_by_prediction / L0_before
 
-
                     save(png_path
                          , per_pixel_by_prediction)
 
-                    utilities.show_four_images(x_28_28_first=ori.reshape(28, 28),
-                                               x_28_28_first_title=f"attacking sample\nidx = {seed_idx}",
-                                               x_28_28_second=adv.reshape(28, 28),
-                                               x_28_28_second_title=f"adv\ntarget = {TARGET_LABEL}\nL0(this, ori) = {L0_before}\nL2(this, ori) = {np.round(L2_before, 2)}",
-                                               x_28_28_third=smooth_adv.reshape(28, 28),
-                                               x_28_28_third_title=f"optimized adv\nL0(this, ori) = {L0_after}\nL2(this, ori) = {np.round(L2_after, 2)}\nuse step = {STEP}",
-                                               x_28_28_fourth=highlight.reshape(28, 28),
-                                               x_28_28_fourth_title="diff(adv, optimized adv)\nwhite means difference",
-                                               display=False,
-                                               path=img_path)
+                    # utilities.show_four_images(x_28_28_first=ori.reshape(28, 28),
+                    #                            x_28_28_first_title=f"attacking sample\nidx = {seed_idx}",
+                    #                            x_28_28_second=adv.reshape(28, 28),
+                    #                            x_28_28_second_title=f"adv\ntarget = {TARGET_LABEL}\nL0(this, ori) = {L0_before}\nL2(this, ori) = {np.round(L2_before, 2)}",
+                    #                            x_28_28_third=smooth_adv.reshape(28, 28),
+                    #                            x_28_28_third_title=f"optimized adv\nL0(this, ori) = {L0_after}\nL2(this, ori) = {np.round(L2_after, 2)}\nuse step = {STEP}",
+                    #                            x_28_28_fourth=highlight.reshape(28, 28),
+                    #                            x_28_28_fourth_title="diff(adv, optimized adv)\nwhite means difference",
+                    #                            display=False,
+                    #                            path=img_path)
 
                     with open(CSV_PATH, mode='a') as f:
                         seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)

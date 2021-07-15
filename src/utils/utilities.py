@@ -86,7 +86,9 @@ def show_four_images(x_28_28_first, x_28_28_second, x_28_28_third, x_28_28_fourt
     plt.tight_layout(h_pad=0.5, w_pad=0.2)
     if path is not None:
         # plt.savefig(path, pad_inches=0.3, bbox_inches='tight')
-        plt.savefig(path, pad_inches=0, bbox_inches='tight', format='eps')
+        # plt.savefig(path, pad_inches=0, bbox_inches='tight', format='eps')
+        plt.savefig(path, pad_inches=0, bbox_inches='tight', format='png')
+
 
     if display:
         plt.show()
