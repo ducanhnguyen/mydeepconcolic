@@ -44,7 +44,8 @@ class feature_ranker:
 
     @staticmethod
     def find_important_features_of_a_sample(input_image: np.ndarray,
-                                            n_rows: int, n_cols: int, n_channels: int, n_important_features: int,
+                                            n_rows: int,
+                                            n_cols: int, n_channels: int, n_important_features: int,
                                             algorithm: enum.Enum,
                                             gradient_label: int,
                                             classifier: keras.Sequential):
