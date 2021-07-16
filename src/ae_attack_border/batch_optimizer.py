@@ -32,7 +32,8 @@ def adaptive_optimize(oris, advs, adv_idxes, ranking_algorithm, step, target_lab
     """
     n_restored_pixels_final = []
     optimized_advs = np.copy(advs)
-    feature_ranking = create_ranking_matrix(advs, oris, dnn, ranking_algorithm, target_label)
+
+    #feature_ranking = create_ranking_matrix(advs, oris, dnn, ranking_algorithm, target_label)
     while step > 0:
         print("--------------------------------------------")
         print(f"Step = {step}")
@@ -308,7 +309,7 @@ def initialize_out_folder(output_folder: str):
     :return:
     """
     if not os.path.exists(output_folder):
-        os.mkdir(output_folder)
+        os.makedirs(output_folder)
     CSV_PATH = get_summary_file(output_folder)
     if not os.path.exists(CSV_PATH):
         with open(CSV_PATH, mode='w') as f:
@@ -393,13 +394,32 @@ if __name__ == '__main__':
     """
     OPTIMIZE
     """
-    step = 6
     oris = all_oris.reshape(-1, MNIST_N_FEATURES)
     print(f"oris shape = {oris.shape}")
     advs = all_advs.reshape(-1, MNIST_N_FEATURES)
     adv_idxes = all_adv_idxes.reshape(-1)
-    ranking_algorithm = RANKING_ALGORITHM.JSMA
-    output_folder = f"/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch/ae_slience_map_{MODEL}_{ORI_LABEL}_{TARGET_LABEL}_JSMA"
-    initialize_out_folder(output_folder)
-    adaptive_optimize(oris[:500], advs[:500], adv_idxes[:500], ranking_algorithm, step, TARGET_LABEL, dnn,
-                      output_folder, epsilons)
+
+    ranking_algorithms = [RANKING_ALGORITHM.JSMA_KA, RANKING_ALGORITHM.JSMA, RANKING_ALGORITHM.COI,
+                          RANKING_ALGORITHM.RANDOM, RANKING_ALGORITHM.SEQUENTIAL]
+    size = None
+    for ranking_algorithm in ranking_algorithms:
+
+        name = None
+        if ranking_algorithm == RANKING_ALGORITHM.JSMA_KA:
+            name = "JSMA-KA"
+        elif ranking_algorithm == RANKING_ALGORITHM.JSMA:
+            name = "JSMA"
+        elif ranking_algorithm == RANKING_ALGORITHM.COI:
+            name = "COI"
+        elif ranking_algorithm == RANKING_ALGORITHM.RANDOM:
+            name = "RANDOM"
+        elif ranking_algorithm == RANKING_ALGORITHM.SEQUENTIAL:
+            name = "SEQUENTIAL"
+
+        steps = [1, 6, 12, 24, 30, 60]
+        feature_ranking = create_ranking_matrix(advs[:size], oris[:size], dnn, ranking_algorithm, TARGET_LABEL)
+        for step in steps:
+            output_folder = f"/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch/ae_slience_map_{MODEL}_{ORI_LABEL}to{TARGET_LABEL}_ranking{name}_step{step}"
+            initialize_out_folder(output_folder)
+            adaptive_optimize(oris[:size], advs[:size], adv_idxes[:size], ranking_algorithm, step, TARGET_LABEL, dnn,
+                              output_folder, epsilons)
