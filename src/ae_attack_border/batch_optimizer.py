@@ -13,6 +13,7 @@ import numpy as np
 MNIST_N_ROW = 28
 MNIST_N_COL = 28
 MNIST_N_CHANNEL = 1
+MNIST_N_CLASSES = 10
 MNIST_N_FEATURES = 784
 
 
@@ -31,7 +32,7 @@ def adaptive_optimize(oris, advs, adv_idxes, ranking_algorithm, step, target_lab
     """
     n_restored_pixels_final = []
     optimized_advs = np.copy(advs)
-    feature_ranking = create_ranking_matrix(advs, ranking_algorithm, target_label)
+    feature_ranking = create_ranking_matrix(advs, oris, dnn, ranking_algorithm, target_label)
     while step > 0:
         print("--------------------------------------------")
         print(f"Step = {step}")
@@ -149,6 +150,7 @@ def export_summaryv2(oris, advs, adv_idxes, optimized_advs, target_label, dnn, o
                            L2_after[idx]])
         f.close()
 
+
 #
 # def export_summary(oris, advs, adv_idxes, optimized_advs, target_label, dnn, output_folder, epsilons):
 #     for idx in range(0, len(oris)):
@@ -220,7 +222,10 @@ def create_matrix_J(oris, feature_ranking, I):
         item = feature_ranking[idx]
         max_row = max(J[idx])
         for jdx in range(0, len(item)):
-            pos = MNIST_N_COL * item[jdx][0] + item[jdx][1]  # for 2-D image
+            if isinstance(item[jdx], np.int64) or isinstance(item[jdx], np.int32):  # the position is an integer
+                pos = item[jdx]
+            else:  # the position is (row, col, channel)
+                pos = MNIST_N_COL * item[jdx][0] + item[jdx][1]  # for 2-D image
             if I[idx][pos] == 1:  # if this position is corresponding to an adversarial feature
                 J[idx][pos] = max_row + 1  # assign an integer priority
                 max_row += 1
@@ -242,7 +247,8 @@ def create_different_matrix(oris, advs):
     return I
 
 
-def create_ranking_matrix(advs: np.ndarray, ranking_algorithm: RANKING_ALGORITHM, target_label: int):
+def create_ranking_matrix(advs: np.ndarray, oris: np.ndarray, dnn, ranking_algorithm: RANKING_ALGORITHM,
+                          target_label: int):
     """
     Rank features
     :param advs: a set of adversarial samples corresponding to the original samples, shape = (-1, number of features)
@@ -252,18 +258,46 @@ def create_ranking_matrix(advs: np.ndarray, ranking_algorithm: RANKING_ALGORITHM
     """
     feature_ranking = []
     for idx in np.arange(0, len(advs)):
-        print(f"[{idx+1}/{len(advs)}] Ranking the features")
-        ranking = feature_ranker().find_important_features_of_a_sample(
-            input_image=advs[idx].reshape(MNIST_N_ROW, MNIST_N_COL, MNIST_N_CHANNEL),
-            n_rows=MNIST_N_ROW,
-            n_cols=MNIST_N_COL,
-            n_channels=MNIST_N_CHANNEL,
-            n_important_features=None,  # None: rank all features
-            algorithm=ranking_algorithm,
-            gradient_label=target_label,
-            classifier=dnn)
-        feature_ranking.append(ranking)
+        print(f"[{idx + 1}/{len(advs)}] Ranking the features")
+        ranking = None
+        if ranking_algorithm == RANKING_ALGORITHM.COI or ranking_algorithm == RANKING_ALGORITHM.CO or ranking_algorithm == RANKING_ALGORITHM.ABS:
+            ranking = feature_ranker().find_important_features_of_a_sample(
+                input_image=advs[idx].reshape(MNIST_N_ROW, MNIST_N_COL, MNIST_N_CHANNEL),
+                n_rows=MNIST_N_ROW,
+                n_cols=MNIST_N_COL,
+                n_channels=MNIST_N_CHANNEL,
+                n_important_features=None,  # None: rank all features
+                algorithm=ranking_algorithm,
+                gradient_label=target_label,
+                classifier=dnn)
 
+        elif ranking_algorithm == RANKING_ALGORITHM.JSMA:
+            diff_pixel_arr, diff_value_arr = feature_ranker().jsma_ranking_original(advs[idx], oris[idx], None,
+                                                                                    target_label, dnn,
+                                                                                    diff_pixels=np.arange(0,
+                                                                                                          MNIST_N_FEATURES),
+                                                                                    num_expected_features=None,
+                                                                                    num_classes=MNIST_N_CLASSES)
+            ranking = diff_pixel_arr[::-1]
+
+        elif ranking_algorithm == RANKING_ALGORITHM.JSMA_KA:
+            diff_pixel_arr, diff_value_arr = feature_ranker().jsma_ranking_borderV2(advs[idx], oris[idx], None,
+                                                                                    target_label, dnn,
+                                                                                    diff_pixels=np.arange(0,
+                                                                                                          MNIST_N_FEATURES),
+                                                                                    num_expected_features=None,
+                                                                                    num_classes=MNIST_N_CLASSES)
+            ranking = diff_pixel_arr[::-1]  # the first element is the most important element
+
+
+        elif ranking_algorithm == RANKING_ALGORITHM.RANDOM:
+            ranking = feature_ranker().random_ranking(diff_pixels=np.arange(0, MNIST_N_FEATURES))
+
+        elif ranking_algorithm == RANKING_ALGORITHM.SEQUENTIAL:
+            ranking = feature_ranker().sequence_ranking(diff_pixels=np.arange(0, MNIST_N_FEATURES))
+
+        if ranking is not None:
+            feature_ranking.append(ranking)
     return np.asarray(feature_ranking)
 
 
@@ -311,8 +345,6 @@ if __name__ == '__main__':
     EPSILON_ALL = ["0,0", "0,1", "0,2", "0,3", "0,4", "0,5", "0,6", "0,7", "0,8", "0,9", "1,0"]
     # EPSILON_ALL = ["0,1"]
 
-    steps = [6]
-    strategies = ['S3']
     all_oris = None
     all_advs = None
     all_adv_idxes = None
@@ -320,45 +352,43 @@ if __name__ == '__main__':
     """
     GENERATE ADVERSARIES
     """
-    for (STEP, RANKING_STRATEGY) in zip(steps, strategies):
-        # Generate adv
-        for epsilon in EPSILON_ALL:
-            print(f"Epsilon {epsilon}")
-            AE_MODEL_H5 = f"../../result/ae-attack-border/{MODEL}/saliency/autoencoder_models/ae_slience_map_{MODEL}_{ORI_LABEL}_{TARGET_LABEL}weight={epsilon}_1000autoencoder.h5"
-            if not os.path.exists(AE_MODEL_H5):
-                continue
+    for epsilon in EPSILON_ALL:
+        print(f"Epsilon {epsilon}")
+        AE_MODEL_H5 = f"../../result/ae-attack-border/{MODEL}/saliency/autoencoder_models/ae_slience_map_{MODEL}_{ORI_LABEL}_{TARGET_LABEL}weight={epsilon}_1000autoencoder.h5"
+        if not os.path.exists(AE_MODEL_H5):
+            continue
 
-            X_attack, selected_seeds = get_X_attack(X_train, y_train, WRONG_SEEDS, ORI_LABEL,
-                                                    N_ATTACKING_SAMPLES=1000)
+        X_attack, selected_seeds = get_X_attack(X_train, y_train, WRONG_SEEDS, ORI_LABEL,
+                                                N_ATTACKING_SAMPLES=1000)
 
-            if IS_SALIENCY_ATTACK:
-                ae = keras.models.load_model(filepath=AE_MODEL_H5, compile=False,
-                                             custom_objects={'concate_start_to_end': concate_start_to_end})
-                n_adv, advs, oris, adv_idxes = generate_adv_for_single_attack_SALIENCE(X_attack, selected_seeds,
-                                                                                       TARGET_LABEL, ae, dnn)
-            else:
-                ae = keras.models.load_model(filepath=AE_MODEL_H5, compile=False)
-                print("generate_adv_for_single_attack_ALL_FEATURE")
-                n_adv, advs, oris, adv_idxes = generate_adv_for_single_attack_ALL_FEATURE(X_attack,
-                                                                                          selected_seeds,
-                                                                                          TARGET_LABEL, ae, dnn)
-            for idx in range(0, len(advs)):
-                epsilons.append(epsilon)
+        if IS_SALIENCY_ATTACK:
+            ae = keras.models.load_model(filepath=AE_MODEL_H5, compile=False,
+                                         custom_objects={'concate_start_to_end': concate_start_to_end})
+            n_adv, advs, oris, adv_idxes = generate_adv_for_single_attack_SALIENCE(X_attack, selected_seeds,
+                                                                                   TARGET_LABEL, ae, dnn)
+        else:
+            ae = keras.models.load_model(filepath=AE_MODEL_H5, compile=False)
+            print("generate_adv_for_single_attack_ALL_FEATURE")
+            n_adv, advs, oris, adv_idxes = generate_adv_for_single_attack_ALL_FEATURE(X_attack,
+                                                                                      selected_seeds,
+                                                                                      TARGET_LABEL, ae, dnn)
+        for idx in range(0, len(advs)):
+            epsilons.append(epsilon)
 
-            if all_oris is None:
-                all_oris = oris
-            else:
-                all_oris = np.concatenate((all_oris, oris))
+        if all_oris is None:
+            all_oris = oris
+        else:
+            all_oris = np.concatenate((all_oris, oris))
 
-            if all_advs is None:
-                all_advs = advs
-            else:
-                all_advs = np.concatenate((all_advs, advs))
+        if all_advs is None:
+            all_advs = advs
+        else:
+            all_advs = np.concatenate((all_advs, advs))
 
-            if all_adv_idxes is None:
-                all_adv_idxes = adv_idxes
-            else:
-                all_adv_idxes = np.concatenate((all_adv_idxes, adv_idxes))
+        if all_adv_idxes is None:
+            all_adv_idxes = adv_idxes
+        else:
+            all_adv_idxes = np.concatenate((all_adv_idxes, adv_idxes))
 
     """
     OPTIMIZE
@@ -368,8 +398,8 @@ if __name__ == '__main__':
     print(f"oris shape = {oris.shape}")
     advs = all_advs.reshape(-1, MNIST_N_FEATURES)
     adv_idxes = all_adv_idxes.reshape(-1)
-    ranking_algorithm = RANKING_ALGORITHM.COI
-    output_folder = "/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch"
+    ranking_algorithm = RANKING_ALGORITHM.JSMA
+    output_folder = f"/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch/ae_slience_map_{MODEL}_{ORI_LABEL}_{TARGET_LABEL}_JSMA"
     initialize_out_folder(output_folder)
-    adaptive_optimize(oris[:None], advs[:None], adv_idxes[:None], ranking_algorithm, step, TARGET_LABEL, dnn,
+    adaptive_optimize(oris[:500], advs[:500], adv_idxes[:500], ranking_algorithm, step, TARGET_LABEL, dnn,
                       output_folder, epsilons)

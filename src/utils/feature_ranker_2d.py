@@ -11,12 +11,16 @@ logger = logging.getLogger()
 from src.utils.mylogger import MyLogger
 
 logger = MyLogger.getLog()
-
+import random
 
 class RANKING_ALGORITHM(enum.Enum):
     ABS = 1
     COI = 2
     CO = 3
+    JSMA = 4
+    JSMA_KA = 5
+    RANDOM = 6
+    SEQUENTIAL = 7
 
 
 class feature_ranker:
@@ -165,6 +169,111 @@ class feature_ranker:
         plt.title("Most important features are highlighted")
         plt.show()
 
+    @staticmethod # https://github.com/testingforAI-vnuuet/AdvGeneration/blob/ae4dnn-nPix-attack_1/src/utility/feature_ranker.py
+    def jsma_ranking_borderV2(generated_adv, origin_image, border_index, target_label, classifier, diff_pixels,
+                              num_expected_features=1,
+                              num_classes=10):
+        # compute gradient respect to generated_adv for each label
+        dF_t = None  # gradient for target_label
+        dF_rest = []  # array of gradient for the rest
+        for i in range(num_classes):
+            dF_i = feature_ranker.compute_gradient_wrt_features(
+                input=tf.convert_to_tensor([generated_adv.reshape(28, 28, 1)]),
+                target_neuron=i, classifier=classifier)
+            if i != target_label:
+                dF_rest.append(dF_i)
+            else:
+                dF_t = dF_i
+
+        ori_2_dimension = origin_image.reshape(28, 28)
+        adv_2_dimension = generated_adv.reshape(28, 28)
+        # compute the importance of each pixel
+        SX = np.zeros_like(origin_image.reshape(28, 28))
+        for index in range(np.prod(origin_image.shape)):
+            row, col = int(index // 28), int(index % 28)
+            dF_t_i = dF_t[row, col][0]
+            sum_dF_rest_i = sum([abs(dF_rest_i[row, col][0]) for dF_rest_i in dF_rest])
+
+            SX_i = 0
+            if adv_2_dimension[row, col] > ori_2_dimension[row, col]:
+
+                if dF_t_i < 0 or sum_dF_rest_i > 0:
+                    SX_i = -1 * 1.0 / (abs(dF_t_i * sum_dF_rest_i) + 0.1)
+                else:
+                    SX_i = dF_t_i * abs(sum_dF_rest_i)
+            else:
+                if dF_t_i > 0 or sum_dF_rest_i < 0:
+                    SX_i = -1 * 1.0 / (abs(dF_t_i * sum_dF_rest_i) + 0.1)
+                else:
+                    SX_i = abs(dF_t_i) * sum_dF_rest_i
+
+            SX[row, col] = SX_i
+            # print(f'dF_t_i={dF_t_i}')
+            # print(f'sum_dF_rest_i={sum_dF_rest_i}')
+
+        # get the rank of diff_pixels
+        SX_flat = SX.flatten()
+        a = SX_flat[diff_pixels]
+        a_argsort = np.argsort(a)
+        return np.array(diff_pixels)[a_argsort], a[a_argsort]
+
+    @staticmethod # https://github.com/testingforAI-vnuuet/AdvGeneration/blob/ae4dnn-nPix-attack_1/src/utility/feature_ranker.py
+    def jsma_ranking_original(generated_adv, origin_image, border_index, target_label, classifier, diff_pixels,
+                              num_expected_features=1,
+                              num_classes=10):
+        # compute gradient respect to generated_adv for each label
+        dF_t = None  # gradient for target_label
+        dF_rest = []  # array of gradient for the rest
+        for i in range(num_classes):
+            dF_i = feature_ranker.compute_gradient_wrt_features(
+                input=tf.convert_to_tensor([generated_adv.reshape(28, 28, 1)]),
+                target_neuron=i, classifier=classifier)
+            if i != target_label:
+                dF_rest.append(dF_i)
+            else:
+                dF_t = dF_i
+
+        ori_2_dimension = origin_image.reshape(28, 28)
+        adv_2_dimension = generated_adv.reshape(28, 28)
+        # compute the importance of each pixel
+        SX = np.zeros_like(origin_image.reshape(28, 28))
+        for index in range(np.prod(origin_image.shape)):
+            row, col = int(index // 28), int(index % 28)
+            dF_t_i = dF_t[row, col][0]
+            sum_dF_rest_i = sum([abs(dF_rest_i[row, col][0]) for dF_rest_i in dF_rest])
+
+            SX_i = 0
+            if adv_2_dimension[row, col] > ori_2_dimension[row, col]:
+
+                if dF_t_i < 0 or sum_dF_rest_i > 0:
+                    SX_i = 0
+                else:
+                    SX_i = dF_t_i * abs(sum_dF_rest_i)
+            else:
+                if dF_t_i > 0 or sum_dF_rest_i < 0:
+                    SX_i = 0
+                else:
+                    SX_i = abs(dF_t_i) * sum_dF_rest_i
+
+            SX[row, col] = SX_i
+            # print(f'dF_t_i={dF_t_i}')
+            # print(f'sum_dF_rest_i={sum_dF_rest_i}')
+
+        # get the rank of diff_pixels
+        SX_flat = SX.flatten()
+        a = SX_flat[diff_pixels]
+        a_argsort = np.argsort(a)
+        return np.array(diff_pixels)[a_argsort], a[a_argsort]
+
+    @staticmethod
+    def random_ranking(diff_pixels):
+        diff_pixel = np.asarray(diff_pixels)
+        random.shuffle(diff_pixels)
+        return diff_pixel
+
+    @staticmethod
+    def sequence_ranking(diff_pixels):
+        return diff_pixels
 
 if __name__ == '__main__':
     ATTACKED_MODEL_H5 = f"/Users/ducanhnguyen/Documents/mydeepconcolic/result/ae-attack-border/model/Alexnet.h5"
