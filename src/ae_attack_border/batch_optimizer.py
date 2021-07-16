@@ -16,7 +16,7 @@ MNIST_N_CHANNEL = 1
 MNIST_N_FEATURES = 784
 
 
-def adaptive_optimize(oris, advs, adv_idxes, ranking_algorithm, step, target_label, dnn, output_folder):
+def adaptive_optimize(oris, advs, adv_idxes, ranking_algorithm, step, target_label, dnn, output_folder, epsilons):
     """
     Optimize adversaries
     :param oris:  a set of original samples, shape = (-1, number of features) (0..1 values)
@@ -57,7 +57,7 @@ def adaptive_optimize(oris, advs, adv_idxes, ranking_algorithm, step, target_lab
     n_restored_pixels_final = np.transpose(n_restored_pixels_final)  # convert into shape (#samples, #predictions)
     export_restored_rate(n_restored_pixels_final, oris, advs, output_folder)
 
-    export_summary(oris, advs, adv_idxes, optimized_advs, target_label, dnn, output_folder)
+    export_summaryv2(oris, advs, adv_idxes, optimized_advs, target_label, dnn, output_folder, epsilons)
 
 
 def optimize(oris, advs, step, target_label, dnn, J):
@@ -74,10 +74,12 @@ def optimize(oris, advs, step, target_label, dnn, J):
 
     n_restored_pixels = []
     optimized_advs = np.copy(advs)
-    max_priority = np.max(J)
 
-    for idx in range(0, 10000000):
-        print(f"\nPerforming {idx}-th restoration for the batch")
+    max_priority = np.max(J)
+    num_iterations = np.math.ceil(max_priority / step)
+
+    for idx in range(0, num_iterations):
+        print(f"\n[{idx + 1}/{num_iterations}] Optimize the batch")
         clone = np.copy(optimized_advs)
 
         """
@@ -97,10 +99,10 @@ def optimize(oris, advs, step, target_label, dnn, J):
         labels = np.argmax(pred, axis=1)
 
         # Revert the restoration for the adv which has failed restoration
+        print(f"Reverting the restoration for the failed action")
         for jdx in range(0, len(labels)):
             if labels[jdx] != target_label:
                 # need to restore
-                print(f"The restoration fails. Reverting the restoration for {jdx}-th adversarial example")
                 for kdx in range(0, len(optimized_advs[jdx])):
                     optimized_advs[jdx][kdx] = clone[jdx][kdx]
         #
@@ -131,12 +133,30 @@ def create_J_instance(oris, start_priority, end_priority, max_priority, J):
     return ranking_matrix
 
 
-def export_summary(oris, advs, adv_idxes, optimized_advs, target_label, dnn, output_folder):
+def export_summaryv2(oris, advs, adv_idxes, optimized_advs, target_label, dnn, output_folder, epsilons):
+    L0_before = utilities.compute_l0s(advs, oris, n_features=MNIST_N_FEATURES)
+    L2_before = utilities.compute_l2s(advs, oris, n_features=MNIST_N_FEATURES)
+    L0_after = utilities.compute_l0s(optimized_advs, oris, n_features=MNIST_N_FEATURES)
+    L2_after = utilities.compute_l2s(optimized_advs, oris, n_features=MNIST_N_FEATURES)
+    with open(get_summary_file(output_folder), mode='a') as f:
+        seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+        n_adv = len(advs)
+        for idx in range(0, n_adv):
+            seed.writerow([epsilons[idx], adv_idxes[idx], ORI_LABEL, TARGET_LABEL, L0_before[idx],
+                           L0_after[idx],
+                           L2_before[idx],
+                           L2_after[idx]])
+        f.close()
+
+
+def export_summary(oris, advs, adv_idxes, optimized_advs, target_label, dnn, output_folder, epsilons):
     for idx in range(0, len(oris)):
         seed_idx = adv_idxes[idx]
         print(f"Exporting seed {seed_idx}")
         ori = oris[idx]
         adv = advs[idx]
+        epsilon = epsilons[idx]
         optimized_adv = optimized_advs[idx]
         L0_before = utilities.compute_l0(adv, ori)
         L2_before = utilities.compute_l2(adv, ori)
@@ -198,10 +218,12 @@ def create_matrix_J(oris, feature_ranking, I):
     J = np.zeros(oris.shape, dtype=int)
     for idx in range(0, len(feature_ranking)):
         item = feature_ranking[idx]
+        max_row = max(J[idx])
         for jdx in range(0, len(item)):
             pos = MNIST_N_COL * item[jdx][0] + item[jdx][1]  # for 2-D image
             if I[idx][pos] == 1:  # if this position is corresponding to an adversarial feature
-                J[idx][pos] = max(J[idx]) + 1  # assign an integer priority
+                J[idx][pos] = max_row + 1  # assign an integer priority
+                max_row += 1
     return J
 
 
@@ -230,7 +252,7 @@ def create_ranking_matrix(advs: np.ndarray, ranking_algorithm: RANKING_ALGORITHM
     """
     feature_ranking = []
     for idx in np.arange(0, len(advs)):
-        print(f"Ranking the features of the {idx}-th adversarial example")
+        print(f"[{idx+1}/{len(advs)}] Ranking the features")
         ranking = feature_ranker().find_important_features_of_a_sample(
             input_image=advs[idx].reshape(MNIST_N_ROW, MNIST_N_COL, MNIST_N_CHANNEL),
             n_rows=MNIST_N_ROW,
@@ -287,13 +309,14 @@ if __name__ == '__main__':
     ORI_LABEL = 9
     TARGET_LABEL = 7  # 2nd label ##########################################################
     EPSILON_ALL = ["0,1", "0,2", "0,3", "0,4", "0,5", "0,6", "0,7", "0,8", "0,9", "1,0"]
+    # EPSILON_ALL = ["0,1"]
 
     steps = [6]
     strategies = ['S3']
     all_oris = None
     all_advs = None
     all_adv_idxes = None
-
+    epsilons = []
     """
     GENERATE ADVERSARIES
     """
@@ -319,6 +342,9 @@ if __name__ == '__main__':
                 n_adv, advs, oris, adv_idxes = generate_adv_for_single_attack_ALL_FEATURE(X_attack,
                                                                                           selected_seeds,
                                                                                           TARGET_LABEL, ae, dnn)
+            for idx in range(0, len(advs)):
+                epsilons.append(epsilon)
+
             if all_oris is None:
                 all_oris = oris
             else:
@@ -345,4 +371,5 @@ if __name__ == '__main__':
     ranking_algorithm = RANKING_ALGORITHM.COI
     output_folder = "/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch"
     initialize_out_folder(output_folder)
-    adaptive_optimize(oris, advs, adv_idxes, ranking_algorithm, step, TARGET_LABEL, dnn, output_folder)
+    adaptive_optimize(oris[:None], advs[:None], adv_idxes[:None], ranking_algorithm, step, TARGET_LABEL, dnn,
+                      output_folder, epsilons)

@@ -15,6 +15,17 @@ global logger
 logger = logging.getLogger()
 
 
+def compute_l2s(advs: np.ndarray,
+                oris: np.ndarray,
+                n_features: int):
+    if not (np.min(advs) >= 0 and np.max(advs) <= 1):
+        advs = advs / 255
+    if not (np.min(oris) >= 0 and np.max(oris) <= 1):
+        oris = oris / 255
+    l2_dist = np.linalg.norm(advs.reshape(-1, n_features) - oris.reshape(-1, n_features), axis=1)
+    return l2_dist
+
+
 def compute_l2(adv: np.ndarray,
                ori: np.ndarray):
     if not (np.min(adv) >= 0 and np.max(adv) <= 1):
@@ -22,6 +33,19 @@ def compute_l2(adv: np.ndarray,
     if not (np.min(ori) >= 0 and np.max(ori) <= 1):
         ori = ori / 255
     return np.linalg.norm(adv.reshape(-1) - ori.reshape(-1))
+
+
+def compute_l0s(advs: np.ndarray,
+                oris: np.ndarray,
+                n_features: int,
+                normalized=False):
+    if not normalized:
+        advs = np.round(advs * 255)
+        oris = np.round(oris * 255)
+    advs = advs.reshape(-1, n_features)
+    oris = oris.reshape(-1, n_features)
+    l0_dist = np.sum(advs != oris, axis=1)
+    return l0_dist
 
 
 def compute_l0(adv: np.ndarray,
@@ -89,7 +113,6 @@ def show_four_images(x_28_28_first, x_28_28_second, x_28_28_third, x_28_28_fourt
         # plt.savefig(path, pad_inches=0, bbox_inches='tight', format='eps')
         plt.savefig(path, pad_inches=0, bbox_inches='tight', format='png')
 
-
     if display:
         plt.show()
 
@@ -110,7 +133,8 @@ def show_two_images(x_28_28_left, x_28_28_right, left_title="", right_title="", 
     if display:
         plt.show()
 
-def plot_line_chart(x, y, x_title = None, y_title = None, title = None):
+
+def plot_line_chart(x, y, x_title=None, y_title=None, title=None):
     import matplotlib.pyplot as plt
     plt.plot(x, y)
     if x_title is not None:
@@ -120,6 +144,7 @@ def plot_line_chart(x, y, x_title = None, y_title = None, title = None):
     if title is not None:
         plt.title(title)
     plt.show()
+
 
 def load_model(weight_path: str,
                structure_path: str,
@@ -207,6 +232,7 @@ def highlight_diff(img1_0_255, img2_0_255):
             highlight.append(0)
     highlight = np.asarray(highlight)
     return highlight.reshape(shape)
+
 
 if __name__ == '__main__':
     logger.debug("initialize_dnn_model")
