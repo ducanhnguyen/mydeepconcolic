@@ -149,46 +149,46 @@ def export_summaryv2(oris, advs, adv_idxes, optimized_advs, target_label, dnn, o
                            L2_after[idx]])
         f.close()
 
-
-def export_summary(oris, advs, adv_idxes, optimized_advs, target_label, dnn, output_folder, epsilons):
-    for idx in range(0, len(oris)):
-        seed_idx = adv_idxes[idx]
-        print(f"Exporting seed {seed_idx}")
-        ori = oris[idx]
-        adv = advs[idx]
-        epsilon = epsilons[idx]
-        optimized_adv = optimized_advs[idx]
-        L0_before = utilities.compute_l0(adv, ori)
-        L2_before = utilities.compute_l2(adv, ori)
-        L0_after = utilities.compute_l0(optimized_adv, ori)
-        L2_after = utilities.compute_l2(optimized_adv, ori)
-        highlight = utilities.highlight_diff(np.round(adv * 255), np.round(optimized_adv * 255))
-        img_path = f"{output_folder}/{seed_idx}.png"
-
-        pred = dnn.predict(optimized_advs.reshape(-1, 28, 28, 1))
-        label = np.argmax(pred, axis=1)[0]
-
-        if label == target_label:
-            # utilities.show_four_images(x_28_28_first=ori.reshape(28, 28),
-            #                            x_28_28_first_title=f"attacking sample",
-            #                            x_28_28_second=adv.reshape(28, 28),
-            #                            x_28_28_second_title=f"adv\ntarget = {target_label}\nL0(this, ori) = {L0_before}\nL2(this, ori) = {np.round(L2_before, 2)}",
-            #                            x_28_28_third=optimized_adv.reshape(28, 28),
-            #                            x_28_28_third_title=f"optimized adv\nL0(this, ori) = {L0_after}\nL2(this, ori) = {np.round(L2_after, 2)}\nuse step = {step}",
-            #                            x_28_28_fourth=highlight.reshape(28, 28),
-            #                            x_28_28_fourth_title="diff(adv, optimized adv)\nwhite means difference",
-            #                            display=False,
-            #                            path=img_path)
-
-            with open(get_summary_file(output_folder), mode='a') as f:
-                seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                seed.writerow([epsilon, seed_idx, ORI_LABEL, TARGET_LABEL, L0_before,
-                               L0_after,
-                               L2_before,
-                               L2_after])
-                f.close()
-        else:
-            print(f"Problem with seed {seed_idx} on the attacking set")
+#
+# def export_summary(oris, advs, adv_idxes, optimized_advs, target_label, dnn, output_folder, epsilons):
+#     for idx in range(0, len(oris)):
+#         seed_idx = adv_idxes[idx]
+#         print(f"Exporting seed {seed_idx}")
+#         ori = oris[idx]
+#         adv = advs[idx]
+#         epsilon = epsilons[idx]
+#         optimized_adv = optimized_advs[idx]
+#         L0_before = utilities.compute_l0(adv, ori)
+#         L2_before = utilities.compute_l2(adv, ori)
+#         L0_after = utilities.compute_l0(optimized_adv, ori)
+#         L2_after = utilities.compute_l2(optimized_adv, ori)
+#         highlight = utilities.highlight_diff(np.round(adv * 255), np.round(optimized_adv * 255))
+#         img_path = f"{output_folder}/{seed_idx}.png"
+#
+#         pred = dnn.predict(optimized_advs.reshape(-1, 28, 28, 1))
+#         label = np.argmax(pred, axis=1)[0]
+#
+#         if label == target_label:
+#             # utilities.show_four_images(x_28_28_first=ori.reshape(28, 28),
+#             #                            x_28_28_first_title=f"attacking sample",
+#             #                            x_28_28_second=adv.reshape(28, 28),
+#             #                            x_28_28_second_title=f"adv\ntarget = {target_label}\nL0(this, ori) = {L0_before}\nL2(this, ori) = {np.round(L2_before, 2)}",
+#             #                            x_28_28_third=optimized_adv.reshape(28, 28),
+#             #                            x_28_28_third_title=f"optimized adv\nL0(this, ori) = {L0_after}\nL2(this, ori) = {np.round(L2_after, 2)}\nuse step = {step}",
+#             #                            x_28_28_fourth=highlight.reshape(28, 28),
+#             #                            x_28_28_fourth_title="diff(adv, optimized adv)\nwhite means difference",
+#             #                            display=False,
+#             #                            path=img_path)
+#
+#             with open(get_summary_file(output_folder), mode='a') as f:
+#                 seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+#                 seed.writerow([epsilon, seed_idx, ORI_LABEL, TARGET_LABEL, L0_before,
+#                                L0_after,
+#                                L2_before,
+#                                L2_after])
+#                 f.close()
+#         else:
+#             print(f"Problem with seed {seed_idx} on the attacking set")
 
 
 def export_restored_rate(n_restored_pixels_final, oris, advs, output_folder):
@@ -308,7 +308,7 @@ if __name__ == '__main__':
 
     ORI_LABEL = 9
     TARGET_LABEL = 7  # 2nd label ##########################################################
-    EPSILON_ALL = ["0,1", "0,2", "0,3", "0,4", "0,5", "0,6", "0,7", "0,8", "0,9", "1,0"]
+    EPSILON_ALL = ["0,0", "0,1", "0,2", "0,3", "0,4", "0,5", "0,6", "0,7", "0,8", "0,9", "1,0"]
     # EPSILON_ALL = ["0,1"]
 
     steps = [6]
