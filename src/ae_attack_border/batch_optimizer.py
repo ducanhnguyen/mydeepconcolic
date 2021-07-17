@@ -109,7 +109,7 @@ def optimize(oris, advs, step, target_label, dnn, J):
                     optimized_advs[jdx][kdx] = clone[jdx][kdx]
         #
         n_diff_features_after = np.sum(np.round(oris * 255) != np.round(optimized_advs * 255), axis=1)
-        n_restored_pixels.append(n_diff_features_before - n_diff_features_after + 1)
+        n_restored_pixels.append(n_diff_features_before - n_diff_features_after)
 
     # pred = dnn.predict(optimized_advs.reshape(-1, 28, 28, 1))
     # labels = np.argmax(pred, axis=1)
@@ -332,7 +332,7 @@ if __name__ == '__main__':
     MODEL = 'Alexnet'
     ATTACKED_MODEL_H5 = f"../../result/ae-attack-border/model/{MODEL}.h5"
     WRONG_SEEDS = wrongseeds_AlexNet
-    IS_SALIENCY_ATTACK = True
+    IS_SALIENCY_ATTACK = False
     N_ATTACKING_SAMPLES = 1000
     N_CLASSES = 10
 
@@ -355,7 +355,8 @@ if __name__ == '__main__':
     """
     for epsilon in EPSILON_ALL:
         print(f"Epsilon {epsilon}")
-        AE_MODEL_H5 = f"../../result/ae-attack-border/{MODEL}/saliency/autoencoder_models/ae_slience_map_{MODEL}_{ORI_LABEL}_{TARGET_LABEL}weight={epsilon}_1000autoencoder.h5"
+        # AE_MODEL_H5 = f"../../result/ae-attack-border/{MODEL}/saliency/autoencoder_models/ae_slience_map_{MODEL}_{ORI_LABEL}_{TARGET_LABEL}weight={epsilon}_1000autoencoder.h5"
+        AE_MODEL_H5 = f"../../result/ae-attack-border/{MODEL}/allfeature/autoencoder_models/ae4dnn_{MODEL}_{ORI_LABEL}_{TARGET_LABEL}weight={epsilon}_1000autoencoder.h5"
         if not os.path.exists(AE_MODEL_H5):
             continue
 
@@ -399,9 +400,11 @@ if __name__ == '__main__':
     advs = all_advs.reshape(-1, MNIST_N_FEATURES)
     adv_idxes = all_adv_idxes.reshape(-1)
 
-    ranking_algorithms = [RANKING_ALGORITHM.JSMA_KA, RANKING_ALGORITHM.JSMA, RANKING_ALGORITHM.COI,
+    # ranking_algorithms = [RANKING_ALGORITHM.JSMA_KA, RANKING_ALGORITHM.JSMA, RANKING_ALGORITHM.COI,
+    #                       RANKING_ALGORITHM.RANDOM, RANKING_ALGORITHM.SEQUENTIAL]
+    ranking_algorithms = [RANKING_ALGORITHM.COI,
                           RANKING_ALGORITHM.RANDOM, RANKING_ALGORITHM.SEQUENTIAL]
-    size = None
+    size = 10
     for ranking_algorithm in ranking_algorithms:
 
         name = None
@@ -419,7 +422,7 @@ if __name__ == '__main__':
         steps = [1, 6, 12, 24, 30, 60]
         feature_ranking = create_ranking_matrix(advs[:size], oris[:size], dnn, ranking_algorithm, TARGET_LABEL)
         for step in steps:
-            output_folder = f"/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch/ae_slience_map_{MODEL}_{ORI_LABEL}to{TARGET_LABEL}_ranking{name}_step{step}"
+            output_folder = f"/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch/ae_allfeature_{MODEL}_{ORI_LABEL}to{TARGET_LABEL}_ranking{name}_step{step}"
             initialize_out_folder(output_folder)
             adaptive_optimize(oris[:size], advs[:size], adv_idxes[:size], ranking_algorithm, step, TARGET_LABEL, dnn,
                               output_folder, epsilons)
