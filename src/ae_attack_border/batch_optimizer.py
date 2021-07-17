@@ -17,11 +17,12 @@ MNIST_N_CLASSES = 10
 MNIST_N_FEATURES = 784
 
 
-def adaptive_optimize(oris, advs, adv_idxes, ranking_algorithm, step, target_label, dnn, output_folder, epsilons):
+def adaptive_optimize(oris_0_1, advs_0_1, adv_idxes, ranking_algorithm, step, target_label, dnn, output_folder,
+                      epsilons):
     """
     Optimize adversaries
-    :param oris:  a set of original samples, shape = (-1, number of features) (0..1 values)
-    :param advs: a set of adversarial samples corresponding to the original samples, shape = (-1, number of features)  (0..1 values)
+    :param oris_0_1:  a set of original samples, shape = (-1, number of features) (0..1 values)
+    :param advs_0_1: a set of adversarial samples corresponding to the original samples, shape = (-1, number of features)  (0..1 values)
     :param adv_idxes: index of origial samples corresponding to adversarial examples on the attacking set (could be None)
     :param ranking_algorithm:
     :param step: > 0
@@ -31,21 +32,23 @@ def adaptive_optimize(oris, advs, adv_idxes, ranking_algorithm, step, target_lab
     :return: a set of optimized adversaries
     """
     n_restored_pixels_final = []
-    optimized_advs = np.copy(advs)
+    oris_0_255 = np.round(oris_0_1 * 255).astype(int)
+    advs_0_255 = np.round(advs_0_1 * 255).astype(int)
 
-    #feature_ranking = create_ranking_matrix(advs, oris, dnn, ranking_algorithm, target_label)
+    optimized_advs_0_255 = np.copy(advs_0_255)
+    # feature_ranking = create_ranking_matrix(advs, oris, dnn, ranking_algorithm, target_label)
     while step > 0:
         print("--------------------------------------------")
         print(f"Step = {step}")
 
         print("create_different_matrix")
-        I = create_different_matrix(oris, optimized_advs)
+        I = create_different_matrix(oris_0_255, optimized_advs_0_255)
 
         print("create_matrix_J")
-        J = create_matrix_J(oris, feature_ranking, I)
+        J = create_matrix_J(oris_0_255, feature_ranking, I)
 
         print("optimize")
-        optimized_advs, n_restored_pixels = optimize(oris, optimized_advs, step, target_label, dnn, J)
+        optimized_advs_0_255, n_restored_pixels = optimize(oris_0_255, optimized_advs_0_255, step, target_label, dnn, J)
         step = int(np.round(step / 2))
 
         # update the restored rate
@@ -57,47 +60,48 @@ def adaptive_optimize(oris, advs, adv_idxes, ranking_algorithm, step, target_lab
             n_restored_pixels_final.append(latest + item)
 
     n_restored_pixels_final = np.transpose(n_restored_pixels_final)  # convert into shape (#samples, #predictions)
-    export_restored_rate(n_restored_pixels_final, oris, advs, output_folder)
+    export_restored_rate(n_restored_pixels_final, oris_0_255, advs_0_255, output_folder)
 
-    export_summaryv2(oris, advs, adv_idxes, optimized_advs, target_label, dnn, output_folder, epsilons)
+    export_summaryv2(oris_0_255, advs_0_255, adv_idxes, optimized_advs_0_255, target_label, dnn, output_folder,
+                     epsilons)
 
 
-def optimize(oris, advs, step, target_label, dnn, J):
+def optimize(oris_0_255, advs_0_255, step, target_label, dnn, J):
     """
     Optimize a set of adversaries concurrently, from the first adversarial feature to the last one
-    :param oris:  a set of original samples, shape = (-1, number of features)
-    :param advs: a set of adversarial samples corresponding to the original samples, shape = (-1, number of features)
+    :param oris_0_255:  a set of original samples, shape = (-1, number of features)
+    :param advs_0_255: a set of adversarial samples corresponding to the original samples, shape = (-1, number of features)
     :param step:
     :param target_label:
     :param dnn:
     :return:
     """
-    n_diff_features_before = np.sum(np.round(oris * 255) != np.round(advs * 255), axis=1)
+    n_diff_features_before = np.sum(oris_0_255 != advs_0_255, axis=1)
 
     n_restored_pixels = []
-    optimized_advs = np.copy(advs)
+    optimized_advs_0_255 = np.copy(advs_0_255)
 
     max_priority = np.max(J)
     num_iterations = np.math.ceil(max_priority / step)
 
     for idx in range(0, num_iterations):
         print(f"\n[{idx + 1}/{num_iterations}] Optimize the batch")
-        clone = np.copy(optimized_advs)
+        clone = np.copy(optimized_advs_0_255)
 
         """
         Find out matrix of adversarial features
         """
         start_priority = step * idx + 1  # must start from 1 (1 is the highest priority)
         end_priority = start_priority + step
-        ranking_matrix = create_J_instance(oris, start_priority, end_priority, max_priority, J)
+        ranking_matrix = create_J_instance(oris_0_255.shape, start_priority, end_priority, max_priority, J)
         if ranking_matrix is None:
             break
 
         """
         generate optimized adv
         """
-        optimized_advs = optimized_advs - optimized_advs * ranking_matrix + oris * ranking_matrix
-        pred = dnn.predict(optimized_advs.reshape(-1, MNIST_N_ROW, MNIST_N_COL, MNIST_N_CHANNEL))
+        optimized_advs_0_255 = optimized_advs_0_255 - optimized_advs_0_255 * ranking_matrix + oris_0_255 * ranking_matrix
+        pred = dnn.predict((optimized_advs_0_255 / 255).reshape(-1, MNIST_N_ROW, MNIST_N_COL, MNIST_N_CHANNEL))
         labels = np.argmax(pred, axis=1)
 
         # Revert the restoration for the adv which has failed restoration
@@ -105,28 +109,23 @@ def optimize(oris, advs, step, target_label, dnn, J):
         for jdx in range(0, len(labels)):
             if labels[jdx] != target_label:
                 # need to restore
-                for kdx in range(0, len(optimized_advs[jdx])):
-                    optimized_advs[jdx][kdx] = clone[jdx][kdx]
+                for kdx in range(0, len(optimized_advs_0_255[jdx])):
+                    optimized_advs_0_255[jdx][kdx] = clone[jdx][kdx]
         #
-        n_diff_features_after = np.sum(np.round(oris * 255) != np.round(optimized_advs * 255), axis=1)
+        n_diff_features_after = np.sum(oris_0_255 != optimized_advs_0_255, axis=1)
         n_restored_pixels.append(n_diff_features_before - n_diff_features_after)
 
-    # pred = dnn.predict(optimized_advs.reshape(-1, 28, 28, 1))
-    # labels = np.argmax(pred, axis=1)
-    # for item in labels:
-    #     if item != target_label:
-    #         print("Fail")
-    return optimized_advs, np.asarray(n_restored_pixels)
+    return optimized_advs_0_255, np.asarray(n_restored_pixels)
 
 
-def create_J_instance(oris, start_priority, end_priority, max_priority, J):
+def create_J_instance(shape, start_priority, end_priority, max_priority, J):
     if start_priority > max_priority:  # when iterating over all adversarial features
         return None
 
     if end_priority > max_priority:
         end_priority = max_priority
 
-    ranking_matrix = np.zeros(oris.shape, dtype=int)
+    ranking_matrix = np.zeros(shape, dtype=int)
     for jdx in range(0, len(J)):
         for kdx in range(0, len(J[jdx])):
             if start_priority <= J[jdx][kdx] <= end_priority:
@@ -135,15 +134,15 @@ def create_J_instance(oris, start_priority, end_priority, max_priority, J):
     return ranking_matrix
 
 
-def export_summaryv2(oris, advs, adv_idxes, optimized_advs, target_label, dnn, output_folder, epsilons):
-    L0_before = utilities.compute_l0s(advs, oris, n_features=MNIST_N_FEATURES)
-    L2_before = utilities.compute_l2s(advs, oris, n_features=MNIST_N_FEATURES)
-    L0_after = utilities.compute_l0s(optimized_advs, oris, n_features=MNIST_N_FEATURES)
-    L2_after = utilities.compute_l2s(optimized_advs, oris, n_features=MNIST_N_FEATURES)
+def export_summaryv2(oris_0_255, advs_0_255, adv_idxes, optimized_advs, target_label, dnn, output_folder, epsilons):
+    L0_before = utilities.compute_l0s(advs_0_255, oris_0_255, n_features=MNIST_N_FEATURES, normalized=True)
+    L2_before = utilities.compute_l2s(advs_0_255, oris_0_255, n_features=MNIST_N_FEATURES)
+    L0_after = utilities.compute_l0s(optimized_advs, oris_0_255, n_features=MNIST_N_FEATURES, normalized=True)
+    L2_after = utilities.compute_l2s(optimized_advs, oris_0_255, n_features=MNIST_N_FEATURES)
     with open(get_summary_file(output_folder), mode='a') as f:
         seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
-        n_adv = len(advs)
+        n_adv = len(advs_0_255)
         for idx in range(0, n_adv):
             seed.writerow([epsilons[idx], adv_idxes[idx], ORI_LABEL, TARGET_LABEL, L0_before[idx],
                            L0_after[idx],
@@ -152,55 +151,13 @@ def export_summaryv2(oris, advs, adv_idxes, optimized_advs, target_label, dnn, o
         f.close()
 
 
-#
-# def export_summary(oris, advs, adv_idxes, optimized_advs, target_label, dnn, output_folder, epsilons):
-#     for idx in range(0, len(oris)):
-#         seed_idx = adv_idxes[idx]
-#         print(f"Exporting seed {seed_idx}")
-#         ori = oris[idx]
-#         adv = advs[idx]
-#         epsilon = epsilons[idx]
-#         optimized_adv = optimized_advs[idx]
-#         L0_before = utilities.compute_l0(adv, ori)
-#         L2_before = utilities.compute_l2(adv, ori)
-#         L0_after = utilities.compute_l0(optimized_adv, ori)
-#         L2_after = utilities.compute_l2(optimized_adv, ori)
-#         highlight = utilities.highlight_diff(np.round(adv * 255), np.round(optimized_adv * 255))
-#         img_path = f"{output_folder}/{seed_idx}.png"
-#
-#         pred = dnn.predict(optimized_advs.reshape(-1, 28, 28, 1))
-#         label = np.argmax(pred, axis=1)[0]
-#
-#         if label == target_label:
-#             # utilities.show_four_images(x_28_28_first=ori.reshape(28, 28),
-#             #                            x_28_28_first_title=f"attacking sample",
-#             #                            x_28_28_second=adv.reshape(28, 28),
-#             #                            x_28_28_second_title=f"adv\ntarget = {target_label}\nL0(this, ori) = {L0_before}\nL2(this, ori) = {np.round(L2_before, 2)}",
-#             #                            x_28_28_third=optimized_adv.reshape(28, 28),
-#             #                            x_28_28_third_title=f"optimized adv\nL0(this, ori) = {L0_after}\nL2(this, ori) = {np.round(L2_after, 2)}\nuse step = {step}",
-#             #                            x_28_28_fourth=highlight.reshape(28, 28),
-#             #                            x_28_28_fourth_title="diff(adv, optimized adv)\nwhite means difference",
-#             #                            display=False,
-#             #                            path=img_path)
-#
-#             with open(get_summary_file(output_folder), mode='a') as f:
-#                 seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-#                 seed.writerow([epsilon, seed_idx, ORI_LABEL, TARGET_LABEL, L0_before,
-#                                L0_after,
-#                                L2_before,
-#                                L2_after])
-#                 f.close()
-#         else:
-#             print(f"Problem with seed {seed_idx} on the attacking set")
-
-
-def export_restored_rate(n_restored_pixels_final, oris, advs, output_folder):
-    restored_rate = np.zeros(shape=(len(oris), MNIST_N_FEATURES))
-    n_samples = len(oris)
+def export_restored_rate(n_restored_pixels_final, oris_0_255, advs_0_255, output_folder):
+    restored_rate = np.zeros(shape=(len(oris_0_255), MNIST_N_FEATURES))
+    n_samples = len(oris_0_255)
     for idx in range(0, n_samples):
-        ori = oris[idx]
-        adv = advs[idx]
-        L0_before = utilities.compute_l0(adv, ori)
+        ori_0_255 = oris_0_255[idx]
+        adv_0_255 = advs_0_255[idx]
+        L0_before = utilities.compute_l0(adv_0_255, ori_0_255, normalized = True)
 
         for jdx in range(0, MNIST_N_FEATURES):
             if jdx < len(n_restored_pixels_final[idx]):
@@ -233,17 +190,17 @@ def create_matrix_J(oris, feature_ranking, I):
     return J
 
 
-def create_different_matrix(oris, advs):
+def create_different_matrix(oris_0_255, advs_0_255):
     """
     Create (0,1)-matrix
-    :param oris:  a set of original samples, shape = (-1, number of features)
-    :param advs: a set of adversarial samples corresponding to the original samples, shape = (-1, number of features)
+    :param oris_0_255:  a set of original samples, shape = (-1, number of features)
+    :param advs_0_255: a set of adversarial samples corresponding to the original samples, shape = (-1, number of features)
     :return:
     """
-    I = np.zeros(oris.shape, dtype=int)
+    I = np.zeros(oris_0_255.shape, dtype=int)
     for idx in range(0, len(I)):
         for jdx in range(0, len(I[idx])):
-            if oris[idx][jdx] != advs[idx][jdx]:
+            if oris_0_255[idx][jdx] != advs_0_255[idx][jdx]:
                 I[idx][jdx] = 1
     return I
 
@@ -332,7 +289,7 @@ if __name__ == '__main__':
     MODEL = 'Alexnet'
     ATTACKED_MODEL_H5 = f"../../result/ae-attack-border/model/{MODEL}.h5"
     WRONG_SEEDS = wrongseeds_AlexNet
-    IS_SALIENCY_ATTACK = False
+    IS_SALIENCY_ATTACK = True
     N_ATTACKING_SAMPLES = 1000
     N_CLASSES = 10
 
@@ -355,8 +312,8 @@ if __name__ == '__main__':
     """
     for epsilon in EPSILON_ALL:
         print(f"Epsilon {epsilon}")
-        # AE_MODEL_H5 = f"../../result/ae-attack-border/{MODEL}/saliency/autoencoder_models/ae_slience_map_{MODEL}_{ORI_LABEL}_{TARGET_LABEL}weight={epsilon}_1000autoencoder.h5"
-        AE_MODEL_H5 = f"../../result/ae-attack-border/{MODEL}/allfeature/autoencoder_models/ae4dnn_{MODEL}_{ORI_LABEL}_{TARGET_LABEL}weight={epsilon}_1000autoencoder.h5"
+        AE_MODEL_H5 = f"../../result/ae-attack-border/{MODEL}/saliency/autoencoder_models/ae_slience_map_{MODEL}_{ORI_LABEL}_{TARGET_LABEL}weight={epsilon}_1000autoencoder.h5"
+        # AE_MODEL_H5 = f"../../result/ae-attack-border/{MODEL}/allfeature/autoencoder_models/ae4dnn_{MODEL}_{ORI_LABEL}_{TARGET_LABEL}weight={epsilon}_1000autoencoder.h5"
         if not os.path.exists(AE_MODEL_H5):
             continue
 
@@ -396,15 +353,17 @@ if __name__ == '__main__':
     OPTIMIZE
     """
     oris = all_oris.reshape(-1, MNIST_N_FEATURES)
+    oris = np.round(oris * 255) / 255
     print(f"oris shape = {oris.shape}")
+
     advs = all_advs.reshape(-1, MNIST_N_FEATURES)
+    advs = np.round(advs * 255) / 255
     adv_idxes = all_adv_idxes.reshape(-1)
 
-    # ranking_algorithms = [RANKING_ALGORITHM.JSMA_KA, RANKING_ALGORITHM.JSMA, RANKING_ALGORITHM.COI,
-    #                       RANKING_ALGORITHM.RANDOM, RANKING_ALGORITHM.SEQUENTIAL]
-    ranking_algorithms = [RANKING_ALGORITHM.COI,
+    ranking_algorithms = [RANKING_ALGORITHM.JSMA_KA, RANKING_ALGORITHM.JSMA, RANKING_ALGORITHM.COI,
                           RANKING_ALGORITHM.RANDOM, RANKING_ALGORITHM.SEQUENTIAL]
-    size = 10
+    # ranking_algorithms = [RANKING_ALGORITHM.COI]
+    size = 500
     for ranking_algorithm in ranking_algorithms:
 
         name = None
@@ -419,10 +378,10 @@ if __name__ == '__main__':
         elif ranking_algorithm == RANKING_ALGORITHM.SEQUENTIAL:
             name = "SEQUENTIAL"
 
-        steps = [1, 6, 12, 24, 30, 60]
+        steps = [6]
         feature_ranking = create_ranking_matrix(advs[:size], oris[:size], dnn, ranking_algorithm, TARGET_LABEL)
         for step in steps:
-            output_folder = f"/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch/ae_allfeature_{MODEL}_{ORI_LABEL}to{TARGET_LABEL}_ranking{name}_step{step}"
+            output_folder = f"/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch/ae_saliency_{MODEL}_{ORI_LABEL}to{TARGET_LABEL}_ranking{name}_step{step}"
             initialize_out_folder(output_folder)
             adaptive_optimize(oris[:size], advs[:size], adv_idxes[:size], ranking_algorithm, step, TARGET_LABEL, dnn,
                               output_folder, epsilons)
