@@ -16,6 +16,19 @@ MNIST_N_CHANNEL = 1
 MNIST_N_CLASSES = 10
 MNIST_N_FEATURES = 784
 
+def get_name_of_ranking(ranking_algorithm):
+    name = None
+    if ranking_algorithm == RANKING_ALGORITHM.JSMA_KA:
+        name = "JSMA-KA"
+    elif ranking_algorithm == RANKING_ALGORITHM.JSMA:
+        name = "JSMA"
+    elif ranking_algorithm == RANKING_ALGORITHM.COI:
+        name = "COI"
+    elif ranking_algorithm == RANKING_ALGORITHM.RANDOM:
+        name = "RANDOM"
+    elif ranking_algorithm == RANKING_ALGORITHM.SEQUENTIAL:
+        name = "SEQUENTIAL"
+    return name
 
 def adaptive_optimize(oris_0_1, advs_0_1, adv_idxes, feature_ranking, step, target_label, dnn, output_folder,
                       epsilons, ori_label):
@@ -155,7 +168,17 @@ def export_summaryv2(oris_0_255, advs_0_255, adv_idxes, optimized_advs, target_l
         np.save(f"{output_folder}/adv.npy", advs_0_255)
         np.save(f"{output_folder}/origin.npy", oris_0_255)
         for idx in range(0, n_adv):
-            seed.writerow([epsilons[idx], adv_idxes[idx], ori_label, target_label, L0_before[idx],
+            if adv_idxes is None:
+                adv_index = ''
+            else:
+                adv_index = adv_idxes[idx]
+
+            if epsilons is None:
+                epsilon = ''
+            else:
+                epsilon = epsilons[idx]
+
+            seed.writerow([epsilon, adv_index, ori_label, target_label, L0_before[idx],
                            L0_after[idx],
                            L2_before[idx],
                            L2_after[idx]])
@@ -169,6 +192,9 @@ def export_restored_rate(n_restored_pixels_final, oris_0_255, advs_0_255, output
         ori_0_255 = oris_0_255[idx]
         adv_0_255 = advs_0_255[idx]
         L0_before = utilities.compute_l0(adv_0_255, ori_0_255, normalized=True)
+
+        if L0_before == 0:
+            continue
 
         for jdx in range(0, MNIST_N_FEATURES):
             if jdx < len(n_restored_pixels_final[idx]):

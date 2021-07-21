@@ -313,37 +313,17 @@ def highlight_diff(img1_0_255, img2_0_255):
 
 
 if __name__ == '__main__':
-    # logger.debug("initialize_dnn_model")
-    # model = keras.models.load_model(
-    #     filepath="/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/rivf/autoencoder_mnist.h5",
-    #     compile=False)
-    # model.summary()
-    #
-    # mnist_loader = mnist_dataset()
-    # Xtrain, ytrain, Xtest, ytest = mnist_loader.read_data(
-    #     trainset_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/digit-recognizer/train.csv',
-    #     testset_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/digit-recognizer/test.csv')
-    # x_image_4D = Xtrain[1].reshape(-1, 28, 28, 1)
-    #
-    # visualize_cnn(x_image_4D=x_image_4D, model=model, specified_layer=None)
+    logger.debug("initialize_dnn_model")
+    model = keras.models.load_model(
+        filepath="/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/rivf/autoencoder_mnist.h5",
+        compile=False)
+    model.summary()
 
-    advs = np.load(
-        "/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch3/Alexnet/trash_ae_border_Alexnet_9to7_rankingCOI_step6/adv.npy")
-    advs = advs.reshape(-1, 28, 28)
+    mnist_loader = mnist_dataset()
+    Xtrain, ytrain, Xtest, ytest = mnist_loader.read_data(
+        trainset_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/digit-recognizer/train.csv',
+        testset_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/digit-recognizer/test.csv')
+    x_image_4D = Xtrain[1].reshape(-1, 28, 28, 1)
 
-    oris = np.load(
-        "/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch3/Alexnet/trash_ae_border_Alexnet_9to7_rankingCOI_step6/origin.npy")
-    oris = oris.reshape(-1, 28, 28)
+    visualize_cnn(x_image_4D=x_image_4D, model=model, specified_layer=None)
 
-    optimized_advs = np.load(
-        "/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch3/Alexnet/trash_ae_border_Alexnet_9to7_rankingCOI_step6/optimized_adv.npy")
-    optimized_advs = optimized_advs.reshape(-1, 28, 28)
-
-    selected = []
-    l0s = compute_l0s(optimized_advs.reshape(-1, 784), oris.reshape(-1, 784), n_features=784,  normalized=True)
-    for idx in range(len(l0s)):
-        if l0s[idx] <= 10:
-            selected.append(idx)
-    selected = selected[:7]
-    highlight = optimized_advs != advs
-    show_ori_adv_optmizedadv(oris[selected], advs[selected], optimized_advs[selected], highlight[selected], display=True, path=None)

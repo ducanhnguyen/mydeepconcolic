@@ -55,59 +55,60 @@ if __name__ == '__main__':
             n_adv, advs, oris, adv_idxes = generate_adv_for_single_attack_BORDER_PATTERN(X_attack,
                                                                                          selected_seeds,
                                                                                          TARGET_LABEL, ae, dnn)
-        if len(advs) > 0:
-            for idx in range(0, len(advs)):
-                epsilons.append(epsilon)
+        print(f"{np.sum(np.argmax(dnn.predict(advs), axis=1)==TARGET_LABEL)}/{len(advs)}")
+        # if len(advs) > 0:
+        #     for idx in range(0, len(advs)):
+        #         epsilons.append(epsilon)
+        #
+        #     if all_oris is None:
+        #         all_oris = oris
+        #     else:
+        #         all_oris = np.concatenate((all_oris, oris))
+        #
+        #     if all_advs is None:
+        #         all_advs = advs
+        #     else:
+        #         all_advs = np.concatenate((all_advs, advs))
+        #
+        #     if all_adv_idxes is None:
+        #         all_adv_idxes = adv_idxes
+        #     else:
+        #         all_adv_idxes = np.concatenate((all_adv_idxes, adv_idxes))
 
-            if all_oris is None:
-                all_oris = oris
-            else:
-                all_oris = np.concatenate((all_oris, oris))
-
-            if all_advs is None:
-                all_advs = advs
-            else:
-                all_advs = np.concatenate((all_advs, advs))
-
-            if all_adv_idxes is None:
-                all_adv_idxes = adv_idxes
-            else:
-                all_adv_idxes = np.concatenate((all_adv_idxes, adv_idxes))
-
-    """
-    OPTIMIZE
-    """
-    oris = all_oris.reshape(-1, MNIST_N_FEATURES)
-    oris = np.round(oris * 255) / 255
-    print(f"oris shape = {oris.shape}")
-
-    advs = all_advs.reshape(-1, MNIST_N_FEATURES)
-    advs = np.round(advs * 255) / 255
-    adv_idxes = all_adv_idxes.reshape(-1)
-
-    ranking_algorithms = [RANKING_ALGORITHM.COI, RANKING_ALGORITHM.RANDOM, RANKING_ALGORITHM.JSMA]
-    size = None
-    steps = [6, 60]
-    dict_ranking = dict()
-    for step in steps:
-        for ranking_algorithm in ranking_algorithms:
-            name = None
-            if ranking_algorithm == RANKING_ALGORITHM.JSMA_KA:
-                name = "JSMA-KA"
-            elif ranking_algorithm == RANKING_ALGORITHM.JSMA:
-                name = "JSMA"
-            elif ranking_algorithm == RANKING_ALGORITHM.COI:
-                name = "COI"
-            elif ranking_algorithm == RANKING_ALGORITHM.RANDOM:
-                name = "RANDOM"
-            elif ranking_algorithm == RANKING_ALGORITHM.SEQUENTIAL:
-                name = "SEQUENTIAL"
-
-            if name not in dict_ranking:
-                dict_ranking[name] = create_ranking_matrix(advs[:size], oris[:size], dnn, ranking_algorithm,
-                                                           TARGET_LABEL)
-
-            output_folder = f"/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch3/Alexnet/ae_border_{MODEL}_{ORI_LABEL}to{TARGET_LABEL}_ranking{name}_step{step}"
-            initialize_out_folder(output_folder)
-            adaptive_optimize(oris[:size], advs[:size], adv_idxes[:size], dict_ranking[name], step, TARGET_LABEL, dnn,
-                              output_folder, epsilons, ORI_LABEL)
+    # """
+    # OPTIMIZE
+    # """
+    # oris = all_oris.reshape(-1, MNIST_N_FEATURES)
+    # oris = np.round(oris * 255) / 255
+    # print(f"oris shape = {oris.shape}")
+    #
+    # advs = all_advs.reshape(-1, MNIST_N_FEATURES)
+    # advs = np.round(advs * 255) / 255
+    # adv_idxes = all_adv_idxes.reshape(-1)
+    #
+    # ranking_algorithms = [RANKING_ALGORITHM.COI, RANKING_ALGORITHM.RANDOM, RANKING_ALGORITHM.JSMA]
+    # size = None
+    # steps = [6, 60]
+    # dict_ranking = dict()
+    # for step in steps:
+    #     for ranking_algorithm in ranking_algorithms:
+    #         name = None
+    #         if ranking_algorithm == RANKING_ALGORITHM.JSMA_KA:
+    #             name = "JSMA-KA"
+    #         elif ranking_algorithm == RANKING_ALGORITHM.JSMA:
+    #             name = "JSMA"
+    #         elif ranking_algorithm == RANKING_ALGORITHM.COI:
+    #             name = "COI"
+    #         elif ranking_algorithm == RANKING_ALGORITHM.RANDOM:
+    #             name = "RANDOM"
+    #         elif ranking_algorithm == RANKING_ALGORITHM.SEQUENTIAL:
+    #             name = "SEQUENTIAL"
+    #
+    #         if name not in dict_ranking:
+    #             dict_ranking[name] = create_ranking_matrix(advs[:size], oris[:size], dnn, ranking_algorithm,
+    #                                                        TARGET_LABEL)
+    #
+    #         output_folder = f"/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch3/Alexnet/ae_border_{MODEL}_{ORI_LABEL}to{TARGET_LABEL}_ranking{name}_step{step}"
+    #         initialize_out_folder(output_folder)
+    #         adaptive_optimize(oris[:size], advs[:size], adv_idxes[:size], dict_ranking[name], step, TARGET_LABEL, dnn,
+    #                           output_folder, epsilons, ORI_LABEL)
