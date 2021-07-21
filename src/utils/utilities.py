@@ -1,4 +1,5 @@
 import logging
+import random
 
 import keras
 import matplotlib
@@ -108,6 +109,83 @@ def show_four_images(x_28_28_first, x_28_28_second, x_28_28_third, x_28_28_fourt
     plt.imshow(x_28_28_fourth, cmap='gray')
 
     plt.tight_layout(h_pad=0.5, w_pad=0.2)
+    if path is not None:
+        # plt.savefig(path, pad_inches=0.3, bbox_inches='tight')
+        # plt.savefig(path, pad_inches=0, bbox_inches='tight', format='eps')
+        plt.savefig(path, pad_inches=0, bbox_inches='tight', format='png')
+
+    if display:
+        plt.show()
+
+
+def show_ori_adv_optmizedadv(ori_28_28: np.ndarray, adv_28_28: np.ndarray, optimizedadv_28_28: np.ndarray, highlight: np.ndarray,
+                             path=None, display=False):
+    matplotlib.rcParams.update({'font.size': 10})
+    if path is None and not display:
+        return
+    fig = plt.figure()
+
+    n_col = len(ori_28_28)
+    n_row = 4
+
+    for idx in range(n_col):
+        # ori
+        ax = fig.add_subplot(n_row, n_col, idx + 1)
+        if idx == 0:
+            plt.text(-0.3, 0.5, 'Origin',
+                     horizontalalignment='center',
+                     verticalalignment='center',
+                     transform=ax.transAxes,
+                     rotation=90)
+        plt.imshow(ori_28_28[idx], cmap="gray")
+        plt.gca().axes.get_xaxis().set_visible(False)  # remove axis label
+        plt.gca().axes.get_yaxis().set_visible(False)
+
+        # adv
+        ax = fig.add_subplot(n_row, n_col, n_col + idx + 1)
+        # L0_after = int(np.round(compute_l0(oris[idx], advs[idx], normalized=True)))
+        # L2_after = np.round(compute_l2(oris[idx], advs[idx]), 1)
+        # ax.title.set_text(f'L0: {L0_after}\nL2: {L2_after}')
+        if idx == 0:
+            plt.text(-0.3, 0.5, 'Adversary',
+                     horizontalalignment='center',
+                     verticalalignment='center',
+                     transform=ax.transAxes,
+                     rotation=90)
+        plt.imshow(adv_28_28[idx], cmap="gray")
+        plt.gca().axes.get_xaxis().set_visible(False)  # remove axis label
+        plt.gca().axes.get_yaxis().set_visible(False)
+
+        # optimized adv
+        ax = fig.add_subplot(n_row, n_col, 2 * n_col + idx + 1)
+        # L0_after = int(np.round(compute_l0(oris[idx], optimizedadv_28_28[idx], normalized=True)))
+        # L2_after = np.round(compute_l2(oris[idx], optimizedadv_28_28[idx]), 1)
+        # ax.title.set_text(f'L0: {L0_after}\nL2: {L2_after}')
+        if idx == 0:
+            plt.text(-0.3, 0.5, 'Optimized\nAdversary',
+                     horizontalalignment='center',
+                     verticalalignment='center',
+                     transform=ax.transAxes,
+                     rotation=90)
+        plt.imshow(optimizedadv_28_28[idx], cmap="gray")
+        plt.gca().axes.get_xaxis().set_visible(False)  # remove axis label
+        plt.gca().axes.get_yaxis().set_visible(False)
+
+        # highlight
+        ax = fig.add_subplot(n_row, n_col, 3 * n_col + idx + 1)
+        if idx == 0:
+            plt.text(-0.3, 0.5, 'Difference',
+                     horizontalalignment='center',
+                     verticalalignment='center',
+                     transform=ax.transAxes,
+                     rotation=90)
+        plt.imshow(highlight[idx], cmap="gray")
+        plt.gca().axes.get_xaxis().set_visible(False)  # remove axis label
+        plt.gca().axes.get_yaxis().set_visible(False)
+
+
+    plt.tight_layout(h_pad=0.5, w_pad=0.2)
+
     if path is not None:
         # plt.savefig(path, pad_inches=0.3, bbox_inches='tight')
         # plt.savefig(path, pad_inches=0, bbox_inches='tight', format='eps')
@@ -235,16 +313,37 @@ def highlight_diff(img1_0_255, img2_0_255):
 
 
 if __name__ == '__main__':
-    logger.debug("initialize_dnn_model")
-    model = keras.models.load_model(
-        filepath="/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/rivf/autoencoder_mnist.h5",
-        compile=False)
-    model.summary()
+    # logger.debug("initialize_dnn_model")
+    # model = keras.models.load_model(
+    #     filepath="/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/rivf/autoencoder_mnist.h5",
+    #     compile=False)
+    # model.summary()
+    #
+    # mnist_loader = mnist_dataset()
+    # Xtrain, ytrain, Xtest, ytest = mnist_loader.read_data(
+    #     trainset_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/digit-recognizer/train.csv',
+    #     testset_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/digit-recognizer/test.csv')
+    # x_image_4D = Xtrain[1].reshape(-1, 28, 28, 1)
+    #
+    # visualize_cnn(x_image_4D=x_image_4D, model=model, specified_layer=None)
 
-    mnist_loader = mnist_dataset()
-    Xtrain, ytrain, Xtest, ytest = mnist_loader.read_data(
-        trainset_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/digit-recognizer/train.csv',
-        testset_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/digit-recognizer/test.csv')
-    x_image_4D = Xtrain[1].reshape(-1, 28, 28, 1)
+    advs = np.load(
+        "/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch3/Alexnet/trash_ae_border_Alexnet_9to7_rankingCOI_step6/adv.npy")
+    advs = advs.reshape(-1, 28, 28)
 
-    visualize_cnn(x_image_4D=x_image_4D, model=model, specified_layer=None)
+    oris = np.load(
+        "/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch3/Alexnet/trash_ae_border_Alexnet_9to7_rankingCOI_step6/origin.npy")
+    oris = oris.reshape(-1, 28, 28)
+
+    optimized_advs = np.load(
+        "/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch3/Alexnet/trash_ae_border_Alexnet_9to7_rankingCOI_step6/optimized_adv.npy")
+    optimized_advs = optimized_advs.reshape(-1, 28, 28)
+
+    selected = []
+    l0s = compute_l0s(optimized_advs.reshape(-1, 784), oris.reshape(-1, 784), n_features=784,  normalized=True)
+    for idx in range(len(l0s)):
+        if l0s[idx] <= 10:
+            selected.append(idx)
+    selected = selected[:7]
+    highlight = optimized_advs != advs
+    show_ori_adv_optmizedadv(oris[selected], advs[selected], optimized_advs[selected], highlight[selected], display=True, path=None)

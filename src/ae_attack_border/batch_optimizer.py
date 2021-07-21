@@ -18,7 +18,7 @@ MNIST_N_FEATURES = 784
 
 
 def adaptive_optimize(oris_0_1, advs_0_1, adv_idxes, feature_ranking, step, target_label, dnn, output_folder,
-                      epsilons):
+                      epsilons, ori_label):
     """
     Optimize adversaries
     :param oris_0_1:  a set of original samples, shape = (-1, number of features) (0..1 values)
@@ -62,7 +62,7 @@ def adaptive_optimize(oris_0_1, advs_0_1, adv_idxes, feature_ranking, step, targ
     n_restored_pixels_final = np.transpose(n_restored_pixels_final)  # convert into shape (#samples, #predictions)
     export_restored_rate(n_restored_pixels_final, oris_0_255, advs_0_255, output_folder)
 
-    export_summaryv2(oris_0_255, advs_0_255, adv_idxes, optimized_advs_0_255, target_label, dnn, output_folder,
+    export_summaryv2(oris_0_255, advs_0_255, adv_idxes, optimized_advs_0_255, target_label, ori_label, output_folder,
                      epsilons)
 
 
@@ -142,7 +142,7 @@ def create_J_instance(shape, start_priority, end_priority, max_priority, J):
     return ranking_matrix
 
 
-def export_summaryv2(oris_0_255, advs_0_255, adv_idxes, optimized_advs, target_label, dnn, output_folder, epsilons):
+def export_summaryv2(oris_0_255, advs_0_255, adv_idxes, optimized_advs, target_label, ori_label, output_folder, epsilons):
     L0_before = utilities.compute_l0s(advs_0_255, oris_0_255, n_features=MNIST_N_FEATURES, normalized=True)
     L2_before = utilities.compute_l2s(advs_0_255, oris_0_255, n_features=MNIST_N_FEATURES)
     L0_after = utilities.compute_l0s(optimized_advs, oris_0_255, n_features=MNIST_N_FEATURES, normalized=True)
@@ -151,8 +151,11 @@ def export_summaryv2(oris_0_255, advs_0_255, adv_idxes, optimized_advs, target_l
         seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
         n_adv = len(advs_0_255)
+        np.save(f"{output_folder}/optimized_adv.npy", optimized_advs)
+        np.save(f"{output_folder}/adv.npy", advs_0_255)
+        np.save(f"{output_folder}/origin.npy", oris_0_255)
         for idx in range(0, n_adv):
-            seed.writerow([epsilons[idx], adv_idxes[idx], ORI_LABEL, TARGET_LABEL, L0_before[idx],
+            seed.writerow([epsilons[idx], adv_idxes[idx], ori_label, target_label, L0_before[idx],
                            L0_after[idx],
                            L2_before[idx],
                            L2_after[idx]])
@@ -238,6 +241,7 @@ def create_ranking_matrix(advs: np.ndarray, oris: np.ndarray, dnn, ranking_algor
                 algorithm=ranking_algorithm,
                 gradient_label=target_label,
                 classifier=dnn)
+            ranking = ranking[::-1] # first element has lowest priority
 
         elif ranking_algorithm == RANKING_ALGORITHM.JSMA:
             diff_pixel_arr, diff_value_arr = feature_ranker().jsma_ranking_original(advs[idx], oris[idx], None,
@@ -246,8 +250,7 @@ def create_ranking_matrix(advs: np.ndarray, oris: np.ndarray, dnn, ranking_algor
                                                                                                           MNIST_N_FEATURES),
                                                                                     num_expected_features=None,
                                                                                     num_classes=MNIST_N_CLASSES)
-            # ranking = diff_pixel_arr[::-1] # the first element is the least important element
-            ranking = diff_pixel_arr
+            ranking = diff_pixel_arr  # first element has lowest priority
 
         elif ranking_algorithm == RANKING_ALGORITHM.JSMA_KA:
             diff_pixel_arr, diff_value_arr = feature_ranker().jsma_ranking_borderV2(advs[idx], oris[idx], None,
@@ -256,8 +259,7 @@ def create_ranking_matrix(advs: np.ndarray, oris: np.ndarray, dnn, ranking_algor
                                                                                                           MNIST_N_FEATURES),
                                                                                     num_expected_features=None,
                                                                                     num_classes=MNIST_N_CLASSES)
-            # ranking = diff_pixel_arr[::-1]  # the first element is the least important element
-            ranking = diff_pixel_arr
+            ranking = diff_pixel_arr  # first element has lowest priority
 
 
         elif ranking_algorithm == RANKING_ALGORITHM.RANDOM:
@@ -297,106 +299,3 @@ def get_restored_rate_file(output_folder: str):
     return f"{output_folder}/restored_rate.csv"
 
 
-if __name__ == '__main__':
-    MODEL = 'Alexnet'
-    ATTACKED_MODEL_H5 = f"../../result/ae-attack-border/model/{MODEL}.h5"
-    WRONG_SEEDS = wrongseeds_AlexNet
-    IS_SALIENCY_ATTACK = False
-    N_ATTACKING_SAMPLES = 1000
-    N_CLASSES = 10
-
-    (X_train, y_train), (_, _) = tf.keras.datasets.mnist.load_data(path='mnist.npz')
-    X_train = X_train / 255
-
-    dnn = keras.models.load_model(filepath=ATTACKED_MODEL_H5, compile=False)
-
-    ORI_LABEL = 9
-    TARGET_LABEL = 7  # 2nd label ##########################################################
-    # EPSILON_ALL = ["0,0", "0,1", "0,2", "0,3", "0,4", "0,5", "0,6", "0,7", "0,8", "0,9", "1,0"]
-    EPSILON_ALL = ["0,1",  "0,3", "0,5", "0,7", "0,9"]
-    # EPSILON_ALL = ["0,1"]
-
-    all_oris = None
-    all_advs = None
-    all_adv_idxes = None
-    epsilons = []
-    """
-    GENERATE ADVERSARIES
-    """
-    for epsilon in EPSILON_ALL:
-        print(f"Epsilon {epsilon}")
-        # AE_MODEL_H5 = f"../../result/ae-attack-border/{MODEL}/saliency/autoencoder_models/ae_slience_map_{MODEL}_{ORI_LABEL}_{TARGET_LABEL}weight={epsilon}_1000autoencoder.h5"
-        AE_MODEL_H5 = f"../../result/ae-attack-border/{MODEL}/allfeature/autoencoder_models/ae4dnn_{MODEL}_{ORI_LABEL}_{TARGET_LABEL}weight={epsilon}_1000autoencoder.h5"
-        if not os.path.exists(AE_MODEL_H5):
-            continue
-
-        X_attack, selected_seeds = get_X_attack(X_train, y_train, WRONG_SEEDS, ORI_LABEL,
-                                                N_ATTACKING_SAMPLES=1000)
-
-        if IS_SALIENCY_ATTACK:
-            ae = keras.models.load_model(filepath=AE_MODEL_H5, compile=False,
-                                         custom_objects={'concate_start_to_end': concate_start_to_end})
-            n_adv, advs, oris, adv_idxes = generate_adv_for_single_attack_SALIENCE(X_attack, selected_seeds,
-                                                                                   TARGET_LABEL, ae, dnn)
-        else:
-            ae = keras.models.load_model(filepath=AE_MODEL_H5, compile=False)
-            print("generate_adv_for_single_attack_ALL_FEATURE")
-            n_adv, advs, oris, adv_idxes = generate_adv_for_single_attack_ALL_FEATURE(X_attack,
-                                                                                      selected_seeds,
-                                                                                      TARGET_LABEL, ae, dnn)
-        for idx in range(0, len(advs)):
-            epsilons.append(epsilon)
-
-        if all_oris is None:
-            all_oris = oris
-        else:
-            all_oris = np.concatenate((all_oris, oris))
-
-        if all_advs is None:
-            all_advs = advs
-        else:
-            all_advs = np.concatenate((all_advs, advs))
-
-        if all_adv_idxes is None:
-            all_adv_idxes = adv_idxes
-        else:
-            all_adv_idxes = np.concatenate((all_adv_idxes, adv_idxes))
-
-    """
-    OPTIMIZE
-    """
-    oris = all_oris.reshape(-1, MNIST_N_FEATURES)
-    oris = np.round(oris * 255) / 255
-    print(f"oris shape = {oris.shape}")
-
-    advs = all_advs.reshape(-1, MNIST_N_FEATURES)
-    advs = np.round(advs * 255) / 255
-    adv_idxes = all_adv_idxes.reshape(-1)
-
-    ranking_algorithms = [RANKING_ALGORITHM.COI, RANKING_ALGORITHM.RANDOM, #RANKING_ALGORITHM.JSMA_KA,
-                          RANKING_ALGORITHM.JSMA]
-    size = None
-    steps = [6, 30]
-    dict_ranking = dict()
-    for step in steps:
-        for ranking_algorithm in ranking_algorithms:
-            name = None
-            if ranking_algorithm == RANKING_ALGORITHM.JSMA_KA:
-                name = "JSMA-KA"
-            elif ranking_algorithm == RANKING_ALGORITHM.JSMA:
-                name = "JSMA"
-            elif ranking_algorithm == RANKING_ALGORITHM.COI:
-                name = "COI"
-            elif ranking_algorithm == RANKING_ALGORITHM.RANDOM:
-                name = "RANDOM"
-            elif ranking_algorithm == RANKING_ALGORITHM.SEQUENTIAL:
-                name = "SEQUENTIAL"
-
-            if name not in dict_ranking:
-                dict_ranking[name] = create_ranking_matrix(advs[:size], oris[:size], dnn, ranking_algorithm,
-                                                           TARGET_LABEL)
-
-            output_folder = f"/Users/ducanhnguyen/Documents/mydeepconcolic/optimization_batch3/ae_allfeature_{MODEL}_{ORI_LABEL}to{TARGET_LABEL}_ranking{name}_step{step}"
-            initialize_out_folder(output_folder)
-            adaptive_optimize(oris[:size], advs[:size], adv_idxes[:size], dict_ranking[name], step, TARGET_LABEL, dnn,
-                              output_folder, epsilons)
