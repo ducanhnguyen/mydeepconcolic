@@ -1,20 +1,17 @@
-import os
-import keras
-from src.ae_attack_border.ae_custom_layer import concate_start_to_end
-import tensorflow as tf
 import csv as csv
-from src.ae_attack_border.ae_reader import get_X_attack, generate_adv_for_single_attack_SALIENCE, \
-    generate_adv_for_single_attack_ALL_FEATURE
-from src.ae_attack_border.data import wrongseeds_AlexNet
-from src.utils import utilities
-from src.utils.feature_ranker_2d import feature_ranker, RANKING_ALGORITHM
+import os
+
 import numpy as np
 
-MNIST_N_ROW = 28
-MNIST_N_COL = 28
-MNIST_N_CHANNEL = 1
-MNIST_N_CLASSES = 10
-MNIST_N_FEATURES = 784
+from src.utils import utilities
+from src.utils.feature_ranker_2d import feature_ranker, RANKING_ALGORITHM
+
+N_ROW = 32
+N_COL = 32
+N_CHANNEL = 3
+N_CLASSES = 10
+N_FEATURES = N_ROW * N_COL * N_CHANNEL
+
 
 def get_name_of_ranking(ranking_algorithm):
     name = None
@@ -30,12 +27,30 @@ def get_name_of_ranking(ranking_algorithm):
         name = "SEQUENTIAL"
     return name
 
+
+def analyze_speed(restored_rate, threshold, min_num_differences):
+    is_improved = True
+
+    if len(restored_rate) >= min_num_differences:
+        n_unimprovement = 1
+        for i in np.arange(len(restored_rate) - 1, 0, -1):
+            delta = restored_rate[i] - restored_rate[i - 1]
+            if delta < threshold:
+                print(delta)
+                n_unimprovement += 1
+            else:
+                break
+        if n_unimprovement >= min_num_differences:
+            is_improved = False
+    return is_improved
+
+
 def adaptive_optimize(oris_0_1, advs_0_1, adv_idxes, feature_ranking, step, target_label, dnn, output_folder,
-                      epsilons, ori_label):
+                      epsilons, ori_label, threshold, min_num_differences):
     """
     Optimize adversaries
-    :param oris_0_1:  a set of original samples, shape = (-1, number of features) (0..1 values)
-    :param advs_0_1: a set of adversarial samples corresponding to the original samples, shape = (-1, number of features)  (0..1 values)
+    :param oris_0_1:  a set of original samples, shape = (-1, row, col, channel) (0..1 values)
+    :param advs_0_1: a set of adversarial samples corresponding to the original samples, shape = (-1, row, col, channel)  (0..1 values)
     :param adv_idxes: index of origial samples corresponding to adversarial examples on the attacking set (could be None)
     :param feature_ranking:
     :param step: > 0
@@ -49,37 +64,37 @@ def adaptive_optimize(oris_0_1, advs_0_1, adv_idxes, feature_ranking, step, targ
     advs_0_255 = np.round(advs_0_1 * 255).astype(int)
 
     optimized_advs_0_255 = np.copy(advs_0_255)
-    # feature_ranking = create_ranking_matrix(advs, oris, dnn, ranking_algorithm, target_label)
+
     while step > 0:
         print("--------------------------------------------")
         print(f"Step = {step}")
 
-        print("create_different_matrix")
-        I = create_different_matrix(oris_0_255, optimized_advs_0_255)
-
         print("create_matrix_J")
-        J = create_matrix_J(oris_0_255, feature_ranking, I)
+        J = create_matrix_J(oris_0_255, feature_ranking, oris_0_255 != advs_0_255)
 
         print("optimize")
-        optimized_advs_0_255, n_restored_pixels = optimize(oris_0_255, optimized_advs_0_255, step, target_label, dnn, J)
-        step = int(np.round(step / 2))
+        optimized_advs_0_255, n_restored_pixels_final, is_improved = optimize(oris_0_255, optimized_advs_0_255, step,
+                                                                              target_label, dnn, J,
+                                                                              n_restored_pixels_final,
+                                                                              threshold, min_num_differences)
 
-        # update the restored rate
-        if len(n_restored_pixels_final) >= 1:
-            latest = n_restored_pixels_final[-1]
+        # adjust speed
+        if not is_improved:
+            print("STOP!!!")
+            break
         else:
-            latest = 0
-        for item in n_restored_pixels:
-            n_restored_pixels_final.append(latest + item)
+            step = int(np.round(step / 2))
+            if step < 0:
+                break
 
     n_restored_pixels_final = np.transpose(n_restored_pixels_final)  # convert into shape (#samples, #predictions)
     export_restored_rate(n_restored_pixels_final, oris_0_255, advs_0_255, output_folder)
-
     export_summaryv2(oris_0_255, advs_0_255, adv_idxes, optimized_advs_0_255, target_label, ori_label, output_folder,
                      epsilons)
 
 
-def optimize(oris_0_255, advs_0_255, step, target_label, dnn, J):
+def optimize(oris_0_255, advs_0_255, step, target_label, dnn, J, n_restored_pixels_final, threshold,
+             min_num_differences):
     """
     Optimize a set of adversaries concurrently, from the first adversarial feature to the last one
     :param oris_0_255:  a set of original samples, shape = (-1, number of features)
@@ -89,26 +104,22 @@ def optimize(oris_0_255, advs_0_255, step, target_label, dnn, J):
     :param dnn:
     :return:
     """
-    n_diff_features_before = np.sum(oris_0_255 != advs_0_255, axis=1)
-
-    n_restored_pixels = []
+    is_improved = True
+    n_diff_features_before = np.sum(oris_0_255 != advs_0_255, axis=(1, 2, 3))
+    latest = n_restored_pixels_final[-1] if len(n_restored_pixels_final) >= 1 else 0
     optimized_advs_0_255 = np.copy(advs_0_255)
-
     max_priority = np.max(J)
     num_iterations = np.math.ceil(max_priority / step)
 
-    for idx in range(0, num_iterations):
-        print(f"\n[{idx + 1}/{num_iterations}] Optimize the batch")
-        # print(f"Creating clone - begin")
-        # clone = np.copy(optimized_advs_0_255)
-        # print(f"Creating clone - done")
+    for iteration in range(0, num_iterations):
+        print(f"\n[{iteration + 1}/{num_iterations}] Optimize the batch")
         """
         Find out matrix of adversarial features
         """
-        start_priority = step * idx + 1  # must start from 1 (1 is the highest priority)
+        start_priority = step * iteration + 1  # must start from 1 (1 is the highest priority)
         end_priority = start_priority + step - 1
         print(f"create_J_instance: priority {start_priority} -> {end_priority}")
-        ranking_matrix = create_J_instance(oris_0_255.shape, start_priority, end_priority, max_priority, J)
+        ranking_matrix = create_J_instance(start_priority, end_priority, max_priority, J)
         if ranking_matrix is None:
             break
 
@@ -117,28 +128,36 @@ def optimize(oris_0_255, advs_0_255, step, target_label, dnn, J):
         """
         print("reprediction")
         new_optimized_advs_0_255 = optimized_advs_0_255 - optimized_advs_0_255 * ranking_matrix + oris_0_255 * ranking_matrix
-        pred = dnn.predict((new_optimized_advs_0_255 / 255).reshape(-1, MNIST_N_ROW, MNIST_N_COL, MNIST_N_CHANNEL))
+        pred = dnn.predict((new_optimized_advs_0_255 / 255).reshape(-1, N_ROW, N_COL, N_CHANNEL))
         labels = np.argmax(pred, axis=1)
 
         # Revert the restoration for the adv which has failed restoration
         print(f"Reverting the restoration for the failed action")
-        count = 0
-        for jdx in range(0, len(labels)):
-            if labels[jdx] != target_label:
-                count += 1
-                for kdx in range(0, len(new_optimized_advs_0_255[jdx])):
-                    new_optimized_advs_0_255[jdx][kdx] = optimized_advs_0_255[jdx][kdx]  # revert the restoration
-        print(f"#fail restorations = {count}/{len(labels)}")
-        #
-        n_diff_features_after = np.sum(oris_0_255 != new_optimized_advs_0_255, axis=1)
-        n_restored_pixels.append(n_diff_features_before - n_diff_features_after)
+        fail_sample_idxes = np.asarray(np.where(labels != target_label)).reshape(-1)
+        new_optimized_advs_0_255[fail_sample_idxes] = optimized_advs_0_255[fail_sample_idxes]
+        print(f"#fail restorations = {len(fail_sample_idxes)}/{len(labels)}")
 
+        #
+        n_diff_features_after = np.sum(oris_0_255 != new_optimized_advs_0_255, axis=(1, 2, 3))
+        n_restored_pixels_final.append(
+            latest + n_diff_features_before - n_diff_features_after)  # shape = (#samples, #predictions)
         optimized_advs_0_255 = new_optimized_advs_0_255
 
-    return optimized_advs_0_255, np.asarray(n_restored_pixels)
+        # check early stopping
+        if len(n_restored_pixels_final) % 10 == 0 or iteration == num_iterations - 1:
+            if threshold is not None and min_num_differences is not None:
+                print("Check early stopping")
+                restored_rate = export_restored_rate(np.transpose(n_restored_pixels_final)
+                                                     # convert into shape (#samples, #predictions)
+                                                     , oris_0_255, advs_0_255, None)
+
+                is_improved = analyze_speed(restored_rate, threshold, min_num_differences)
+                if not is_improved:
+                    break
+    return optimized_advs_0_255, n_restored_pixels_final, is_improved
 
 
-def create_J_instance(shape, start_priority, end_priority, max_priority, J):
+def create_J_instance(start_priority, end_priority, max_priority, J):
     if start_priority > max_priority:  # when iterating over all adversarial features
         return None
 
@@ -146,20 +165,15 @@ def create_J_instance(shape, start_priority, end_priority, max_priority, J):
         end_priority = max_priority
 
     ranking_matrix = (J >= start_priority) & (J <= end_priority)
-    # ranking_matrix = np.zeros(shape, dtype=int)
-    # for jdx in range(0, len(J)):
-    #     for kdx in range(0, len(J[jdx])):
-    #         if start_priority <= J[jdx][kdx] <= end_priority:
-    #             # if the importance of a feature is in the valid priority
-    #             ranking_matrix[jdx][kdx] = 1
     return ranking_matrix
 
 
-def export_summaryv2(oris_0_255, advs_0_255, adv_idxes, optimized_advs, target_label, ori_label, output_folder, epsilons):
-    L0_before = utilities.compute_l0s(advs_0_255, oris_0_255, n_features=MNIST_N_FEATURES, normalized=True)
-    L2_before = utilities.compute_l2s(advs_0_255, oris_0_255, n_features=MNIST_N_FEATURES)
-    L0_after = utilities.compute_l0s(optimized_advs, oris_0_255, n_features=MNIST_N_FEATURES, normalized=True)
-    L2_after = utilities.compute_l2s(optimized_advs, oris_0_255, n_features=MNIST_N_FEATURES)
+def export_summaryv2(oris_0_255, advs_0_255, adv_idxes, optimized_advs, target_label, ori_label, output_folder,
+                     epsilons):
+    L0_before = utilities.compute_l0s(advs_0_255, oris_0_255, n_features=N_FEATURES, normalized=True)
+    L2_before = utilities.compute_l2s(advs_0_255, oris_0_255, n_features=N_FEATURES)
+    L0_after = utilities.compute_l0s(optimized_advs, oris_0_255, n_features=N_FEATURES, normalized=True)
+    L2_after = utilities.compute_l2s(optimized_advs, oris_0_255, n_features=N_FEATURES)
     with open(get_summary_file(output_folder), mode='a') as f:
         seed = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
@@ -186,62 +200,56 @@ def export_summaryv2(oris_0_255, advs_0_255, adv_idxes, optimized_advs, target_l
 
 
 def export_restored_rate(n_restored_pixels_final, oris_0_255, advs_0_255, output_folder):
-    restored_rate = np.zeros(shape=(len(oris_0_255), MNIST_N_FEATURES))
-    n_samples = len(oris_0_255)
+    """
+
+    :param n_restored_pixels_final: shape=(# samples, # predictions)
+    :param oris_0_255:
+    :param advs_0_255:
+    :param output_folder:
+    :return:
+    """
+    n_samples = n_restored_pixels_final.shape[0]
+    n_prediction = n_restored_pixels_final.shape[1]
+    restored_rate = np.zeros(shape=n_restored_pixels_final.shape)
+
     for idx in range(0, n_samples):
-        ori_0_255 = oris_0_255[idx]
-        adv_0_255 = advs_0_255[idx]
-        L0_before = utilities.compute_l0(adv_0_255, ori_0_255, normalized=True)
-
-        if L0_before == 0:
-            continue
-
-        for jdx in range(0, MNIST_N_FEATURES):
-            if jdx < len(n_restored_pixels_final[idx]):
-                restored_rate[idx][jdx] = n_restored_pixels_final[idx][jdx] / L0_before
-            else:
-                restored_rate[idx][jdx] = n_restored_pixels_final[idx][
-                                              len(n_restored_pixels_final[idx]) - 1] / L0_before
+        L0_before = utilities.compute_l0(oris_0_255[idx], advs_0_255[idx], normalized=True)
+        for jdx in range(0, n_prediction):
+            restored_rate[idx][jdx] = (n_restored_pixels_final[idx][jdx] / L0_before) if (L0_before != 0) else 0
     restored_rate = np.average(restored_rate, axis=0)
 
     # export to file
-    with open(get_restored_rate_file(output_folder), mode='w') as f:
-        seed = csv.writer(f)
-        for value in restored_rate:
-            seed.writerow([str(np.round(value, 5))])
-        f.close()
+    if output_folder is not None:
+        with open(get_restored_rate_file(output_folder), mode='w') as f:
+            seed = csv.writer(f)
+            for value in restored_rate:
+                seed.writerow([str(np.round(value, 5))])
+            f.close()
+    return restored_rate
 
 
 def create_matrix_J(oris, feature_ranking, I):
-    J = np.zeros(oris.shape, dtype=int)
-    for idx in range(0, len(feature_ranking)):
-        item = feature_ranking[idx]
-        max_row = 0
-        for jdx in range(0, len(item)):
-            if isinstance(item[jdx], np.int64) or isinstance(item[jdx], np.int32):  # the position is an integer
-                pos = item[jdx]
-            else:  # the position is (row, col, channel)
-                pos = MNIST_N_COL * item[jdx][0] + item[jdx][1]  # for 2-D image
-            if I[idx][pos] == 1:  # if this position is corresponding to an adversarial feature
-                J[idx][pos] = max_row + 1  # assign an integer priority
-                max_row += 1
-    return J
-
-
-def create_different_matrix(oris_0_255, advs_0_255):
     """
-    Create (0,1)-matrix
-    :param oris_0_255:  a set of original samples, shape = (-1, number of features)
-    :param advs_0_255: a set of adversarial samples corresponding to the original samples, shape = (-1, number of features)
+    :param oris: shape: (#samples, #width, #height, #channel)
+    :param feature_ranking: shape: (#samples, #width * #height * #channel, #channel)
+    :param I: shape: (#samples, #width, #height, #channel)
     :return:
     """
-    return oris_0_255 != advs_0_255
-    # I = np.zeros(oris_0_255.shape, dtype=int)
-    # for idx in range(0, len(I)):
-    #     for jdx in range(0, len(I[idx])):
-    #         if oris_0_255[idx][jdx] != advs_0_255[idx][jdx]:
-    #             I[idx][jdx] = 1
-    # return I
+    J = np.zeros(oris.shape, dtype=int)  # shape: (#samples, #width, #height, #channel)
+    n_samples = feature_ranking.shape[0]
+    for sample_idx in range(0, n_samples):
+        current_priority = 0
+
+        n_features = feature_ranking.shape[1]
+        for feature_idx in range(0, n_features):
+            pixel = feature_ranking[sample_idx][feature_idx]  # value = (row position, col position, channel position)
+            row_pos = pixel[0]  # first channel
+            col_pos = pixel[1]  # second channel
+            channel_pos = pixel[2]  # third channel
+            if I[sample_idx][row_pos][col_pos][channel_pos]:
+                J[sample_idx][row_pos][col_pos][channel_pos] = current_priority + 1
+                current_priority += 1
+    return J
 
 
 def create_ranking_matrix(advs: np.ndarray, oris: np.ndarray, dnn, ranking_algorithm: RANKING_ALGORITHM,
@@ -259,40 +267,40 @@ def create_ranking_matrix(advs: np.ndarray, oris: np.ndarray, dnn, ranking_algor
         ranking = None
         if ranking_algorithm == RANKING_ALGORITHM.COI or ranking_algorithm == RANKING_ALGORITHM.CO or ranking_algorithm == RANKING_ALGORITHM.ABS:
             ranking = feature_ranker().find_important_features_of_a_sample(
-                input_image=advs[idx].reshape(MNIST_N_ROW, MNIST_N_COL, MNIST_N_CHANNEL),
-                n_rows=MNIST_N_ROW,
-                n_cols=MNIST_N_COL,
-                n_channels=MNIST_N_CHANNEL,
+                input_image=advs[idx].reshape(N_ROW, N_COL, N_CHANNEL),
+                n_rows=N_ROW,
+                n_cols=N_COL,
+                n_channels=N_CHANNEL,
                 n_important_features=None,  # None: rank all features
                 algorithm=ranking_algorithm,
                 gradient_label=target_label,
                 classifier=dnn)
-            ranking = ranking[::-1] # first element has lowest priority
+            ranking = ranking[::-1]  # first element has lowest priority
 
         elif ranking_algorithm == RANKING_ALGORITHM.JSMA:
             diff_pixel_arr, diff_value_arr = feature_ranker().jsma_ranking_original(advs[idx], oris[idx], None,
                                                                                     target_label, dnn,
                                                                                     diff_pixels=np.arange(0,
-                                                                                                          MNIST_N_FEATURES),
+                                                                                                          N_FEATURES),
                                                                                     num_expected_features=None,
-                                                                                    num_classes=MNIST_N_CLASSES)
+                                                                                    num_classes=N_CLASSES)
             ranking = diff_pixel_arr  # first element has lowest priority
 
         elif ranking_algorithm == RANKING_ALGORITHM.JSMA_KA:
             diff_pixel_arr, diff_value_arr = feature_ranker().jsma_ranking_borderV2(advs[idx], oris[idx], None,
                                                                                     target_label, dnn,
                                                                                     diff_pixels=np.arange(0,
-                                                                                                          MNIST_N_FEATURES),
+                                                                                                          N_FEATURES),
                                                                                     num_expected_features=None,
-                                                                                    num_classes=MNIST_N_CLASSES)
+                                                                                    num_classes=N_CLASSES)
             ranking = diff_pixel_arr  # first element has lowest priority
 
 
         elif ranking_algorithm == RANKING_ALGORITHM.RANDOM:
-            ranking = feature_ranker().random_ranking(diff_pixels=np.arange(0, MNIST_N_FEATURES))
+            ranking = feature_ranker().random_ranking(diff_pixels=np.arange(0, N_FEATURES))
 
         elif ranking_algorithm == RANKING_ALGORITHM.SEQUENTIAL:
-            ranking = feature_ranker().sequence_ranking(diff_pixels=np.arange(0, MNIST_N_FEATURES))
+            ranking = feature_ranker().sequence_ranking(diff_pixels=np.arange(0, N_FEATURES))
 
         if ranking is not None:
             feature_ranking.append(ranking)
@@ -323,5 +331,3 @@ def get_summary_file(output_folder: str):
 
 def get_restored_rate_file(output_folder: str):
     return f"{output_folder}/restored_rate.csv"
-
-
