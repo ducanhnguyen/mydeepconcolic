@@ -1,5 +1,6 @@
 import csv as csv
 import os
+import random
 
 import numpy as np
 
@@ -66,14 +67,17 @@ def adaptive_optimize(oris_0_1, advs_0_1, adv_idxes, feature_ranking, step, targ
     optimized_advs_0_255 = np.copy(advs_0_255)
 
     while step > 0:
+
         print("--------------------------------------------")
         print(f"Step = {step}")
 
         print("create_matrix_J")
-        J = create_matrix_J(oris_0_255, feature_ranking, oris_0_255 != advs_0_255)
+        J = create_matrix_J(oris_0_255, feature_ranking, oris_0_255 != optimized_advs_0_255)
 
         print("optimize")
-        optimized_advs_0_255, n_restored_pixels_final, is_improved = optimize(oris_0_255, optimized_advs_0_255, step,
+        optimized_advs_0_255, n_restored_pixels_final, is_improved = optimize(oris_0_255, optimized_advs_0_255,
+                                                                              advs_0_255,
+                                                                              step,
                                                                               target_label, dnn, J,
                                                                               n_restored_pixels_final,
                                                                               threshold, min_num_differences)
@@ -84,7 +88,7 @@ def adaptive_optimize(oris_0_1, advs_0_1, adv_idxes, feature_ranking, step, targ
             break
         else:
             step = int(np.round(step / 2))
-            if step < 0:
+            if step <= 0: #############################################################################################################################
                 break
 
     n_restored_pixels_final = np.transpose(n_restored_pixels_final)  # convert into shape (#samples, #predictions)
@@ -93,26 +97,28 @@ def adaptive_optimize(oris_0_1, advs_0_1, adv_idxes, feature_ranking, step, targ
                      epsilons)
 
 
-def optimize(oris_0_255, advs_0_255, step, target_label, dnn, J, n_restored_pixels_final, threshold,
+def optimize(oris_0_255, current_optimized_advs_0_255, advs_0_255, step, target_label, dnn, J, n_restored_pixels_final,
+             threshold,
              min_num_differences):
     """
     Optimize a set of adversaries concurrently, from the first adversarial feature to the last one
     :param oris_0_255:  a set of original samples, shape = (-1, number of features)
-    :param advs_0_255: a set of adversarial samples corresponding to the original samples, shape = (-1, number of features)
+    :param current_optimized_advs_0_255: a set of adversarial samples corresponding to the original samples, shape = (-1, number of features)
     :param step:
     :param target_label:
     :param dnn:
     :return:
     """
     is_improved = True
-    n_diff_features_before = np.sum(oris_0_255 != advs_0_255, axis=(1, 2, 3))
-    latest = n_restored_pixels_final[-1] if len(n_restored_pixels_final) >= 1 else 0
-    optimized_advs_0_255 = np.copy(advs_0_255)
+
+    # latest = n_restored_pixels_final[-1] if len(n_restored_pixels_final) >= 1 else 0
+    optimized_advs_0_255 = np.copy(current_optimized_advs_0_255)
     max_priority = np.max(J)
     num_iterations = np.math.ceil(max_priority / step)
 
     for iteration in range(0, num_iterations):
         print(f"\n[{iteration + 1}/{num_iterations}] Optimize the batch")
+        n_diff_features_before = np.sum(oris_0_255 != optimized_advs_0_255, axis=(1, 2, 3))
         """
         Find out matrix of adversarial features
         """
@@ -138,18 +144,19 @@ def optimize(oris_0_255, advs_0_255, step, target_label, dnn, J, n_restored_pixe
         print(f"#fail restorations = {len(fail_sample_idxes)}/{len(labels)}")
 
         #
-        n_diff_features_after = np.sum(oris_0_255 != new_optimized_advs_0_255, axis=(1, 2, 3))
-        n_restored_pixels_final.append(
-            latest + n_diff_features_before - n_diff_features_after)  # shape = (#samples, #predictions)
         optimized_advs_0_255 = new_optimized_advs_0_255
+        n_diff_features_after = np.sum(oris_0_255 != optimized_advs_0_255, axis=(1, 2, 3))
+        n_restored_pixels_final.append(
+            n_diff_features_before - n_diff_features_after)  # shape = (#samples, #predictions)
 
         # check early stopping
-        if len(n_restored_pixels_final) % 10 == 0 or iteration == num_iterations - 1:
+        if len(n_restored_pixels_final) % 5 == 0 or iteration == num_iterations - 1:
             if threshold is not None and min_num_differences is not None:
                 print("Check early stopping")
                 restored_rate = export_restored_rate(np.transpose(n_restored_pixels_final)
                                                      # convert into shape (#samples, #predictions)
                                                      , oris_0_255, advs_0_255, None)
+                print(f"restore rate: {np.round(restored_rate[-10:-1], decimals=3)}")
 
                 is_improved = analyze_speed(restored_rate, threshold, min_num_differences)
                 if not is_improved:
@@ -214,8 +221,13 @@ def export_restored_rate(n_restored_pixels_final, oris_0_255, advs_0_255, output
 
     for idx in range(0, n_samples):
         L0_before = utilities.compute_l0(oris_0_255[idx], advs_0_255[idx], normalized=True)
+
+        tmp = [n_restored_pixels_final[idx][0]]
+        for jdx in range(1, n_prediction):
+            tmp.append(tmp[jdx - 1] + n_restored_pixels_final[idx][jdx])
+        tmp = np.asarray(tmp)
         for jdx in range(0, n_prediction):
-            restored_rate[idx][jdx] = (n_restored_pixels_final[idx][jdx] / L0_before) if (L0_before != 0) else 0
+            restored_rate[idx][jdx] = (tmp[jdx] / L0_before) if (L0_before != 0) else 0
     restored_rate = np.average(restored_rate, axis=0)
 
     # export to file
@@ -297,7 +309,14 @@ def create_ranking_matrix(advs: np.ndarray, oris: np.ndarray, dnn, ranking_algor
 
 
         elif ranking_algorithm == RANKING_ALGORITHM.RANDOM:
-            ranking = feature_ranker().random_ranking(diff_pixels=np.arange(0, N_FEATURES))
+            ranking = []
+            for row in range(0, N_ROW):
+                for col in range(0, N_COL):
+                    for channel in range(0, N_CHANNEL):
+                        ranking.append([row, col, channel])
+            ranking = np.asarray(ranking)
+            random.shuffle(ranking)
+
 
         elif ranking_algorithm == RANKING_ALGORITHM.SEQUENTIAL:
             ranking = feature_ranker().sequence_ranking(diff_pixels=np.arange(0, N_FEATURES))
