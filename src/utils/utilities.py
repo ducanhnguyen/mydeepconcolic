@@ -5,7 +5,7 @@ import keras
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import pyplot
+from matplotlib import pyplot, gridspec
 from tensorflow.python.keras.models import model_from_json, Model
 
 from src.mnist_dataset import mnist_dataset
@@ -120,15 +120,17 @@ def show_four_images(x_28_28_first, x_28_28_second, x_28_28_third, x_28_28_fourt
 
 def show_ori_adv_optmizedadv(ori_28_28: np.ndarray, adv_28_28: np.ndarray, optimizedadv_28_28: np.ndarray, highlight: np.ndarray,
                              path=None, display=False):
-    matplotlib.rcParams.update({'font.size': 10})
+    matplotlib.rcParams.update({'font.size': 14})
     if path is None and not display:
         return
-    fig = plt.figure()
 
     n_col = len(ori_28_28)
     n_row = 4
 
+    fig = plt.figure()
+
     for idx in range(n_col):
+        print(f"idx = {idx}")
         # ori
         ax = fig.add_subplot(n_row, n_col, idx + 1)
         if idx == 0:
@@ -143,8 +145,8 @@ def show_ori_adv_optmizedadv(ori_28_28: np.ndarray, adv_28_28: np.ndarray, optim
 
         # adv
         ax = fig.add_subplot(n_row, n_col, n_col + idx + 1)
-        # L0_after = int(np.round(compute_l0(oris[idx], advs[idx], normalized=True)))
-        # L2_after = np.round(compute_l2(oris[idx], advs[idx]), 1)
+        # L0_after = int(np.round(compute_l0(ori_28_28[idx], adv_28_28[idx], normalized=True)))
+        # L2_after = np.round(compute_l2(ori_28_28[idx], adv_28_28[idx]), 1)
         # ax.title.set_text(f'L0: {L0_after}\nL2: {L2_after}')
         if idx == 0:
             plt.text(-0.3, 0.5, 'Adversary',
@@ -158,8 +160,8 @@ def show_ori_adv_optmizedadv(ori_28_28: np.ndarray, adv_28_28: np.ndarray, optim
 
         # optimized adv
         ax = fig.add_subplot(n_row, n_col, 2 * n_col + idx + 1)
-        # L0_after = int(np.round(compute_l0(oris[idx], optimizedadv_28_28[idx], normalized=True)))
-        # L2_after = np.round(compute_l2(oris[idx], optimizedadv_28_28[idx]), 1)
+        # L0_after = int(np.round(compute_l0(ori_28_28[idx], optimizedadv_28_28[idx], normalized=True)))
+        # L2_after = np.round(compute_l2(ori_28_28[idx], optimizedadv_28_28[idx]), 1)
         # ax.title.set_text(f'L0: {L0_after}\nL2: {L2_after}')
         if idx == 0:
             plt.text(-0.3, 0.5, 'Optimized\nAdversary',
@@ -183,13 +185,40 @@ def show_ori_adv_optmizedadv(ori_28_28: np.ndarray, adv_28_28: np.ndarray, optim
         plt.gca().axes.get_xaxis().set_visible(False)  # remove axis label
         plt.gca().axes.get_yaxis().set_visible(False)
 
+        print("done")
 
     plt.tight_layout(h_pad=0.5, w_pad=0.2)
-
+    plt.subplots_adjust(hspace=0, wspace=0)
     if path is not None:
         # plt.savefig(path, pad_inches=0.3, bbox_inches='tight')
         # plt.savefig(path, pad_inches=0, bbox_inches='tight', format='eps')
-        plt.savefig(path, pad_inches=0, bbox_inches='tight', format='png')
+        plt.savefig(path, bbox_inches='tight', format='png')
+
+    if display:
+        print("show")
+        plt.show()
+        print("show")
+
+
+def show_three_images(x_28_28_left, x_28_28_mid, x_28_28_right, left_title="", mid_title= "", right_title="", path=None, display=False):
+    fig = plt.figure()
+    fig1 = fig.add_subplot(1, 3, 1)
+    fig1.title.set_text(left_title)
+    # plt.imshow(x_28_28_left, cmap="gray")
+    plt.imshow(x_28_28_left)
+
+    fig2 = fig.add_subplot(1, 3, 2)
+    fig2.title.set_text(mid_title)
+    # plt.imshow(x_28_28_right, cmap='gray')
+    plt.imshow(x_28_28_mid)
+
+    fig3 = fig.add_subplot(1, 3, 3)
+    fig3.title.set_text(right_title)
+    # plt.imshow(x_28_28_right, cmap='gray')
+    plt.imshow(x_28_28_right)
+
+    if path is not None:
+        plt.savefig(path, pad_inches=0, bbox_inches='tight')
 
     if display:
         plt.show()
@@ -199,11 +228,13 @@ def show_two_images(x_28_28_left, x_28_28_right, left_title="", right_title="", 
     fig = plt.figure()
     fig1 = fig.add_subplot(1, 2, 1)
     fig1.title.set_text(left_title)
-    plt.imshow(x_28_28_left, cmap="gray")
+    # plt.imshow(x_28_28_left, cmap="gray")
+    plt.imshow(x_28_28_left)
 
     fig2 = fig.add_subplot(1, 2, 2)
     fig2.title.set_text(right_title)
-    plt.imshow(x_28_28_right, cmap='gray')
+    # plt.imshow(x_28_28_right, cmap='gray')
+    plt.imshow(x_28_28_right)
 
     if path is not None:
         plt.savefig(path, pad_inches=0, bbox_inches='tight')
