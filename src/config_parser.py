@@ -1,14 +1,14 @@
 import json
 import platform
 
-
+import os
 def get_config(attributes, recursive=True):
     if platform.system() == 'Darwin':  # macosx
         config_path = '/Users/ducanhnguyen/Documents/mydeepconcolic/src/config_osx.json'
     elif platform.system() == 'Linux':  # hpc
         config_path = './config_hpc.json'
     else:
-        return
+        config_path = "C:/Users/ducanhnguyen/PycharmProjects/mydeepconcolic/src/config_win.json"
 
     with open(config_path, 'r') as f:
         config = json.load(f)

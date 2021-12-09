@@ -1,0 +1,150 @@
+                 {
+  "mnist_ann_keras": {
+    "structure": "{base_path}/src/saved_models/mnist_ann_keras.json",
+    "weight": "{base_path}/src/saved_models/mnist_ann_keras.h5",
+    "train_set": "{base_path}/dataset/digit-recognizer/train.csv",
+    "test_set": "{base_path}/dataset/digit-recognizer/test.csv",
+    "num_classes": 10,
+    "start_seed": 0,
+    "end_seed": 10000
+  },
+  "mnist_simard": {
+    "structure": "{base_path}/src/saved_models/mnist_simard.json",
+    "weight": "{base_path}/src/saved_models/mnist_simard.h5",
+    "train_set": "{base_path}/dataset/digit-recognizer/train.csv",
+    "test_set": "{base_path}/dataset/digit-recognizer/test.csv",
+    "num_classes": 10,
+    "start_seed": 0,
+    "end_seed": 10000
+  },
+  "mnist_simple": {
+    "structure": "{base_path}/src/saved_models/mnist_simple.json",
+    "weight": "{base_path}/src/saved_models/mnist_simple.h5",
+    "train_set": "{base_path}/dataset/digit-recognizer/train.csv",
+    "test_set": "{base_path}/dataset/digit-recognizer/test.csv",
+    "num_classes": 10,
+    "start_seed": 0,
+    "end_seed": 10000
+  },
+  "mnist_deepcheck": {
+    "structure": "{base_path}/src/saved_models/mnist_deepcheck.json",
+    "weight": "{base_path}/src/saved_models/mnist_deepcheck.h5",
+    "train_set": "{base_path}/dataset/digit-recognizer/train.csv",
+    "test_set": "{base_path}/dataset/digit-recognizer/test.csv",
+    "num_classes": 10,
+    "start_seed": 0,
+    "end_seed": 10000
+  },
+  "mnist_deepcheck_1": {
+    "structure": "{base_path}/src/saved_models/mnist_deepcheck_1.json",
+    "weight": "{base_path}/src/saved_models/mnist_deepcheck_1.h5",
+    "train_set": "{base_path}/dataset/digit-recognizer/train.csv",
+    "test_set": "{base_path}/dataset/digit-recognizer/test.csv",
+    "num_classes": 10,
+    "start_seed": 0,
+    "end_seed": 200
+  },
+
+  "mnist_deepcheck_2": {
+    "structure": "{base_path}/src/saved_models/mnist_deepcheck_2.json",
+    "weight": "{base_path}/src/saved_models/mnist_deepcheck_2.h5",
+    "train_set": "{base_path}/dataset/digit-recognizer/train.csv",
+    "test_set": "{base_path}/dataset/digit-recognizer/test.csv",
+    "num_classes": 10,
+    "start_seed": 0,
+    "end_seed": 200
+  },
+  "mnist_deepcheck_3": {
+    "structure": "{base_path}/src/saved_models/mnist_deepcheck_3.json",
+    "weight": "{base_path}/src/saved_models/mnist_deepcheck_3.h5",
+    "train_set": "{base_path}/dataset/digit-recognizer/train.csv",
+    "test_set": "{base_path}/dataset/digit-recognizer/test.csv",
+    "num_classes": 10,
+    "start_seed": 0,
+    "end_seed": 200
+  },
+  "mnist_deepcheck_4": {
+    "structure": "{base_path}/src/saved_models/mnist_deepcheck_4.json",
+    "weight": "{base_path}/src/saved_models/mnist_deepcheck_4.h5",
+    "train_set": "{base_path}/dataset/digit-recognizer/train.csv",
+    "test_set": "{base_path}/dataset/digit-recognizer/test.csv",
+    "num_classes": 10,
+    "start_seed": 0,
+    "end_seed": 200
+  },
+  "mnist_deepcheck_10": {
+    "structure": "{base_path}/src/saved_models/mnist_deepcheck_10.json",
+    "weight": "{base_path}/src/saved_models/mnist_deepcheck_10.h5",
+    "train_set": "{base_path}/dataset/digit-recognizer/train.csv",
+    "test_set": "{base_path}/dataset/digit-recognizer/test.csv",
+    "num_classes": 10,
+    "start_seed": 0,
+    "end_seed": 200
+  },
+  "cifar_10": {
+    "structure": "{base_path}/src/saved_models/cifar10_ann_keras.json",
+    "weight": "{base_path}/src/saved_models/cifar10_ann_keras.h5",
+    "train_set": "invalid",
+    "test_set": "invalid",
+    "num_classes": 10,
+    "start_seed": 0,
+    "end_seed": 60000,
+    "link": "https://www.cs.toronto.edu/~kriz/cifar.html"
+  },
+  "fashion_mnist": {
+    "structure": "{base_path}/src/saved_models/fashion_mnist_ann_keras.json",
+    "weight": "{base_path}/src/saved_models/fashion_mnist_ann_keras.h5",
+    "train_set": "{base_path}/dataset/fashion_mnist/train.csv",
+    "test_set": "{base_path}/dataset/fashion_mnist/test.csv",
+    "num_classes": 10,
+    "start_seed": 0,
+    "end_seed": 60000
+  },
+  "shvn": {
+    "structure": "{base_path}/src/saved_models/shvn_ann_keras.json",
+    "weight": "{base_path}/src/saved_models/shvn_ann_keras.h5",
+    "train_set": "{base_path}/dataset/SVHN/train_32x32.mat",
+    "test_set": "{base_path}/dataset/SVHN/test_32x32.mat",
+    "num_classes": 10,
+    "start_seed": 0,
+    "send_seed": 73257
+  },
+  "z3": {
+    "z3_solution_parser_command": "\"C:/Program Files/Common Files/Oracle/Java/javapath/java.exe\" -Dfile.encoding=UTF-8 -p \"{base_path}/lib/z3_parser2/bin\";\"{base_path}/lib/z3_parser2/lib/hamcrest-core-1.3.jar\";\"{base_path}/lib/z3_parser2/lib/jeval.jar\";\"{base_path}/lib/z3_parser2/lib/junit-4.13-beta-3.jar\";\"{base_path}/lib/z3_parser2/lib/org.apache.commons.io.jar\" -m z3_parser2/z3_parser.Z3SolutionParser",
+    "z3_normalized_solution_path": "{base_path}/result/{dataset}/norm_solution{thread_idx}.txt",
+    "z3_solution_path": "{base_path}/result/{dataset}/solution{thread_idx}.txt",
+    "z3_input_path": "{base_path}/result/{dataset}/constraint{thread_idx}.txt",
+    "z3_solver_path": "{base_path}/lib/z3-4.8.13-x64-win/bin/z3.exe",
+    "constraints_file_path": "{base_path}/result/{dataset}/constraint{thread_idx}.txt",
+    "time_out": 5000
+  },
+  "files": {
+    "new_image_file_path": "{base_path}/result/{dataset}/{seed_index}_new.png",
+    "comparison_file_path": "{base_path}/result/{dataset}/{seed_index}_comparison.png",
+    "seed_file_path": "{base_path}/result/{dataset}/seed{thread_idx}.csv",
+    "true_label_seed_file_path": "{base_path}/result/{dataset}/true_label{thread_idx}.txt",
+    "seed_index_file_path": "{base_path}/result/{dataset}/seed_index{thread_idx}.txt",
+    "analyzed_seed_index_file_path": "{base_path}/result/{dataset}/analyzed_seed_index{thread_idx}.txt",
+    "selected_seed_index_file_path": "{base_path}/result/{dataset}/selected_seed_index{thread_idx}.txt"
+  },
+  "constraint_config": {
+    "delta_lower_bound": 255,
+    "delta_upper_bound": 255,
+    "feature_lower_bound": 0,
+    "feature_upper_bound": 255,
+    "feature_input_type": "int",
+    "delta_prefix_name": "delta",
+    "output_layer_type_constraint": "true_index_smaller_than_second_index",
+    "strategy": "change_1_most_important_pixels",
+    "supported_strategies": [
+      "change_nonzero_pixels",
+      "change_edge",
+      "change_close_to_edge",
+      "change_5_most_important_pixels"
+    ]
+  },
+  "n_threads": 1,
+  "output_folder": "{base_path}/result/{dataset}",
+  "dataset": "mnist_deepcheck_10",
+  "base_path": "C:\\Users\\ducanhnguyen\\PycharmProjects\\mydeepconcolic"
+}

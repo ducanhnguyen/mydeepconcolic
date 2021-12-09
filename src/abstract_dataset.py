@@ -1,7 +1,7 @@
 import keras
 import numpy as np
 from keras.models import model_from_json
-
+import tensorflow as tf
 
 class abstract_dataset:
     def __init__(self):
@@ -36,12 +36,11 @@ class abstract_dataset:
         # train ANN model
         if train:
             # compiling
-            model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(lr=learning_rate),
+            model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(lr=learning_rate),
                           metrics=['accuracy'])
 
             model.fit(self.get_Xtrain(), self.category2indicator(self.get_ytrain()),
-                      batch_size=batch_size, epochs=nb_epoch, verbose=1,
-                      validation_data=(self.get_Xtest(), self.category2indicator(self.get_ytest())))
+                      batch_size=batch_size, epochs=nb_epoch, verbose=1)
             score = model.evaluate(self.get_Xtrain(), self.category2indicator(self.get_ytrain()), verbose=0)
             print('Overall training score:', score[0])
             print('Accuracy on train set:', score[1])
@@ -101,7 +100,7 @@ class abstract_dataset:
         self.__num_classes = num_class
 
     def set_Xtrain(self, Xtrain):
-        # assert (len(Xtrain.shape) == 2)
+        assert (len(Xtrain.shape) == 2)
         self.__Xtrain = Xtrain
 
     def get_Xtrain(self):
@@ -118,7 +117,7 @@ class abstract_dataset:
         return self.__Xtest
 
     def set_Xtest(self, Xtest):
-        # assert (len(Xtest.shape) == 2)
+        assert (len(Xtest.shape) == 2)
         self.__Xtest = Xtest
 
     def get_ytest(self):

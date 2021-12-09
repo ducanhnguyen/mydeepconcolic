@@ -10,6 +10,11 @@ from src.saved_models.mnist_cnnmonday import MNIST_CNN_MONDAY
 from src.saved_models.mnist_dataset import mnist_dataset
 from src.saved_models.mnist_ann_keras import MNIST_ANN_KERAS
 from src.saved_models.mnist_deepcheck import MNIST_DEEPCHECK
+from src.saved_models.mnist_deepcheck_1 import MNIST_DEEPCHECK_1
+from src.saved_models.mnist_deepcheck_10 import MNIST_DEEPCHECK_10
+from src.saved_models.mnist_deepcheck_2 import MNIST_DEEPCHECK_2
+from src.saved_models.mnist_deepcheck_3 import MNIST_DEEPCHECK_3
+from src.saved_models.mnist_deepcheck_4 import MNIST_DEEPCHECK_4
 from src.saved_models.mnist_simard import MNIST_SIMARD
 from src.saved_models.mnist_simple import MNIST_SIMPLE
 
@@ -56,6 +61,27 @@ def initialize_dnn_model_from_name(name_model):
     elif name_model == "mnist_cnn_monday":
         model_object = MNIST_CNN_MONDAY()
         NORMALIZATION_FACTOR = fashionmnist_dataset.NORMALIZATION_FACTOR
+
+
+    elif name_model == "mnist_deepcheck_1":
+        model_object = MNIST_DEEPCHECK_1()
+        NORMALIZATION_FACTOR = mnist_dataset.NORMALIZATION_FACTOR
+
+    elif name_model == "mnist_deepcheck_2":
+        model_object = MNIST_DEEPCHECK_2()
+        NORMALIZATION_FACTOR = mnist_dataset.NORMALIZATION_FACTOR
+
+    elif name_model == "mnist_deepcheck_3":
+        model_object = MNIST_DEEPCHECK_3()
+        NORMALIZATION_FACTOR = mnist_dataset.NORMALIZATION_FACTOR
+
+    elif name_model == "mnist_deepcheck_4":
+        model_object = MNIST_DEEPCHECK_4()
+        NORMALIZATION_FACTOR = mnist_dataset.NORMALIZATION_FACTOR
+
+    elif name_model == "mnist_deepcheck_10":
+        model_object = MNIST_DEEPCHECK_10()
+        NORMALIZATION_FACTOR = mnist_dataset.NORMALIZATION_FACTOR
 
     if model_object is None:
         return

@@ -3,6 +3,7 @@ Command:
 /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/lib/z3-4.8.5-x64-osx-10.14.2/bin/z3 -smt2 /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/constraint.txt > /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/solution.txt
 '''
 import os
+import subprocess
 from threading import Thread
 from types import SimpleNamespace
 
@@ -13,11 +14,11 @@ from keras.models import Model
 from src.abstract_dataset import abstract_dataset
 from src.close_to_edge_detection import close_to_edge
 from src.config_parser import *
-from src.utils.edge_detection import is_edge
 from src.log_analyzer import is_int
 from src.model_loader import initialize_dnn_model
 from src.test_summarizer import *
 from src.utils import keras_activation, keras_layer, keras_model
+from src.utils.edge_detection import is_edge
 from src.utils.feature_ranker1d import feature_ranker1d
 from src.utils.feature_ranker_2d import RANKING_ALGORITHM
 from src.utils.utilities import compute_l0, compute_l2, compute_minimum_change, compute_linf
@@ -584,7 +585,10 @@ def image_generation(seeds, thread_config, model_object):
             command = get_config(["z3", "z3_solution_parser_command"]) + f' {tmp1} ' + f'{tmp2}'
 
             # logger.debug(f'{thread_config.thread_name}: \t{command}')
-            os.system(command)
+            if platform.system() == 'Darwin' or platform.system() == 'Linux':  # macosx or hpc
+                os.system(command)
+            else: # windows
+                subprocess.run(command, shell=True)
 
             # comparison
             try:
@@ -759,7 +763,8 @@ def create_summary(directory: str, model_object, all_seeds):
         with open(adv_arr_path[idx]) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
             for row in csv_reader:
-                adv_dict[seed_index] = np.asarray(row).astype(int)
+                if len(row) > 0:
+                    adv_dict[seed_index] = np.asarray(row).astype(int)
 
     # load model
     X_train = model_object.get_Xtrain()  # for MNIST: shape = (60k, 784)
@@ -805,8 +810,8 @@ def create_summary(directory: str, model_object, all_seeds):
             pred_label_arr.append(None)
 
             true_pred_sorted = sorted(predicted_prob, reverse=True)
-            first_largest_prob.append(true_pred_sorted[0] )
-            second_largest_prob.append(true_pred_sorted[1] )
+            first_largest_prob.append(true_pred_sorted[0])
+            second_largest_prob.append(true_pred_sorted[1])
             third_largest_prob.append(true_pred_sorted[2])
             fourth_largest_prob.append(true_pred_sorted[3])
             fifth_largest_prob.append(true_pred_sorted[4])
