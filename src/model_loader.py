@@ -1,7 +1,13 @@
 import os
 
 from src.config_parser import get_config
-from src.mnist_dataset import mnist_dataset
+from src.saved_models.fashionmnist_ann_keras import FASHIONMNIST_ANN_KERAS
+from src.saved_models.fashionmnist_dataset import fashionmnist_dataset
+from src.saved_models.fashionmnist_deepcheck import FASHIONMNIST_DEEPCHECK
+from src.saved_models.fashionmnist_simard import FASHIONMNIST_SIMARD
+from src.saved_models.fashionmnist_simple import FASHIONMNIST_SIMPLE
+from src.saved_models.mnist_cnnmonday import MNIST_CNN_MONDAY
+from src.saved_models.mnist_dataset import mnist_dataset
 from src.saved_models.mnist_ann_keras import MNIST_ANN_KERAS
 from src.saved_models.mnist_deepcheck import MNIST_DEEPCHECK
 from src.saved_models.mnist_simard import MNIST_SIMARD
@@ -30,6 +36,26 @@ def initialize_dnn_model_from_name(name_model):
     elif name_model == "mnist_deepcheck":
         model_object = MNIST_DEEPCHECK()
         NORMALIZATION_FACTOR = mnist_dataset.NORMALIZATION_FACTOR
+
+    elif name_model == "fashionmnist_ann_keras":
+        model_object = FASHIONMNIST_ANN_KERAS()
+        NORMALIZATION_FACTOR = fashionmnist_dataset.NORMALIZATION_FACTOR
+
+    elif name_model == "fashionmnist_deepcheck":
+        model_object = FASHIONMNIST_DEEPCHECK()
+        NORMALIZATION_FACTOR = fashionmnist_dataset.NORMALIZATION_FACTOR
+
+    elif name_model == "fashionmnist_simple":
+        model_object = FASHIONMNIST_SIMPLE()
+        NORMALIZATION_FACTOR = fashionmnist_dataset.NORMALIZATION_FACTOR
+
+    elif name_model == "fashionmnist_simard":
+        model_object = FASHIONMNIST_SIMARD()
+        NORMALIZATION_FACTOR = fashionmnist_dataset.NORMALIZATION_FACTOR
+
+    elif name_model == "mnist_cnn_monday":
+        model_object = MNIST_CNN_MONDAY()
+        NORMALIZATION_FACTOR = fashionmnist_dataset.NORMALIZATION_FACTOR
 
     if model_object is None:
         return

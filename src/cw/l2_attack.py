@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.python.keras.models import Sequential, Model, model_from_json
 
-from src.mnist_dataset import mnist_dataset
+from src.saved_models.mnist_dataset import mnist_dataset
 from src.utils import utilities
 
 # Configure

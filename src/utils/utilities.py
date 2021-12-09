@@ -1,16 +1,21 @@
 import logging
-import random
 
 import keras
 import matplotlib
 import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib import pyplot, gridspec
+from matplotlib import pyplot
 from tensorflow.python.keras.models import model_from_json, Model
 
-from src.mnist_dataset import mnist_dataset
-
+from src.saved_models.mnist_dataset import mnist_dataset
+from os import listdir
+from os.path import isfile, join
+import os
 # matplotlib.use('TkAgg')
+from src.utils.edge_detection import is_edge
+from src.utils.feature_ranker1d import feature_ranker1d
+from src.utils.feature_ranker_2d import RANKING_ALGORITHM
+import numpy as np
+import tensorflow as tf
 
 global logger
 logger = logging.getLogger()
@@ -228,13 +233,13 @@ def show_two_images(x_28_28_left, x_28_28_right, left_title="", right_title="", 
     fig = plt.figure()
     fig1 = fig.add_subplot(1, 2, 1)
     fig1.title.set_text(left_title)
-    # plt.imshow(x_28_28_left, cmap="gray")
-    plt.imshow(x_28_28_left)
+    plt.imshow(x_28_28_left, cmap="gray")
+    # plt.imshow(x_28_28_left)
 
     fig2 = fig.add_subplot(1, 2, 2)
     fig2.title.set_text(right_title)
-    # plt.imshow(x_28_28_right, cmap='gray')
-    plt.imshow(x_28_28_right)
+    plt.imshow(x_28_28_right, cmap='gray')
+    # plt.imshow(x_28_28_right)
 
     if path is not None:
         plt.savefig(path, pad_inches=0, bbox_inches='tight')
@@ -272,6 +277,21 @@ def load_model(weight_path: str,
 def visualize_cnn(x_image_4D: np.ndarray,
                   model: keras.engine.sequential.Sequential,
                   specified_layer: str):
+    if (False): # just main
+        logger.debug("initialize_dnn_model")
+        model = keras.models.load_model(
+            filepath="/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/rivf/autoencoder_mnist.h5",
+            compile=False)
+        model.summary()
+
+        mnist_loader = mnist_dataset()
+        Xtrain, ytrain, Xtest, ytest = mnist_loader.read_data(
+            trainset_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/digit-recognizer/train.csv',
+            testset_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/digit-recognizer/test.csv')
+        x_image_4D = Xtrain[1].reshape(-1, 28, 28, 1)
+
+        visualize_cnn(x_image_4D=x_image_4D, model=model, specified_layer=None)
+
     for layer in model.layers:
         # logger.debug(f"Layer {layer.name}")
         if specified_layer is None or \
@@ -342,6 +362,119 @@ def highlight_diff(img1_0_255, img2_0_255):
     highlight = np.asarray(highlight)
     return highlight.reshape(shape)
 
+def find_joint_adv():
+    '''
+    Compute the number of adversarial examples in a folder
+    :return:
+    '''
+    model = 'deepcheck'
+    strategies  = ['1most', 'nonzero', 'edge']
+    types = ['or', 'secondLabelTarget', 'upperbound']
+
+    for strategy in strategies:
+        advs = []
+        for type in types:
+
+            paths = [
+                f'/Users/ducanhnguyen/Documents/mydeepconcolic/result/smt4ffnn/fashionmnist/{model}/{strategy}_{type}'
+                     ]
+
+            for path in paths:
+                if os.path.exists(path):
+                    onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
+                    # print(len(onlyfiles))
+                    for file in onlyfiles:
+                        if file not in advs and file.endswith(".png"):
+                            advs.append(file)
+        print(f'---------{strategy}: {len(advs)}')
+
+
+def find_joint_pixels(model_object, seed_idx):
+    '''
+    Given a set of changed pixels, find the joint set of this set and n-most important pixels
+    :param model_object:
+    :param seed_idx:
+    :return:
+    '''
+    x_28_28 = model_object.get_Xtrain()[seed_idx].reshape(28, 28)
+    changed_features = []
+    idx = 0
+    for i in range(28):
+        for j in range(28):
+            if is_edge(i, j, x_28_28):
+                changed_features.append(idx)
+            idx += 1
+    print(f'size of changed_features = {len(changed_features)}')
+    print(f'changed_features = {changed_features}')
+
+    #
+    true_label = model_object.get_ytrain()[seed_idx]
+    print(f'true label = {true_label}')
+    target_labels = [idx for idx in range(10) if idx != true_label]
+    x_28_28 = x_28_28.reshape(-1, 784)
+    grad_arr = []
+    for target_label in target_labels:
+        important_features = feature_ranker1d.find_important_features_of_a_sample(
+            input_image=x_28_28.reshape(-1, 784),
+            n_important_features=len(changed_features),
+            algorithm=RANKING_ALGORITHM.COI,
+            gradient_label=target_label,
+            classifier=model_object.get_model())
+        # joint set
+        joint = [idx for idx in changed_features if idx in important_features]
+        grad_arr.append(len(joint))
+
+    # sort and display
+    grad_arr, target_labels = zip(*sorted(zip(grad_arr, target_labels), reverse=True))
+    for k, v in zip(grad_arr, target_labels):
+        if v != true_label:
+            print(f'label {v}: len(joint pixels) = {k}')
+
+def least_likely(model_object, seed_idx):
+    '''
+    Given a set of changed pixels, find the sum of gradient wrt these pixes
+    :return:
+    '''
+    #
+    x_28_28 = model_object.get_Xtrain()[seed_idx].reshape(28, 28)
+    x_784 = model_object.get_Xtrain()[seed_idx].reshape(784)
+    changed_features = []
+    idx = 0
+    for i in range(28):
+        for j in range(28):
+            if is_edge(i, j, x_28_28):
+                changed_features.append(idx)
+            idx += 1
+    print(f'size of changed_features = {len(changed_features)}')
+    print(f'changed_features = {changed_features}')
+
+    #
+    true_label = model_object.get_ytrain()[seed_idx]
+    print(f'true label = {true_label}')
+    target_labels = [idx for idx in range(10) if idx != true_label]
+    x_28_28 = x_28_28.reshape(-1, 784)
+    grad_arr = []
+    for target_label in target_labels:
+        gradient = feature_ranker1d.compute_gradient_wrt_features(
+            input=tf.convert_to_tensor(x_28_28),
+            target_neuron=target_label,
+            classifier=model_object.get_model()
+        )
+        grad_arr.append(np.sum(np.abs(gradient[changed_features] * x_784[changed_features])))  # COI
+
+    # sort and display
+    grad_arr, target_labels = zip(*sorted(zip(grad_arr, target_labels), reverse=True))
+    for k, v in zip(grad_arr, target_labels):
+        if v != true_label:
+            print(f'label {v}: sum of grad = {k}')
+
+
+def compute_neuron_values(model, seed_index):
+    for layer in model.layers:
+        # redefine model to output right after the first hidden layer
+        print(layer)
+        model = Model(inputs=model.inputs, outputs=layer.output)
+
 
 if __name__ == '__main__':
     logger.debug("initialize_dnn_model")
@@ -350,11 +483,4 @@ if __name__ == '__main__':
         compile=False)
     model.summary()
 
-    mnist_loader = mnist_dataset()
-    Xtrain, ytrain, Xtest, ytest = mnist_loader.read_data(
-        trainset_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/digit-recognizer/train.csv',
-        testset_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/digit-recognizer/test.csv')
-    x_image_4D = Xtrain[1].reshape(-1, 28, 28, 1)
-
-    visualize_cnn(x_image_4D=x_image_4D, model=model, specified_layer=None)
-
+    compute_neuron_values(model, 1)

@@ -1,5 +1,5 @@
 """
-Just support FFNN
+Just support CNN (doing)
 """
 from tensorflow.python.keras import Model
 from tensorflow.python.keras.models import Sequential
@@ -11,14 +11,17 @@ import numpy as np
 
 nameVars = set()
 
+
 def weight(layer_idx, starting_neuron, target_neuron):
     if layer_idx < 0:
         return f"w_f{starting_neuron}_to_n{target_neuron}"
     else:
         return f"w_l{layer_idx}_n{starting_neuron}_to_n{target_neuron}"
 
+
 def get_feature_name(feature_idx):
     return f"f{feature_idx}"
+
 
 def get_neuron_name(layer_idex, neuron_idx, model):
     presoftmax_index = get_presoftmax_index(model)
@@ -39,17 +42,38 @@ def generate_weights(model: Sequential):
         print(f"layer {current_layer.name}")
         print(f"layer {current_layer}")
         weights = current_layer.get_weights()  # the second are biases, the first are weights between two layers
+
         if keras_layer.is_dense(current_layer):
             kernel = weights[0]
-            biases = weights[1]
-
-            print(f"#neuron in pre layer = {kernel.shape[0]}")
-            print(f"#neuron in next layer = {kernel.shape[1]}")
-            print(f"#neuron in bias = {len(biases)}")
+            output += f"double[][] {current_layer.name}_kernel = new double[{kernel.shape[0]}][{kernel.shape[1]}];\n"
             for i in range(kernel.shape[0]):
                 for j in range(kernel.shape[1]):
-                    output += f"double  {weight(idx - 1, i, j)} = {kernel[i][j]};"
-                    output += "\n"
+                    output += f"{current_layer.name}_kernel[{i}][{j}] = {kernel[i][j]}; "
+
+            output += "\n"
+
+            biases = weights[1]  # shape = #filter
+            output += f"double[] {current_layer.name}_bias = new double[{biases.shape[0]}];\n"
+            for i in range(0, biases.shape[0]):
+                output += f"{current_layer.name}_bias[{i}] = {biases[i]}; "
+            # print(output)
+
+        elif keras_layer.is_conv2d(current_layer):
+            kernel = weights[0]  # shape = (#filter_width, #filter_height, #channel, #filter)
+            output += f"double[][][][] {current_layer.name}_kernel = new double[{kernel.shape[0]}][{kernel.shape[1]}][{kernel.shape[2]}][{kernel.shape[3]}];\n"
+            for i in range(0, kernel.shape[0]):
+                for j in range(0, kernel.shape[1]):
+                    for k in range(0, kernel.shape[2]):
+                        for h in range(0, kernel.shape[3]):
+                            output += f"{current_layer.name}_kernel[{i}][{j}][{k}][{h}] = {kernel[i][j][k][h]}; "
+
+            output += "\n"
+
+            biases = weights[1]  # shape = #filter
+            output += f"double[] {current_layer.name}_bias = new double[{biases.shape[0]}];\n"
+            for i in range(0, biases.shape[0]):
+                output += f"{current_layer.name}_bias[{i}] = {biases[i]}; "
+            # print(output)
 
     return output
 
@@ -98,16 +122,18 @@ def handle_softmax_layer(layer, i, model):  # just print pre-softmax value
 
     output += "\n"
     for j in range(n_neurons - 1):
-        name = get_neuron_name(layer_idex=i-1, neuron_idx=j, model=model)
+        name = get_neuron_name(layer_idex=i - 1, neuron_idx=j, model=model)
         nameVars.add(name)
         # output += f"printf(\"prob of class {j} = %.6f  \\n \", {name});\n"
     return output
+
 
 def print_all_vars():
     output = ""
     for nameVar in nameVars:
         output += f"printf(\"{nameVar} = %.8f  \\n \", {nameVar});\n"
     return output
+
 
 def handle_dense_layer(layer, layer_idx, model):
     output = ""
@@ -165,16 +191,17 @@ def get_presoftmax_index(model):
 
 
 if __name__ == '__main__':
-    model_object = initialize_dnn_model_from_name("fashionmnist_simple")
+    model_object = initialize_dnn_model_from_name("mnist_cnn_monday")
     print(model_object.get_model().summary())
     model = model_object.get_model()
+    model.summary()
     inputlayer = model.layers[0]
-
-    # y_pred = np.argmax(model.predict(model_object.get_Xtrain()[:100]), axis=1);
-    # np.where(np.argmax(model.predict(model_object.get_Xtrain()), axis=1) != model_object.get_ytrain())
-    '''
-    add header
-    '''
+    #
+    # # y_pred = np.argmax(model.predict(model_object.get_Xtrain()[:100]), axis=1);
+    # # np.where(np.argmax(model.predict(model_object.get_Xtrain()), axis=1) != model_object.get_ytrain())
+    # '''
+    # add header
+    # '''
     code = "";
     with open('/Users/ducanhnguyen/Documents/mydeepconcolic/src/c_code/header.c') as f:
         lines = f.readlines()
@@ -185,106 +212,68 @@ if __name__ == '__main__':
         lines = f.readlines()
         for line in lines:
             code += line;
-    # print(generate_weights(model))
-    '''
-    generate predict()
-    '''
-    code += generate_prototype(inputlayer) + "\n"
-    code += "{\n"
-    code += normalize_features(inputlayer) + "\n"
-
-    for idx, current_layer in enumerate(model.layers):
-        if keras_layer.is_inputlayer(current_layer):
-            continue;
-
-        elif keras_layer.is_dense(current_layer):
-            code += handle_dense_layer(model.layers[idx], idx, model)
-            code += "\n"
-        elif keras_layer.is_activation(current_layer):
-            if keras_activation.is_relu(current_layer):
-                code += handle_relu_layer(model.layers[idx], idx, model)
-                code += "\n"
-            elif keras_activation.is_softmax(current_layer):
-                code += handle_softmax_layer(model.layers[idx], idx, model)
-                code += "\n"
-
-    code += print_all_vars();
-    code += "}\n\n"
-
-    '''
-    initialize testpath
-    '''
-    code += "int main(int argc, char** argv){\n"
-    with open('/Users/ducanhnguyen/Documents/mydeepconcolic/src/c_code/ccode.c') as f:
-        lines = f.readlines()
-        for line in lines:
-            code += line;
-
-    '''
-    declaration
-    '''
-
-    N_FEATURES = 784
-    for idx in range(N_FEATURES):
-        # argv[1]: the first argument
-        code += f"double {get_feature_name(idx)} = atoi(argv[{idx + 1}]); "
-    code += "\n";
-
-
+    code = generate_weights(model)
 
     # '''
-    # ifdef
+    # generate predict()
     # '''
-    # num_analyzed_seeds = 100  # len(model_object.get_Xtrain())
-    # code += f"#ifdef seed0\n"
-    # for seed_idx in range(0, num_analyzed_seeds):
-    #     input_image = model_object.get_Xtrain()[seed_idx].reshape(-1)
-    #     for idx in range(len(input_image)):
-    #         code += f"\t{get_feature_name(idx)} = {np.round(255 * input_image[idx], 0)}; "
+    # code += generate_prototype(inputlayer) + "\n"
+    # code += "{\n"
+    # code += normalize_features(inputlayer) + "\n"
     #
-    #     # just for logging
-    #     code += f"\n/*true label: {model_object.get_ytrain()[seed_idx]}*/\n"
-    #     presoftmax = -2
-    #     intermediate_layer_model = Model(inputs=model_object.get_model().inputs,
-    #                                      outputs=model_object.get_model().layers[presoftmax].output)
-    #     presoftmax_str = intermediate_layer_model.predict(input_image.reshape(-1, 784))
-    #     code += f"/*presoftmax: {presoftmax_str}\n*/"
+    # for idx, current_layer in enumerate(model.layers):
+    #     if keras_layer.is_inputlayer(current_layer):
+    #         continue;
     #
-    #     if (seed_idx != num_analyzed_seeds - 1):
-    #         code += f"\n#elif seed{seed_idx + 1}\n"
-    #     else:
-    #         code += "\n#endif\n"
-
-    '''
-    make symbolic
-    '''
-    # code += makesymbolic(input_image) + "\n"
-    # code += assume(inputlayer, np.round(input_image * 255), delta=10) + "\n"
-
-    '''
-    call predict()
-    '''
-    code += "\n"
-    code += "predict("
-    for idx in range(N_FEATURES):
-        code += f"{get_feature_name(idx)}"
-        if idx != N_FEATURES - 1:
-            code += ", "
-    code += ");\n"  # end of predict call
-    code += "return 0;\n"
-    code += "}"
-
-    '''
-    export to file
-    '''
-    f = open("/Users/ducanhnguyen/Documents/NpixelAttackDeepFault/datatest/ImprovedDeepFault/fashionmnist_simple/model/ccodeexam.c", "w")
+    #     elif keras_layer.is_dense(current_layer):
+    #         code += handle_dense_layer(model.layers[idx], idx, model)
+    #         code += "\n"
+    #     elif keras_layer.is_activation(current_layer):
+    #         if keras_activation.is_relu(current_layer):
+    #             code += handle_relu_layer(model.layers[idx], idx, model)
+    #             code += "\n"
+    #         elif keras_activation.is_softmax(current_layer):
+    #             code += handle_softmax_layer(model.layers[idx], idx, model)
+    #             code += "\n"
+    #
+    # code += print_all_vars();
+    # code += "}\n\n"
+    #
+    # '''
+    # initialize testpath
+    # '''
+    # code += "int main(int argc, char** argv){\n"
+    # with open('/Users/ducanhnguyen/Documents/mydeepconcolic/src/c_code/ccode.c') as f:
+    #     lines = f.readlines()
+    #     for line in lines:
+    #         code += line;
+    #
+    # '''
+    # declaration
+    # '''
+    #
+    # N_FEATURES = 784
+    # for idx in range(N_FEATURES):
+    #     # argv[1]: the first argument
+    #     code += f"double {get_feature_name(idx)} = atoi(argv[{idx + 1}]); "
+    # code += "\n";
+    #
+    # '''
+    # call predict()
+    # '''
+    # code += "\n"
+    # code += "predict("
+    # for idx in range(N_FEATURES):
+    #     code += f"{get_feature_name(idx)}"
+    #     if idx != N_FEATURES - 1:
+    #         code += ", "
+    # code += ");\n"  # end of predict call
+    # code += "return 0;\n"
+    # code += "}"
+    #
+    # '''
+    # export to file
+    # '''
+    f = open("/Users/ducanhnguyen/Documents/NpixelAttackDeepFault/datatest/ImprovedDeepFault/test/modelcode/cnn_mnist_monday.c", "w")
     f.write(code)
     f.close()
-
-    # utilities.show_two_images(input_image.reshape(28, 28), input_image.reshape(28, 28), display=True)
-
-    # for checking
-    # intermediate_layer_model = Model(inputs=model.inputs,
-    #                                  outputs=model.layers[-2].output)
-    # neurons = intermediate_layer_model.predict(input_image.reshape(-1, 784))
-    # print(neurons)

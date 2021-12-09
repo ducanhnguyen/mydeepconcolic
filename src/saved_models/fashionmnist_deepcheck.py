@@ -1,21 +1,21 @@
 from keras.layers import Dense, Activation
 from keras.models import Sequential
 
+from src.saved_models.fashionmnist_dataset import fashionmnist_dataset
 from src.saved_models.mnist_dataset import mnist_dataset
-
 '''
-Overall training score: 0.10900241881608963
-Accuracy on train set: 0.9676166772842407
-Overall test score: 0.22557860612869263
-Accuracy on test set: 0.9440000057220459
+Overall training score: 0.28335806727409363
+Accuracy on train set: 0.8955000042915344
+Overall test score: 0.46402227878570557
+Accuracy on test set: 0.8539999723434448
 '''
 import os
 
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
-class MNIST_DEEPCHECK(mnist_dataset):
+class FASHIONMNIST_DEEPCHECK(fashionmnist_dataset):
 
     def __init__(self):
-        super(MNIST_DEEPCHECK, self).__init__()
+        super(FASHIONMNIST_DEEPCHECK, self).__init__()
 
     def create_model(self, input_shape):
         model = Sequential()
@@ -38,15 +38,15 @@ class MNIST_DEEPCHECK(mnist_dataset):
 
 if __name__ == '__main__':
     # train model
-    mnist = MNIST_DEEPCHECK()
+    mnist = FASHIONMNIST_DEEPCHECK()
     mnist.set_num_classes(10)
 
     mnist.train_model(train=True,
-                      kernel_path='/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/mnist_deepcheck.h5',
-                      model_path='/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/mnist_deepcheck.json',
-                      training_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/digit-recognizer/train.csv',
-                      testing_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/digit-recognizer/test.csv',
-                      nb_epoch=100)
+                      kernel_path='/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/fashionmnist_deepcheck.h5',
+                      model_path='/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/fashionmnist_deepcheck.json',
+                      training_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/fashion-mnist/fashion-mnist_train.csv',
+                      testing_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/fashion-mnist/fashion-mnist_test.csv',
+                      nb_epoch=300)
 
     #
     # # plot an observation

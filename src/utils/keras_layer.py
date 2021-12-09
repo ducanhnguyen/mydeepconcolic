@@ -2,7 +2,7 @@ import logging
 
 import keras
 
-from src.utils import keras_model
+from src.utils import keras_model, keras_activation
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -90,10 +90,34 @@ def get_number_of_units(model, layer_idx):
         logger.debug(f'Unable to detect the type of neural network')
     return units
 
+def get_num_relu_neurons(model):
+    n_neurons = 0
+    presoftmax = -2
+
+    layer_idx = 0
+    for layer in model.layers[:presoftmax]:
+        if is_activation(layer) and keras_activation.is_relu(layer):
+            n_neurons += get_number_of_units(model, layer_idx)
+        layer_idx += 1
+
+    return n_neurons
+
+def is_inputlayer(layer_object):
+    if isinstance(layer_object, keras.layers.InputLayer):
+        return True
+    else:
+        return False
 
 def is_dense(layer_object):
     assert (layer_object != None)
     if isinstance(layer_object, keras.layers.core.Dense):
+        return True
+    else:
+        return False
+
+def is_conv2d(layer_object):
+    assert (layer_object != None)
+    if isinstance(layer_object, keras.layers.convolutional.Conv2D):
         return True
     else:
         return False

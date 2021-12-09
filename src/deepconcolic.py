@@ -13,7 +13,7 @@ from keras.models import Model
 from src.abstract_dataset import abstract_dataset
 from src.close_to_edge_detection import close_to_edge
 from src.config_parser import *
-from src.edge_detection import is_edge
+from src.utils.edge_detection import is_edge
 from src.log_analyzer import is_int
 from src.model_loader import initialize_dnn_model
 from src.test_summarizer import *
@@ -21,6 +21,8 @@ from src.utils import keras_activation, keras_layer, keras_model
 from src.utils.feature_ranker1d import feature_ranker1d
 from src.utils.feature_ranker_2d import RANKING_ALGORITHM
 from src.utils.utilities import compute_l0, compute_l2, compute_minimum_change, compute_linf
+import time
+
 
 MINUS_INF = -10000000
 INF = 10000000
@@ -33,6 +35,7 @@ logger = logging.getLogger()
 global graph
 
 NORMALIZATION_FACTOR = 255
+smttime  = []
 
 
 def create_constraint_between_layers(model_object):
@@ -567,10 +570,12 @@ def image_generation(seeds, thread_config, model_object):
             create_constraints_file(model_object, seed_index, thread_config)
 
             # call SMT-Solver
+            start_smt_time = time.time()
             logger.debug(f'{thread_config.thread_name}: call SMT-Solver to solve the constraints')
             command = f"{thread_config.z3_path} -smt2 {thread_config.constraints_file} > {thread_config.z3_solution_file}"
             logger.debug(f'\t{thread_config.thread_name}: command = {command}')
             os.system(command)
+            smttime.append(time.time() - start_smt_time)
 
             # parse solver solution
             logger.debug(f'{thread_config.thread_name}: parse solver solution')
@@ -946,7 +951,13 @@ if __name__ == '__main__':
     logging.root.setLevel(logging.DEBUG)
 
     model_object = initialize_dnn_model()
+
+    start = time.time()
     generate_samples(model_object)
+    end = time.time()
+    TOTAL = end - start
+    print(f"total time {TOTAL}")
+    print(f"smt time {smttime}, avg = {np.average(smttime)}")
 
     start_seed = int(get_config([model_object.get_name_dataset(), "start_seed"]))
     end_seed = int(get_config([model_object.get_name_dataset(), "end_seed"]))

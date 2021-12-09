@@ -1,7 +1,7 @@
 from keras.layers import Dense, Activation
 from keras.models import Sequential
 
-from src.mnist_dataset import mnist_dataset
+from src.saved_models.mnist_dataset import mnist_dataset
 
 '''
 '''

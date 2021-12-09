@@ -2,7 +2,7 @@ from src.saved_models.mnist_ann_keras import MNIST_ANN_KERAS
 import numpy as np
 import matplotlib.pyplot as plt
 
-from src.utils import utilities
+
 
 
 def is_edge(row_idx, col_idx, x_28_28):
@@ -39,7 +39,7 @@ if __name__ == '__main__':
                 x_clone[row_idx, col_idx] = 1
             else:
                 x_clone[row_idx, col_idx] = 0
-
+    from src.utils import utilities
     utilities.show_two_images(left_title=f"ori (idx = {idx})",
                               x_28_28_left=x_28_28.reshape(28, 28),
                               right_title="border_origin_images",

@@ -1,14 +1,21 @@
 from keras.layers import Dense, Activation
 from keras.models import Sequential
 
+from src.saved_models.fashionmnist_dataset import fashionmnist_dataset
 from src.saved_models.mnist_dataset import mnist_dataset
 
+import os
 '''
+Overall training score: 0.012811495922505856
+Accuracy on train set: 0.9957833290100098
+Overall test score: 0.9800440669059753
+Accuracy on test set: 0.8952000141143799
 '''
-class MNIST_SIMARD(mnist_dataset):
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
+class FASHIONMNIST_SIMARD(fashionmnist_dataset):
 
     def __init__(self):
-        super(MNIST_SIMARD, self).__init__()
+        super(FASHIONMNIST_SIMARD, self).__init__()
 
     def create_model(self, input_shape):
         model = Sequential()
@@ -34,15 +41,15 @@ class MNIST_SIMARD(mnist_dataset):
 
 if __name__ == '__main__':
     # train model
-    mnist = MNIST_SIMARD()
+    mnist = FASHIONMNIST_SIMARD()
     mnist.set_num_classes(10)
 
     mnist.train_model(train=True,
-                      kernel_path='/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/mnist_simard.h5',
-                      model_path='/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/mnist_simard.json',
-                      training_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/digit-recognizer/train.csv',
-                      testing_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/digit-recognizer/test.csv',
-                      nb_epoch=100)
+                      kernel_path='/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/fashionmnist_simard.h5',
+                      model_path='/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/fashionmnist_simard.json',
+                      training_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/fashion-mnist/fashion-mnist_train.csv',
+                      testing_path='/Users/ducanhnguyen/Documents/mydeepconcolic/dataset/fashion-mnist/fashion-mnist_test.csv',
+                      nb_epoch=300)
 
     #
     # # plot an observation

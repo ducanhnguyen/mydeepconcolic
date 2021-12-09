@@ -23,7 +23,7 @@
     "train_set": "{base_path}/dataset/digit-recognizer/train.csv",
     "test_set": "{base_path}/dataset/digit-recognizer/test.csv",
     "num_classes": 10,
-    "start_seed": 0,
+    "start_seed": 5546,
     "end_seed": 10000
   },
   "mnist_deepcheck": {
@@ -35,33 +35,50 @@
     "start_seed": 0,
     "end_seed": 10000
   },
-  "cifar_10": {
-    "structure": "{base_path}/src/saved_models/cifar10_ann_keras.json",
-    "weight": "{base_path}/src/saved_models/cifar10_ann_keras.h5",
-    "train_set": "invalid",
-    "test_set": "invalid",
+  "mnist_cnn_monday": {
+    "structure": "{base_path}/src/saved_models/mnist_cnn_monday.json",
+    "weight": "{base_path}/src/saved_models/mnist_cnn_monday.h5",
+    "train_set": "{base_path}/dataset/digit-recognizer/train.csv",
+    "test_set": "{base_path}/dataset/digit-recognizer/test.csv",
     "num_classes": 10,
     "start_seed": 0,
-    "end_seed": 60000,
-    "link": "https://www.cs.toronto.edu/~kriz/cifar.html"
+    "end_seed": 10000
   },
-  "fashion_mnist": {
-    "structure": "{base_path}/src/saved_models/fashion_mnist_ann_keras.json",
-    "weight": "{base_path}/src/saved_models/fashion_mnist_ann_keras.h5",
-    "train_set": "{base_path}/dataset/fashion_mnist/train.csv",
-    "test_set": "{base_path}/dataset/fashion_mnist/test.csv",
+  "fashionmnist_ann_keras": {
+    "structure": "{base_path}/src/saved_models/fashionmnist_ann_keras.json",
+    "weight": "{base_path}/src/saved_models/fashionmnist_ann_keras.h5",
+    "train_set": "{base_path}/dataset/fashion-mnist/fashion-mnist_train.csv",
+    "test_set": "{base_path}/dataset/fashion-mnist/fashion-mnist_test.csv",
     "num_classes": 10,
     "start_seed": 0,
-    "end_seed": 60000
+    "end_seed": 10000
   },
-  "shvn": {
-    "structure": "{base_path}/src/saved_models/shvn_ann_keras.json",
-    "weight": "{base_path}/src/saved_models/shvn_ann_keras.h5",
-    "train_set": "{base_path}/dataset/SVHN/train_32x32.mat",
-    "test_set": "{base_path}/dataset/SVHN/test_32x32.mat",
+  "fashionmnist_deepcheck": {
+    "structure": "{base_path}/src/saved_models/fashionmnist_deepcheck.json",
+    "weight": "{base_path}/src/saved_models/fashionmnist_deepcheck.h5",
+    "train_set": "{base_path}/dataset/fashion-mnist/fashion-mnist_train.csv",
+    "test_set": "{base_path}/dataset/fashion-mnist/fashion-mnist_test.csv",
     "num_classes": 10,
     "start_seed": 0,
-    "send_seed": 73257
+    "end_seed": 10000
+  },
+  "fashionmnist_simple": {
+    "structure": "{base_path}/src/saved_models/fashionmnist_simple.json",
+    "weight": "{base_path}/src/saved_models/fashionmnist_simple.h5",
+    "train_set": "{base_path}/dataset/fashion-mnist/fashion-mnist_train.csv",
+    "test_set": "{base_path}/dataset/fashion-mnist/fashion-mnist_test.csv",
+    "num_classes": 10,
+    "start_seed": 0,
+    "end_seed": 10000
+  },
+  "fashionmnist_simard": {
+    "structure": "{base_path}/src/saved_models/fashionmnist_simard.json",
+    "weight": "{base_path}/src/saved_models/fashionmnist_simard.h5",
+    "train_set": "{base_path}/dataset/fashion-mnist/fashion-mnist_train.csv",
+    "test_set": "{base_path}/dataset/fashion-mnist/fashion-mnist_test.csv",
+    "num_classes": 10,
+    "start_seed": 0,
+    "end_seed": 10000
   },
   "z3": {
     "z3_solution_parser_command": "{base_path}/lib/jdk-11.0.1/bin/java -Dfile.encoding=UTF-8 -p {base_path}/lib/z3_parser2/bin:{base_path}/lib/z3_parser2/lib/hamcrest-core-1.3.jar:{base_path}/lib/z3_parser2/lib/jeval.jar:{base_path}/lib/z3_parser2/lib/junit-4.13-beta-3.jar:{base_path}/lib/z3_parser2/lib/org.apache.commons.io.jar -m z3_parser2/z3_parser.Z3SolutionParser",
@@ -88,17 +105,17 @@
     "feature_upper_bound": 255,
     "feature_input_type": "int",
     "delta_prefix_name": "delta",
-    "output_layer_type_constraint": "true_index_smaller_than_second_index",
-    "strategy": "change_close_to_edge",
+    "output_layer_type_constraint": "or",
+    "strategy": "change_edge",
     "supported_strategies": [
       "change_nonzero_pixels",
       "change_edge",
       "change_close_to_edge",
-      "change_5_most_important_pixels"
+      "change_1_most_important_pixels"
     ]
   },
-  "n_threads": 4,
+  "n_threads": 5,
   "output_folder": "{base_path}/result/{dataset}",
-  "dataset": "mnist_deepcheck",
+  "dataset": "fashionmnist_simard",
   "base_path": "/home/anhnd/mydeepconcolic"
 }
