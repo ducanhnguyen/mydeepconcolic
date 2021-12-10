@@ -4,8 +4,8 @@ Accuracy on train set: 0.9994166493415833
 Overall test score: 0.06345111131668091
 Accuracy on test set: 0.9865000247955322
 '''
-from keras.layers import Dense, Activation
-from keras.models import Sequential
+from tensorflow.keras.layers import Dense, Activation
+from tensorflow.keras.models import Sequential
 from tensorflow.python.keras.layers import Conv2D, MaxPooling2D, Flatten
 from tensorflow.python.keras.optimizer_v1 import SGD
 

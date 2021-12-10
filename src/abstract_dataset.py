@@ -1,8 +1,13 @@
-import keras
+import tensorflow.keras
 import numpy as np
-from keras.models import model_from_json
-import tensorflow as tf
+from tensorflow.keras.models import model_from_json
 
+'''
+Overall training score: 0.23213724792003632
+Accuracy on train set: 0.9347333312034607
+Overall test score: 0.3369622826576233
+Accuracy on test set: 0.9121000170707703
+'''
 class abstract_dataset:
     def __init__(self):
         self.__Xtrain = None  # 2-D array: (N_samples, N_features)
@@ -25,7 +30,7 @@ class abstract_dataset:
         assert (index >= 0 and len(self.get_Xtrain().shape) == 2 and len(self.get_ytrain().shape) == 1)
         return self.get_Xtrain()[index].reshape(1, -1), self.get_ytrain()[index]
 
-    def train_model(self, train, kernel_path, model_path, training_path, testing_path, batch_size=64, nb_epoch=30,
+    def train_model(self, train, kernel_path, model_path, training_path, testing_path, batch_size=512, nb_epoch=30,
                     learning_rate=1e-3):
         assert (train == True or train == False)
         assert (kernel_path != None and training_path != None and testing_path != None)
@@ -36,7 +41,7 @@ class abstract_dataset:
         # train ANN model
         if train:
             # compiling
-            model.compile(loss='categorical_crossentropy', optimizer=tf.keras.optimizers.Adam(lr=learning_rate),
+            model.compile(loss='categorical_crossentropy', optimizer=tensorflow.keras.optimizers.Adam(learning_rate),
                           metrics=['accuracy'])
 
             model.fit(self.get_Xtrain(), self.category2indicator(self.get_ytrain()),

@@ -2,14 +2,12 @@
 Command:
 /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/lib/z3-4.8.5-x64-osx-10.14.2/bin/z3 -smt2 /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/constraint.txt > /Users/ducanhnguyen/Documents/python/pycharm/mydeepconcolic/dataset/solution.txt
 '''
-import os
 import subprocess
 from threading import Thread
 from types import SimpleNamespace
-
-import keras
 import tensorflow as tf
-from keras.models import Model
+from tensorflow.keras.models import Model
+from tensorflow.python.keras.models import Sequential
 
 from src.abstract_dataset import abstract_dataset
 from src.close_to_edge_detection import close_to_edge
@@ -228,7 +226,7 @@ def create_variable_declarations(model_object, type_feature=get_config(["constra
 
     model = model_object.get_model()
     if keras_model.is_ANN(model):
-        if isinstance(model, keras.engine.sequential.Sequential):
+        if isinstance(model, Sequential):
             # for input layer
             constraints.append(f'; feature declaration')
             input_shape = model.input_shape  # (None, n_features)

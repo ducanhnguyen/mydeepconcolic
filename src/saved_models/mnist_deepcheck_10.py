@@ -1,15 +1,15 @@
-import pandas as pd
-from keras.layers import Dense, Activation
-from keras.models import Sequential
+from tensorflow.keras.layers import Dense, Activation
+from tensorflow.keras.models import Sequential
 
 from src.saved_models.mnist_dataset import mnist_dataset
 
 '''
-Overall training score: 0.12820741534233093
-Accuracy on train set: 0.9628000259399414
-Overall test score: 0.26859232783317566
-Accuracy on test set: 0.935699999332428
 
+Overall training score: 0.14809125661849976
+Accuracy on train set: 0.9583166837692261
+2021-12-10 22:35:01.292770: I tensorflow/core/grappler/optimizers/custom_graph_optimizer_registry.cc:112] Plugin optimizer for device_type GPU is enabled.
+Overall test score: 0.29526209831237793
+Accuracy on test set: 0.9278000593185425
 '''
 import os
 

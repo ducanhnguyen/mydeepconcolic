@@ -1,12 +1,14 @@
-import keras
+
+from tensorflow.python.keras.layers import Activation
+
 
 def is_activation(obj):
     assert (obj != None)
-    return isinstance(obj, keras.layers.core.Activation)
+    return isinstance(obj, Activation)
 
 def is_relu(obj):
     assert (obj != None)
-    if isinstance(obj, keras.layers.core.Activation):
+    if isinstance(obj, Activation):
         if str(obj.get_config()['activation']).lower().find('relu') != -1:
             return True
         else:
@@ -17,7 +19,7 @@ def is_relu(obj):
 
 def is_tanh(obj):
     assert (obj != None)
-    if isinstance(obj, keras.layers.core.Activation):
+    if isinstance(obj, Activation):
         if str(obj.get_config()['activation']).lower().find('tanh') != -1:
             return True
         else:
@@ -28,7 +30,7 @@ def is_tanh(obj):
 
 def is_softmax(obj):
     assert (obj != None)
-    if isinstance(obj, keras.layers.core.Activation):
+    if isinstance(obj, Activation):
         if str(obj.get_config()['activation']).lower().find('softmax') != -1:
             return True
         else:

@@ -1,6 +1,10 @@
 import logging
 
-import keras
+from tensorflow.python.feature_column.feature_column import InputLayer
+from tensorflow.python.keras.layers import Conv2D, Conv1D, Conv3D, Convolution1D, Convolution2D, Convolution3D, \
+    Activation, Dropout, Dense
+from tensorflow.python.keras.models import Sequential
+from tensorflow.python.layers.pooling import MaxPooling2D
 
 from src.utils import keras_model, keras_activation
 
@@ -10,7 +14,7 @@ logger.setLevel(logging.DEBUG)
 
 def is_2dconv(layer_object):
     assert (layer_object != None)
-    if isinstance(layer_object, keras.layers.convolutional.Conv2D):
+    if isinstance(layer_object, Conv2D):
         return True
     else:
         return False
@@ -18,12 +22,12 @@ def is_2dconv(layer_object):
 
 def is_conv(layer_object):
     assert (layer_object != None)
-    if isinstance(layer_object, keras.layers.convolutional.Conv1D) \
-            or isinstance(layer_object, keras.layers.convolutional.Conv2D) \
-            or isinstance(layer_object, keras.layers.convolutional.Conv3D) \
-            or isinstance(layer_object, keras.layers.convolutional.Convolution1D) \
-            or isinstance(layer_object, keras.layers.convolutional.Convolution2D) \
-            or isinstance(layer_object, keras.layers.convolutional.Convolution3D):
+    if isinstance(layer_object, Conv1D) \
+            or isinstance(layer_object, Conv2D) \
+            or isinstance(layer_object, Conv3D) \
+            or isinstance(layer_object, Convolution1D) \
+            or isinstance(layer_object, Convolution2D) \
+            or isinstance(layer_object, Convolution3D):
         return True
     else:
         return False
@@ -31,7 +35,7 @@ def is_conv(layer_object):
 
 def is_activation(layer_object):
     assert (layer_object != None)
-    if isinstance(layer_object, keras.layers.core.Activation):
+    if isinstance(layer_object, Activation):
         return True
     else:
         return False
@@ -39,7 +43,7 @@ def is_activation(layer_object):
 
 def is_max_pooling(layer_object):
     assert (layer_object != None)
-    if isinstance(layer_object, keras.layers.pooling.MaxPooling2D):
+    if isinstance(layer_object, MaxPooling2D):
         return True
     else:
         return False
@@ -47,14 +51,14 @@ def is_max_pooling(layer_object):
 
 def is_dropout(layer_object):
     assert (layer_object != None)
-    if isinstance(layer_object, keras.layers.core.Dropout):
+    if isinstance(layer_object, Dropout):
         return True
     else:
         return False
 
 
 def get_number_of_units(model, layer_idx):
-    assert (isinstance(model, keras.engine.sequential.Sequential))
+    assert (isinstance(model, Sequential))
     assert (layer_idx >= 0)
     units = None
 
@@ -103,21 +107,21 @@ def get_num_relu_neurons(model):
     return n_neurons
 
 def is_inputlayer(layer_object):
-    if isinstance(layer_object, keras.layers.InputLayer):
+    if isinstance(layer_object, InputLayer):
         return True
     else:
         return False
 
 def is_dense(layer_object):
     assert (layer_object != None)
-    if isinstance(layer_object, keras.layers.core.Dense):
+    if isinstance(layer_object, Dense):
         return True
     else:
         return False
 
 def is_conv2d(layer_object):
     assert (layer_object != None)
-    if isinstance(layer_object, keras.layers.convolutional.Conv2D):
+    if isinstance(layer_object, Conv2D):
         return True
     else:
         return False

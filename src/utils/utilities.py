@@ -3,7 +3,9 @@ import logging
 import keras
 import matplotlib
 import matplotlib.pyplot as plt
+import tensorflow
 from matplotlib import pyplot
+from tensorflow.python.keras import Sequential
 from tensorflow.python.keras.models import model_from_json, Model
 
 from src.saved_models.mnist_dataset import mnist_dataset
@@ -275,11 +277,11 @@ def load_model(weight_path: str,
 
 
 def visualize_cnn(x_image_4D: np.ndarray,
-                  model: keras.engine.sequential.Sequential,
+                  model: Sequential,
                   specified_layer: str):
     if (False): # just main
         logger.debug("initialize_dnn_model")
-        model = keras.models.load_model(
+        model = tensorflow.keras.models.load_model(
             filepath="/Users/ducanhnguyen/Documents/mydeepconcolic/src/saved_models/rivf/autoencoder_mnist.h5",
             compile=False)
         model.summary()
