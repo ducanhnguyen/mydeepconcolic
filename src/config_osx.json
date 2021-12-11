@@ -45,7 +45,7 @@
     "end_seed": 10
   },
 
-    "mnist_deepcheck_10": {
+  "mnist_deepcheck_10": {
     "structure": "{base_path}/src/saved_models/mnist_deepcheck_10.json",
     "weight": "{base_path}/src/saved_models/mnist_deepcheck_10.h5",
     "train_set": "{base_path}/dataset/digit-recognizer/train.csv",
@@ -55,6 +55,15 @@
     "end_seed": 200
   },
 
+  "mnist_deepcheck_3": {
+    "structure": "{base_path}/src/saved_models/mnist_deepcheck_3.json",
+    "weight": "{base_path}/src/saved_models/mnist_deepcheck_3.h5",
+    "train_set": "{base_path}/dataset/digit-recognizer/train.csv",
+    "test_set": "{base_path}/dataset/digit-recognizer/test.csv",
+    "num_classes": 10,
+    "start_seed": 200,
+    "end_seed": 400
+  },
 
   "fashionmnist_ann_keras": {
     "structure": "{base_path}/src/saved_models/fashionmnist_ann_keras.json",
@@ -117,7 +126,7 @@
     "feature_upper_bound": 255,
     "feature_input_type": "int",
     "delta_prefix_name": "delta",
-    "output_layer_type_constraint": "true_index_smaller_than_second_index",
+    "output_layer_type_constraint": "or",
     "strategy": "change_1_most_important_pixels",
     "supported_strategies": [
       "change_nonzero_pixels",
@@ -126,8 +135,8 @@
       "change_5_most_important_pixels"
     ]
   },
-  "n_threads": 1,
+  "n_threads": 10,
   "output_folder": "{base_path}/result/{dataset}",
-  "dataset": "mnist_deepcheck_10",
+  "dataset": "mnist_deepcheck_3",
   "base_path": "/Users/ducanhnguyen/Documents/mydeepconcolic"
 }

@@ -22,7 +22,6 @@ from src.utils.feature_ranker_2d import RANKING_ALGORITHM
 from src.utils.utilities import compute_l0, compute_l2, compute_minimum_change, compute_linf
 import time
 
-
 MINUS_INF = -10000000
 INF = 10000000
 
@@ -34,10 +33,10 @@ logger = logging.getLogger()
 global graph
 
 NORMALIZATION_FACTOR = 255
-smttime  = []
+smttime = []
 
 
-def create_constraint_between_layers(model_object):
+def create_constraint_of_propogation_layers(model_object, modified_features, x):
     assert (isinstance(model_object, abstract_dataset))
     smt_constraints = []
 
@@ -46,13 +45,10 @@ def create_constraint_between_layers(model_object):
         return
 
     for current_layer_idx, current_layer in enumerate(model.layers):
+        pre_layer_idx = current_layer_idx - 1
+        if keras_layer.is_dense(current_layer):
+            smt_constraints.append(f'\n; Dense layer {current_layer.name}')
 
-        if keras_layer.is_conv(current_layer):
-            logger.debug(f'Layer {model.layers[current_layer_idx].name}: support conv later. Terminating...')
-            return
-
-        elif current_layer_idx == 0:  # 1: the first layer behind the input layer
-            smt_constraints.append(f'\n; (input layer, input of {current_layer.name})')
             weights = current_layer.get_weights()  # the second are biases, the first are weights between two layers
             kernel = weights[0]
             biases = weights[1]
@@ -60,14 +56,19 @@ def create_constraint_between_layers(model_object):
             hidden_units_curr_layer = kernel.shape[1]
 
             for current_pos in range(hidden_units_curr_layer):
-                var = f'u_{current_layer_idx}_{current_pos}'
-
+                var = f'l{current_layer_idx}_{current_pos}'
                 smt_constraint = ''
                 for feature_idx in range(n_features):
-                    previous_var = f'feature_{feature_idx}'
+                    if current_layer_idx == 0:  # 0: the first layer behind the input layer
+                        if feature_idx in modified_features:
+                            previous_var = f'(/ feature_{feature_idx} 255)'  # symbolic value
+                        else:
+                            previous_var = f'{x[feature_idx]}'  # real value
+                    else:
+                        previous_var = f'l{pre_layer_idx}_{feature_idx}'
                     weight = kernel[feature_idx][current_pos]
 
-                    weight = weight / NORMALIZATION_FACTOR  # rather than normalizing feature input
+                    # weight = weight / NORMALIZATION_FACTOR  # rather than normalizing feature input
                     if feature_idx == 0:
                         smt_constraint = f'(* {previous_var} {weight:.25f}) '
                     else:
@@ -77,59 +78,72 @@ def create_constraint_between_layers(model_object):
                 smt_constraint = f'(assert(= {var} {smt_constraint}))'
                 smt_constraints.append(smt_constraint)
 
-        elif keras_layer.is_dense(current_layer):
-            pre_layer_idx = current_layer_idx - 1
-            pre_layer = model.layers[pre_layer_idx]
-
-            weights = current_layer.get_weights()  # the second are biases, the first are weights between two layers
-            kernel = weights[0]
-            biases = weights[1]
-            hidden_units_pre_layer = kernel.shape[0]
-            hidden_units_curr_layer = kernel.shape[1]
-
-            smt_constraints.append(f'\n; ( output of {pre_layer.name}, input of {current_layer.name})')
-
-            if keras_layer.is_dense(pre_layer):  # instance of keras.layers.core.Dense
-                # the current layer and the previous layer is dense
-                for current_pos in range(hidden_units_curr_layer):
-                    # constraints of a hidden unit layer include (1) bias, and (2) weight
-                    var = f'u_{current_layer_idx}_{current_pos}'
-
-                    '''
-                    type constraint 2
-                    '''
-                    smt_constraint = f'{var} = '
-                    for feature_idx in range(hidden_units_pre_layer):
-                        previous_var = f'v_{pre_layer_idx}_{feature_idx}'
-                        weight = kernel[feature_idx][current_pos]
-                        if feature_idx == 0:
-                            smt_constraint = f'(* {previous_var} {weight:.25f}) '
-                        else:
-                            smt_constraint = f'(+ {smt_constraint} (* {previous_var} {weight:.25f})) '
-
-                    smt_constraint = f'(+ {smt_constraint} {biases[current_layer_idx]:.25f}) '
-                    smt_constraint = f'(assert {smt_constraint})'
-                    smt_constraints.append(smt_constraint)
-
-            elif keras_layer.is_activation(pre_layer) or keras_layer.is_dropout(
-                    pre_layer):  # instance of keras.layers.core.Dense
-                for current_pos in range(hidden_units_curr_layer):
-                    var = f'u_{current_layer_idx}_{current_pos}'
-                    previous_var = f'v_{current_layer_idx - 1}_{current_pos}'
-
-                    smt_constraint = f'(assert(= {var} {previous_var}))'
-                    smt_constraints.append(smt_constraint)
-
-        elif keras_layer.is_activation(current_layer):
-            pre_layer_idx = current_layer_idx - 1
-            pre_layer = model.layers[pre_layer_idx]
-
-            smt_constraints.append(f'\n; (output of {pre_layer.name}, input of {current_layer.name})')
-
-            units = keras_layer.get_number_of_units(model, pre_layer_idx)
+        elif keras_activation.is_relu(current_layer):
+            units = keras_layer.get_number_of_units(model, current_layer_idx)
+            smt_constraints.append(f'\n; is relu layer')
             for unit_idx in range(units):
-                smt_constraint = f'(assert(= v_{pre_layer_idx}_{unit_idx} u_{current_layer_idx}_{unit_idx}))'
+                '''
+                constraint type 2
+                v = u>0?x:0
+                '''
+                prelayer_idx = current_layer_idx - 1
+                smt_constraint = f'(= l{current_layer_idx}_{unit_idx} (ite (>= l{prelayer_idx}_{unit_idx} 0) l{prelayer_idx}_{unit_idx} 0))'
+                smt_constraint = f'(assert{smt_constraint})'
                 smt_constraints.append(smt_constraint)
+
+        # elif keras_layer.is_dense(current_layer):
+        #     pre_layer_idx = current_layer_idx - 1
+        #     pre_layer = model.layers[pre_layer_idx]
+        #
+        #     weights = current_layer.get_weights()  # the second are biases, the first are weights between two layers
+        #     kernel = weights[0]
+        #     biases = weights[1]
+        #     hidden_units_pre_layer = kernel.shape[0]
+        #     hidden_units_curr_layer = kernel.shape[1]
+        #
+        #
+        #
+        #     # if keras_layer.is_dense(pre_layer):  # instance of Dense
+        #         # the current layer and the previous layer is dense
+        #     for current_pos in range(hidden_units_curr_layer):
+        #         # constraints of a hidden unit layer include (1) bias, and (2) weight
+        #         var = f'u_{current_layer_idx}_{current_pos}'
+        #
+        #         '''
+        #         type constraint 2
+        #         '''
+        #         smt_constraint = f'{var} = '
+        #         for feature_idx in range(hidden_units_pre_layer):
+        #             previous_var = f'v_{pre_layer_idx}_{feature_idx}'
+        #             weight = kernel[feature_idx][current_pos]
+        #             if feature_idx == 0:
+        #                 smt_constraint = f'(* {previous_var} {weight:.25f}) '
+        #             else:
+        #                 smt_constraint = f'(+ {smt_constraint} (* {previous_var} {weight:.25f})) '
+        #
+        #         # smt_constraint = f'(+ {smt_constraint} {biases[current_layer_idx]:.25f}) '
+        #         smt_constraint = f'(assert {smt_constraint})'
+        #         smt_constraints.append(smt_constraint)
+
+        # elif keras_layer.is_activation(pre_layer) or keras_layer.is_dropout(
+        #         pre_layer):  # instance of keras.layers.core.Dense
+        #     for current_pos in range(hidden_units_curr_layer):
+        #         var = f'u_{current_layer_idx}_{current_pos}'
+        #         previous_var = f'v_{current_layer_idx - 1}_{current_pos}'
+        #
+        #         smt_constraint = f'(assert(= {var} {previous_var}))'
+        #         smt_constraints.append(smt_constraint)
+
+        # elif keras_layer.is_activation(current_layer):
+        #     pre_layer_idx = current_layer_idx - 1
+        #     pre_layer = model.layers[pre_layer_idx]
+        #
+        #     smt_constraints.append(f'\n; (output of {pre_layer.name}, input of {current_layer.name})')
+        #
+        #     units = keras_layer.get_number_of_units(model, pre_layer_idx)
+        #     for unit_idx in range(units):
+        #         smt_constraint = f'(assert(= v_{pre_layer_idx}_{unit_idx} u_{current_layer_idx}_{unit_idx}))'
+        #         smt_constraints.append(smt_constraint)
 
     return smt_constraints
 
@@ -139,88 +153,83 @@ def create_activation_constraints(model_object):
     smt_constraints = []
 
     model = model_object.get_model()
-    if keras_model.is_ANN(model):
-        for current_layer_idx, current_layer in enumerate(model.layers):
-            units = keras_layer.get_number_of_units(model, current_layer_idx)
+    for current_layer_idx, current_layer in enumerate(model.layers):
+        units = keras_layer.get_number_of_units(model, current_layer_idx)
 
-            smt_constraints.append("\n")
-            if keras_activation.is_activation(current_layer):
-                smt_constraints.append(f'; layer {current_layer.name}')
+        smt_constraints.append("\n")
+        if keras_activation.is_activation(current_layer):
+            smt_constraints.append(f'; layer {current_layer.name}')
 
-                # Create the formula based on the type of activation
-                if keras_activation.is_relu(current_layer):
-                    smt_constraints.append(f'; is relu layer')
-                    for unit_idx in range(units):
-                        '''
-                        constraint type 2
-                        v = u>0?x:0
-                        '''
-                        smt_constraint = f'(= v_{current_layer_idx}_{unit_idx} (ite (>= u_{current_layer_idx}_{unit_idx} 0) u_{current_layer_idx}_{unit_idx} 0))'
-                        smt_constraint = f'(assert{smt_constraint})'
-                        smt_constraints.append(smt_constraint)
-
-                elif keras_activation.is_tanh(current_layer):
-                    smt_constraints.append(f';is tanh layer')
-                    for unit_idx in range(units):
-                        '''
-                        constraint type 2
-                        1 - exp(2*a)
-                        a = u_{current_layer_idx}_{unit_idx}
-                        '''
-                        smt_constraint = f'(= v_{current_layer_idx}_{unit_idx} (/ (- 1 (exp (* 2 u_{current_layer_idx}_{unit_idx}))) (+ 1 (exp (* 2 u_{current_layer_idx}_{unit_idx})))))'
-                        smt_constraint = f'(assert{smt_constraint})'
-                        smt_constraints.append(smt_constraint)
-
-                elif keras_activation.is_softmax(current_layer):
-                    smt_constraints.append(f'; is softmax layer')
-                    if current_layer_idx == len(model.layers) - 1:
-                        # no need to create constraints for the output layer
-                        smt_constraints.append(f'; The last layer is softmax: no need to create constraints!\n')
-                        continue
-                    else:
-                        smt_sum_name = f'sum_{current_layer_idx}_{unit_idx}'
-                        smt_constraints.append(f'(declare-fun {smt_sum_name} () Real)')
-
-                        smt_sum = ''
-                        for unit_idx in range(units):
-                            if unit_idx == 0:
-                                smt_sum = f'(exp (- 0 u_{current_layer_idx}_{unit_idx}))'
-                            else:
-                                smt_sum = f'(+ {smt_sum} (exp (- 0 u_{current_layer_idx}_{unit_idx})))'
-
-                        smt_constraint = f'(= {smt_sum_name} {smt_sum})'
-                        smt_constraint = f'(assert{smt_constraint})'
-                        smt_constraints.append(smt_constraint)
-
-                        #
-                        for unit_idx in range(units):
-                            smt_constraint = f'(= v_{current_layer_idx}_{unit_idx} (/ (exp (- 0 u_{current_layer_idx}_{unit_idx})) {smt_sum_name}))'
-                            smt_constraint = f'(assert{smt_constraint})'
-                            smt_constraints.append(smt_constraint)
-
-            elif keras_layer.is_dense(current_layer) and not keras_layer.is_activation(current_layer):
-                # the current layer is dense and not an activation
-                smt_constraints.append(f'; Layer {current_layer.name}\n; not activation layer')
-
+            # Create the formula based on the type of activation
+            if keras_activation.is_relu(current_layer):
+                smt_constraints.append(f'; is relu layer')
                 for unit_idx in range(units):
                     '''
                     constraint type 2
+                    v = u>0?x:0
                     '''
-                    smt_constraint = f'(assert(= u_{current_layer_idx}_{unit_idx} v_{current_layer_idx}_{unit_idx}))'
+                    prelayer_idx = current_layer_idx - 1
+                    smt_constraint = f'(= l{current_layer_idx}_{unit_idx} (ite (>= l{prelayer_idx}_{unit_idx} 0) l{prelayer_idx}_{unit_idx} 0))'
+                    smt_constraint = f'(assert{smt_constraint})'
                     smt_constraints.append(smt_constraint)
-            else:
-                logger.debug(f'Does not support layer {current_layer}')
 
-    elif keras_model.is_CNN(model):
-        logger.debug(f'Model is not CNN. Does not support!')
+            # elif keras_activation.is_tanh(current_layer):
+            #     smt_constraints.append(f';is tanh layer')
+            #     for unit_idx in range(units):
+            #         '''
+            #         constraint type 2
+            #         1 - exp(2*a)
+            #         a = u_{current_layer_idx}_{unit_idx}
+            #         '''
+            #         smt_constraint = f'(= v_{current_layer_idx}_{unit_idx} (/ (- 1 (exp (* 2 l{current_layer_idx}_{unit_idx}))) (+ 1 (exp (* 2 l{current_layer_idx}_{unit_idx})))))'
+            #         smt_constraint = f'(assert{smt_constraint})'
+            #         smt_constraints.append(smt_constraint)
 
-    else:
-        logger.debug(f'Unable to detect the type of neural network')
+            # elif keras_activation.is_softmax(current_layer):
+            #     smt_constraints.append(f'; is softmax layer')
+            #     if current_layer_idx == len(model.layers) - 1:
+            #         # no need to create constraints for the output layer
+            #         smt_constraints.append(f'; The last layer is softmax: no need to create constraints!\n')
+            #         continue
+            #     else:
+            #         smt_sum_name = f'sum_{current_layer_idx}_{unit_idx}'
+            #         smt_constraints.append(f'(declare-fun {smt_sum_name} () Real)')
+            #
+            #         smt_sum = ''
+            #         for unit_idx in range(units):
+            #             if unit_idx == 0:
+            #                 smt_sum = f'(exp (- 0 u_{current_layer_idx}_{unit_idx}))'
+            #             else:
+            #                 smt_sum = f'(+ {smt_sum} (exp (- 0 u_{current_layer_idx}_{unit_idx})))'
+            #
+            #         smt_constraint = f'(= {smt_sum_name} {smt_sum})'
+            #         smt_constraint = f'(assert{smt_constraint})'
+            #         smt_constraints.append(smt_constraint)
+            #
+            #         #
+            #         for unit_idx in range(units):
+            #             smt_constraint = f'(= v_{current_layer_idx}_{unit_idx} (/ (exp (- 0 u_{current_layer_idx}_{unit_idx})) {smt_sum_name}))'
+            #             smt_constraint = f'(assert{smt_constraint})'
+            #             smt_constraints.append(smt_constraint)
+
+        # elif keras_layer.is_dense(current_layer) and not keras_layer.is_activation(current_layer):
+        #     # the current layer is dense and not an activation
+        #     smt_constraints.append(f'; Layer {current_layer.name}\n; not activation layer')
+        #
+        #     for unit_idx in range(units):
+        #         '''
+        #         constraint type 2
+        #         '''
+        #         smt_constraint = f'(assert(= l{current_layer_idx}_{unit_idx} l{current_layer_idx}_{unit_idx}))'
+        #         smt_constraints.append(smt_constraint)
+        # else:
+        #     logger.debug(f'Does not support layer {current_layer}')
 
     return smt_constraints
 
 
-def create_variable_declarations(model_object, type_feature=get_config(["constraint_config", "feature_input_type"])):
+def create_variable_declarations(model_object, modified_features,
+                                 type_feature=get_config(["constraint_config", "feature_input_type"])):
     assert (isinstance(model_object, abstract_dataset))
     constraints = []
 
@@ -233,7 +242,7 @@ def create_variable_declarations(model_object, type_feature=get_config(["constra
             n_features = input_shape[1]
 
             constraint = ''
-            for feature_idx in range(n_features):
+            for feature_idx in modified_features:
                 if type_feature == 'float':
                     constraint += f'(declare-fun feature_{feature_idx} () Real)\t'
 
@@ -254,9 +263,11 @@ def create_variable_declarations(model_object, type_feature=get_config(["constra
                 # value of neuron in all layers except input layer must be real
                 if units is not None:
                     for unit_idx in range(units):
-                        before_activation = f'(declare-fun u_{layer_idx}_{unit_idx} () Real)'
-                        after_activation = f'(declare-fun v_{layer_idx}_{unit_idx} () Real)'
-                        constraints.append(before_activation + '\t\t\t' + after_activation)
+                        # before_activation = f'(declare-fun l_{layer_idx}_{unit_idx} () Real)'
+                        # after_activation = f'(declare-fun v_{layer_idx}_{unit_idx} () Real)'
+                        # constraints.append(before_activation + '\t\t\t' + after_activation)
+
+                        constraints.append(f'(declare-fun l{layer_idx}_{unit_idx} () Real)')
 
     elif keras_model.is_CNN(model):
         logger.debug(f'Model is not CNN. Does not support!')
@@ -293,6 +304,7 @@ def create_feature_constraints_from_an_observation(model_object,
                                                    strategy=get_config(
                                                        ['constraint_config', 'strategy'])):
     assert (isinstance(model_object, abstract_dataset))
+    modified_features = []
 
     smt_constraints = []
     model = model_object.get_model()
@@ -310,16 +322,18 @@ def create_feature_constraints_from_an_observation(model_object,
                 smt_constraints.append(smt_constraint)
 
             else:  # change value
-                smt_constraint = create_bound(x_train_shape784_bound255[feature_idx], delta_lower_bound, delta_upper_bound,
+                smt_constraint = create_bound(x_train_shape784_bound255[feature_idx], delta_lower_bound,
+                                              delta_upper_bound,
                                               feature_lower_bound, feature_upper_bound, feature_idx)
                 smt_constraints.append(smt_constraint)
+                modified_features.append(feature_idx)
 
     elif strategy == 'change_close_to_edge':
         x_28_28_bound255 = x_train_shape784_bound255.reshape(28, 28)
         for feature_idx in range(n_features):
             row_idx = int(np.floor(feature_idx / 28))
             col_idx = feature_idx - row_idx * 28
-            if close_to_edge(row_idx, col_idx, x_28_28_bound255): # changed features
+            if close_to_edge(row_idx, col_idx, x_28_28_bound255):  # changed features
                 smt_constraint = create_bound(x_train_shape784_bound255[feature_idx], delta_lower_bound,
                                               delta_upper_bound,
                                               feature_lower_bound, feature_upper_bound, feature_idx)
@@ -334,11 +348,12 @@ def create_feature_constraints_from_an_observation(model_object,
         for feature_idx in range(n_features):
             row_idx = int(np.floor(feature_idx / 28))
             col_idx = feature_idx - row_idx * 28
-            if is_edge(row_idx, col_idx, x_28_28_bound255): # changed features
+            if is_edge(row_idx, col_idx, x_28_28_bound255):  # changed features
                 smt_constraint = create_bound(x_train_shape784_bound255[feature_idx], delta_lower_bound,
                                               delta_upper_bound,
                                               feature_lower_bound, feature_upper_bound, feature_idx)
                 smt_constraints.append(smt_constraint)
+                modified_features.append(feature_idx)
             else:  # fixed features
                 smt_constraint = create_equal(f'feature_{feature_idx}', x_train_shape784_bound255[feature_idx])
                 smt_constraints.append(smt_constraint)
@@ -355,25 +370,29 @@ def create_feature_constraints_from_an_observation(model_object,
                     algorithm=RANKING_ALGORITHM.COI,
                     gradient_label=y_train,
                     classifier=model_object.get_model())
+                logger.debug(f'important features = {important_features}')
 
                 for feature_idx in range(n_features):
-                    if feature_idx not in important_features:  # fix value
-                        smt_constraint = create_equal(f'feature_{feature_idx}', x_train_shape784_bound255[feature_idx])
-                        smt_constraints.append(smt_constraint)
-                    else:  # change value
+                    if feature_idx in important_features:
+                        # change value
+                        modified_features.append(feature_idx)
                         smt_constraint = create_bound(x_train_shape784_bound255[feature_idx], delta_lower_bound,
                                                       delta_upper_bound,
                                                       feature_lower_bound, feature_upper_bound, feature_idx)
                         smt_constraints.append(smt_constraint)
 
+                    # else:  # fix value
+                    #     smt_constraint = create_equal(f'feature_{feature_idx}', x_train_shape784_bound255[feature_idx])
+                    #     smt_constraints.append(smt_constraint)
 
     elif strategy == 'default':
         for feature_idx in range(n_features):
             smt_constraint = create_bound(x_train_shape784_bound255[feature_idx], delta_lower_bound, delta_upper_bound,
                                           feature_lower_bound, feature_upper_bound, feature_idx)
             smt_constraints.append(smt_constraint)
+            modified_features.append(feature_idx)
 
-    return smt_constraints
+    return smt_constraints, modified_features
 
 
 def create_output_constraints_from_an_observation(model_object, x_train, y_train, thread_config):
@@ -382,73 +401,66 @@ def create_output_constraints_from_an_observation(model_object, x_train, y_train
     smt_constraints = []
     model = model_object.get_model()
 
-    if keras_model.is_ANN(model):
-        assert (x_train.shape[0] == 1 and len(x_train.shape) == 2)
-        last_layer_idx = len(model.layers) - 1
-        n_classes = keras_layer.get_number_of_units(model,
-                                                    last_layer_idx)  # get the number of hidden units in the output layer
+    assert (x_train.shape[0] == 1 and len(x_train.shape) == 2)
+    last_layer_idx = len(model.layers) - 2  # len - 1: presoftmax layer
+    n_classes = keras_layer.get_number_of_units(model,
+                                                last_layer_idx)  # get the number of hidden units in the output layer
 
-        tmp = x_train.reshape(1, -1)
+    tmp = x_train.reshape(1, -1)
 
-        before_softmax = model.layers[-2]
-        intermediate_layer_model = Model(inputs=model.inputs,
-                                         outputs=before_softmax.output)
+    before_softmax = model.layers[-2]
+    intermediate_layer_model = Model(inputs=model.inputs,
+                                     outputs=before_softmax.output)
 
-        # with thread_config.graph.as_default():
-        # must use when using thread
-        prediction = intermediate_layer_model.predict(tmp)
-        largest_value = np.max(prediction[0])
-        largest_idx = np.argmax(prediction[0])
-        left = f'u_{last_layer_idx}_{largest_idx}'
+    # with thread_config.graph.as_default():
+    # must use when using thread
+    prediction = intermediate_layer_model.predict(tmp)
+    largest_value = np.max(prediction[0])
+    largest_idx = np.argmax(prediction[0])
+    left = f'l{last_layer_idx}_{largest_idx}'
 
-        if n_classes is not None:
-            smt_constraints.append(f'; output constraints')
-            smt_constraints.append(f'; pre-sotmax = ' + str(prediction[0]).replace('\n', ''))
+    if n_classes is not None:
+        smt_constraints.append(f'; output constraints')
+        smt_constraints.append(f'; pre-sotmax = ' + str(prediction[0]).replace('\n', ''))
 
-            smt_type_constraint = get_config(["constraint_config", "output_layer_type_constraint"])
-            if smt_type_constraint == 'or':
-                '''
-                Neuron of true label is smaller than all other neurons
-                '''
-                smt_constraint = ''
-                for class_idx in range(n_classes):
-                    if class_idx != largest_idx:
-                        if class_idx == 0:
-                            smt_constraint = f'(< {left} u_{last_layer_idx}_{class_idx}) '
-                        else:
-                            smt_constraint = f'(or {smt_constraint} (< {left} u_{last_layer_idx}_{class_idx})) '
-                smt_constraint = f'(assert {smt_constraint})'
-                logger.debug(f'Output constraint = {smt_constraint}')
-                smt_constraints.append(smt_constraint)
+        smt_type_constraint = get_config(["constraint_config", "output_layer_type_constraint"])
+        if smt_type_constraint == 'or':
+            '''
+            Neuron of true label is smaller than all other neurons
+            '''
+            smt_constraint = ''
+            for class_idx in range(n_classes):
+                if class_idx != largest_idx:
+                    if class_idx == 0:
+                        smt_constraint = f'(< {left} l{last_layer_idx}_{class_idx}) '
+                    else:
+                        smt_constraint = f'(or {smt_constraint} (< {left} l{last_layer_idx}_{class_idx})) '
+            smt_constraint = f'(assert {smt_constraint})'
+            logger.debug(f'Output constraint = {smt_constraint}')
+            smt_constraints.append(smt_constraint)
 
-            elif smt_type_constraint == 'upper_bound':
-                '''
-                Neuron of true label is smaller than its value
-                '''
-                smt_constraint = f'(assert (< {left} {largest_value}) )'
-                logger.debug(f'Output constraint = {smt_constraint}')
-                smt_constraints.append(smt_constraint)
+        elif smt_type_constraint == 'upper_bound':
+            '''
+            Neuron of true label is smaller than its value
+            '''
+            smt_constraint = f'(assert (< {left} {largest_value}) )'
+            logger.debug(f'Output constraint = {smt_constraint}')
+            smt_constraints.append(smt_constraint)
 
-            elif smt_type_constraint == 'true_index_smaller_than_second_index':
-                # get the position of the second largest value
-                smallest_value = np.min(prediction[0])
-                second_value = smallest_value
-                second_idx = np.argmin(prediction[0])
+        elif smt_type_constraint == 'true_index_smaller_than_second_index':
+            # get the position of the second largest value
+            smallest_value = np.min(prediction[0])
+            second_value = smallest_value
+            second_idx = np.argmin(prediction[0])
 
-                for idx in range(0, len(prediction[0])):
-                    if second_value < prediction[0][idx] < largest_value:
-                        second_value = prediction[0][idx]
-                        second_idx = idx
+            for idx in range(0, len(prediction[0])):
+                if second_value < prediction[0][idx] < largest_value:
+                    second_value = prediction[0][idx]
+                    second_idx = idx
 
-                smt_constraint = f'(assert (< {left} u_{last_layer_idx}_{second_idx}) )'
-                logger.debug(f'Output constraint = {smt_constraint}')
-                smt_constraints.append(smt_constraint)
-
-    elif keras_model.is_CNN(model):
-        logger.debug(f'Does not support CNN')
-
-    else:
-        logger.debug(f'Unable to detect the type of neural network')
+            smt_constraint = f'(assert (< {left} l{last_layer_idx}_{second_idx}) )'
+            logger.debug(f'Output constraint = {smt_constraint}')
+            smt_constraints.append(smt_constraint)
 
     return constraints, smt_constraints
 
@@ -470,26 +482,26 @@ def create_constraints_file(model_object, seed_index, thread_config):
     with open(thread_config.true_label_seed_file, 'w') as f:
         f.write(str(y_train))
 
-    # generate constraints
-    smt_exp = define_mathematical_function()
-
-    variable_types = create_variable_declarations(model_object)
-
-    smt_layers_constraints = create_constraint_between_layers(model_object)
-
-    smt_activation_constraints = create_activation_constraints(model_object)
-
     delta_lower_bound = get_config(["constraint_config", "delta_lower_bound"])
     delta_upper_bound = get_config(["constraint_config", "delta_upper_bound"])
     feature_lower_bound = get_config(["constraint_config", "feature_lower_bound"])
     feature_upper_bound = get_config(["constraint_config", "feature_upper_bound"])
-    smt_input_constraints_modification = create_feature_constraints_from_an_observation(model_object,
-                                                                                        x_train,
-                                                                                        y_train,
-                                                                                        delta_lower_bound,
-                                                                                        delta_upper_bound,
-                                                                                        feature_lower_bound,
-                                                                                        feature_upper_bound)
+    smt_input_constraints_modification, modified_features = create_feature_constraints_from_an_observation(model_object,
+                                                                                                           x_train,
+                                                                                                           y_train,
+                                                                                                           delta_lower_bound,
+                                                                                                           delta_upper_bound,
+                                                                                                           feature_lower_bound,
+                                                                                                           feature_upper_bound)
+
+    # generate constraints
+    smt_exp = define_mathematical_function()
+
+    variable_types = create_variable_declarations(model_object, modified_features)
+
+    smt_layers_constraints = create_constraint_of_propogation_layers(model_object, modified_features, x_train.reshape(-1))
+
+    # smt_activation_constraints = create_activation_constraints(model_object)
 
     output_constraints, smt_output_constraints = create_output_constraints_from_an_observation(model_object, x_train,
                                                                                                y_train, thread_config)
@@ -508,8 +520,8 @@ def create_constraints_file(model_object, seed_index, thread_config):
         for constraint in smt_layers_constraints:
             f.write(constraint + '\n')
 
-        for constraint in smt_activation_constraints:
-            f.write(constraint + '\n')
+        # for constraint in smt_activation_constraints:
+        #     f.write(constraint + '\n')
 
         for constraint in smt_input_constraints_modification:
             f.write(constraint + '\n')
@@ -585,7 +597,7 @@ def image_generation(seeds, thread_config, model_object):
             # logger.debug(f'{thread_config.thread_name}: \t{command}')
             if platform.system() == 'Darwin' or platform.system() == 'Linux':  # macosx or hpc
                 os.system(command)
-            else: # windows
+            else:  # windows
                 subprocess.run(command, shell=True)
 
             # comparison
@@ -836,8 +848,8 @@ def create_summary(directory: str, model_object, all_seeds):
                 pred_label_arr.append(None)
 
                 true_pred_sorted = sorted(predicted_prob, reverse=True)
-                first_largest_prob.append(true_pred_sorted[0] )
-                second_largest_prob.append(true_pred_sorted[1] )
+                first_largest_prob.append(true_pred_sorted[0])
+                second_largest_prob.append(true_pred_sorted[1])
                 third_largest_prob.append(true_pred_sorted[2])
                 fourth_largest_prob.append(true_pred_sorted[3])
                 fifth_largest_prob.append(true_pred_sorted[4])
@@ -876,8 +888,8 @@ def create_summary(directory: str, model_object, all_seeds):
                     break
             position_adv_arr.append(position_adv)
 
-            first_largest_prob.append(true_pred_sorted[0] )
-            second_largest_prob.append(true_pred_sorted[1] )
+            first_largest_prob.append(true_pred_sorted[0])
+            second_largest_prob.append(true_pred_sorted[1])
             third_largest_prob.append(true_pred_sorted[2])
             fourth_largest_prob.append(true_pred_sorted[3])
             fifth_largest_prob.append(true_pred_sorted[4])
@@ -924,7 +936,7 @@ def create_summary(directory: str, model_object, all_seeds):
         for i in range(len(seed_arr)):
             seed.writerow([seed_arr[i], l0_arr[i], l2_arr[i], linf_arr[i], minimum_change_arr[i], pred_label_arr[i],
                            adv_label_arr[i], position_adv_arr[i], first_largest_prob[i],
-                           second_largest_prob[i], third_largest_prob[i], fourth_largest_prob[i],fifth_largest_prob[i],
+                           second_largest_prob[i], third_largest_prob[i], fourth_largest_prob[i], fifth_largest_prob[i],
                            last_largest_prob[i]])
     return summary_path
 
